@@ -3,8 +3,12 @@
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const smoothBehavior = prefersReducedMotion ? "auto" : "smooth";
+  // Respect reduced motion for UI behaviors, but FORCE animation for the background
+  const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const smoothBehavior = reduceMotionPref ? "auto" : "smooth";
+
+  const FORCE_ANIMATION = true; // <-- IMPORTANT: always animate the background
+  const prefersReducedMotion = !FORCE_ANIMATION && reduceMotionPref;
 
   // Mobile menu
   const btn = document.getElementById("menu-btn");
@@ -75,41 +79,25 @@
 
   const ctx = canvas.getContext("2d", { alpha: true });
 
-  // --- Tuning knobs (edit these if you want MORE/LESS falling effect)
+  // --- Tuning knobs (these are now set to be VERY obviously animated)
   const SETTINGS = {
-    // How strong the trails are (lower = longer trails, higher = shorter trails)
-    fadeAlpha: 0.20,
+    // Lower = longer trails (more obvious motion)
+    fadeAlpha: 0.14,
 
-    // Token rain
+    // Token rain: denser + brighter + faster
     rain: {
       enabled: true,
-      // lower = dimmer rain
-      baseAlpha: 0.18,
-      // bigger font => fewer columns => better perf + chunkier look
-      fontMin: 14,
-      fontMax: 18,
-      // speed range (units ~ "rows per 16ms frame")
-      speedMin: 0.55,
-      speedMax: 1.55,
-      // chance of reset once it falls off screen (higher => less frequent resets)
-      resetChance: 0.985,
-      // how often a "bright head" appears (0..1)
-      headRate: 0.085,
-      // keep rain mostly above the horizon so content is readable
-      fadeAfterHorizon: true,
+      baseAlpha: 0.30,  // brighter tokens
+      fontMin: 12,
+      fontMax: 16,      // smaller font => more columns
+      speedMin: 1.0,
+      speedMax: 2.6,    // faster falling
+      headRate: 0.18,   // more bright "heads"
+      fadeAfterHorizon: true, // keeps readability in lower section
     },
 
-    // Network density
-    network: {
-      minNodes: 28,
-      maxNodes: 52,
-    },
-
-    // Star density
-    stars: {
-      min: 140,
-      max: 260,
-    },
+    network: { minNodes: 28, maxNodes: 52 },
+    stars: { min: 140, max: 260 },
   };
 
   const rand = (min, max) => min + Math.random() * (max - min);
@@ -125,26 +113,21 @@
     speed: [],
   };
 
-  // AI-ish glyph set (mix of digits + math + short tokens)
+  // Mostly single glyphs (Matrix vibe), with occasional short AI tokens
   const singleGlyphs =
     "01" +
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
     "abcdefghijklmnopqrstuvwxyz" +
     "░▒▓█" +
     "∙•·" +
-    "λθμσ∇Σ" +
+    "λθμσ∇ΣΔ" +
     "<>/=+*";
 
-  const tokenGlyphs = [
-    "AI", "LLM", "GPU", "KV", "∇", "Σ", "θ", "λ", "μ",
-    "tok", "loss", "grad", "ctx", "{}",
-  ];
+  const tokenGlyphs = ["AI", "ML", "∇", "Σ", "θ", "λ", "μ", "Δ", "⊕", "⊗", "∞", "[]", "{}"];
 
   function pickGlyph() {
-    // ~12% chance to use a short token
-    if (Math.random() < 0.12) {
-      return tokenGlyphs[(Math.random() * tokenGlyphs.length) | 0];
-    }
+    // occasional short token (kept low to avoid messy overlaps)
+    if (Math.random() < 0.08) return tokenGlyphs[(Math.random() * tokenGlyphs.length) | 0];
     return singleGlyphs[(Math.random() * singleGlyphs.length) | 0];
   }
 
@@ -176,12 +159,7 @@
   }
 
   function initNetwork() {
-    const count = clamp(
-      Math.round((w * h) / 26000),
-      SETTINGS.network.minNodes,
-      SETTINGS.network.maxNodes
-    );
-
+    const count = clamp(Math.round((w * h) / 26000), SETTINGS.network.minNodes, SETTINGS.network.maxNodes);
     nodes = Array.from({ length: count }, () => ({
       x: rand(0, w),
       y: rand(0, h * 0.55),
@@ -194,10 +172,9 @@
   function initRain() {
     if (!SETTINGS.rain.enabled) return;
 
-    // Scale font with screen width to keep density stable
-    const fs = clamp(Math.round(w / 96), SETTINGS.rain.fontMin, SETTINGS.rain.fontMax);
+    const fs = clamp(Math.round(w / 110), SETTINGS.rain.fontMin, SETTINGS.rain.fontMax);
     rain.fontSize = fs;
-    rain.columns = Math.max(24, Math.floor(w / fs));
+    rain.columns = Math.max(28, Math.floor(w / fs));
 
     const maxRows = Math.ceil(h / fs);
 
@@ -256,7 +233,6 @@
 
     for (let i = 0; i < nodes.length; i++) {
       const a = nodes[i];
-
       for (let j = i + 1; j < nodes.length; j++) {
         const b = nodes[j];
         const dx = a.x - b.x;
@@ -329,54 +305,47 @@
     const horizon = h * 0.63;
     const rowStep = dt / 16;
 
-    // Mild glow (kept low so it doesn't look "bright")
-    ctx.shadowColor = "rgba(34,211,238,0.22)";
-    ctx.shadowBlur = 6;
+    // visible glow (still controlled)
+    ctx.shadowColor = "rgba(34,211,238,0.30)";
+    ctx.shadowBlur = 10;
 
     for (let i = 0; i < rain.columns; i++) {
       const x = i * rain.fontSize;
-      const y = rain.y[i] * rain.fontSize;
+      const yPx = rain.y[i] * rain.fontSize;
 
-      // Mask rain under the horizon so content stays readable
       let mask = 1;
-      if (SETTINGS.rain.fadeAfterHorizon) {
-        if (y > horizon) {
-          const d = (y - horizon) / Math.max(1, h - horizon);
-          mask = Math.max(0, 0.38 * (1 - d));
-        }
+      if (SETTINGS.rain.fadeAfterHorizon && yPx > horizon) {
+        const d = (yPx - horizon) / Math.max(1, h - horizon);
+        mask = Math.max(0, 0.35 * (1 - d));
       }
 
       const isHead = Math.random() < SETTINGS.rain.headRate;
       const glyph = pickGlyph();
 
-      // Base alpha decreases slightly with depth, stays subtle
-      const depthFade = 1 - Math.min(0.70, (y / h) * 0.70);
+      const depthFade = 1 - Math.min(0.70, (yPx / h) * 0.70);
       const a = SETTINGS.rain.baseAlpha * depthFade * mask;
 
       if (a > 0.005) {
         if (isHead) {
-          ctx.fillStyle = `rgba(255,255,255,${Math.min(0.35, a + 0.16)})`;
+          ctx.fillStyle = `rgba(255,255,255,${Math.min(0.55, a + 0.25)})`;
         } else {
-          // occasional violet tint
-          const violet = Math.random() < 0.16;
+          const violet = Math.random() < 0.14;
           ctx.fillStyle = violet
             ? `rgba(168,85,247,${a})`
             : `rgba(34,211,238,${a})`;
         }
-        ctx.fillText(glyph, x, y);
+        ctx.fillText(glyph, x, yPx);
       }
 
-      // advance
       rain.y[i] += rain.speed[i] * rowStep;
 
-      // reset once off-screen
-      if (y > h + 20 && Math.random() > SETTINGS.rain.resetChance) {
+      // Reset immediately once off-screen (guarantees constant rain)
+      if (yPx > h + 20) {
         rain.y[i] = rand(-Math.ceil(h / rain.fontSize), 0);
         rain.speed[i] = rand(SETTINGS.rain.speedMin, SETTINGS.rain.speedMax);
       }
     }
 
-    // reset shadow so it doesn't affect other draws
     ctx.shadowBlur = 0;
   }
 
@@ -392,12 +361,13 @@
     ctx.fillStyle = `rgba(5, 7, 18, ${SETTINGS.fadeAlpha})`;
     ctx.fillRect(0, 0, w, h);
 
+    // draw order: far -> near
     drawStarfield(dt);
+    drawArcadeGrid(now);
     drawAINetwork(dt);
     drawTokenRain(dt);
-    drawArcadeGrid(now);
 
-    // very subtle additive glow pass
+    // subtle additive glow pass
     ctx.globalCompositeOperation = "lighter";
     ctx.fillStyle = "rgba(34,211,238,0.010)";
     ctx.fillRect(0, 0, w, h);
@@ -426,9 +396,9 @@
   if (prefersReducedMotion) {
     // one still render
     drawStarfield(16);
+    drawArcadeGrid(performance.now());
     drawAINetwork(16);
     drawTokenRain(16);
-    drawArcadeGrid(performance.now());
   } else {
     start();
   }

@@ -18,6 +18,7 @@ html {
 }
 
 body {
+  margin: 0;
   font-family: Poppins, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   background:
     radial-gradient(900px 620px at 18% 0%, rgba(34, 211, 238, 0.08), transparent 60%),
@@ -45,9 +46,6 @@ body {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-size: 100% 100%, 100% 64px;
-  animation: scanShift 10s linear infinite;
-
 
   background-image:
     radial-gradient(circle at 50% 20%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.65) 70%, rgba(0,0,0,0.92) 100%),
@@ -58,7 +56,15 @@ body {
       rgba(0,0,0,0) 2px,
       rgba(0,0,0,0) 6px
     );
+
+  background-size: 100% 100%, 100% 64px;
+  animation: scanShift 10s linear infinite;
   opacity: 0.10;
+}
+
+@keyframes scanShift {
+  from { background-position: 0 0, 0 0; }
+  to   { background-position: 0 0, 0 64px; }
 }
 
 .gradient-text {
@@ -201,8 +207,3 @@ body {
     transition: none;
   }
 }
-@keyframes scanShift {
-  from { background-position: 0 0, 0 0; }
-  to   { background-position: 0 0, 0 64px; }
-}
-
