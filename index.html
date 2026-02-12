@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Name | Resume</title>
+
+    <!-- Tailwind CDN (no build step) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Fonts (optional) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Roboto+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root { --bg: #0b0f19; --fg: #e5e7eb; }
+      body { font-family: Poppins, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+      .mono { font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    </style>
+  </head>
+
+  <body class="bg-[var(--bg)] text-[var(--fg)]">
+    <header class="sticky top-0 z-10 backdrop-blur border-b border-white/10">
+      <nav class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+        <a href="#top" class="font-bold tracking-tight">Your Name</a>
+        <div class="flex gap-4 text-sm">
+          <a class="hover:underline" href="#experience">Experience</a>
+          <a class="hover:underline" href="#projects">Projects</a>
+          <a class="hover:underline" href="#skills">Skills</a>
+          <a class="hover:underline" href="#contact">Contact</a>
+        </div>
+      </nav>
+    </header>
+
+    <main id="top" class="max-w-5xl mx-auto px-4 py-10">
+      <section class="flex flex-col gap-4">
+        <p class="mono text-sm text-white/70">Resume site</p>
+        <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight">
+          Your Name
+        </h1>
+        <p class="text-white/80 max-w-2xl">
+          Short headline: role + strengths + domain (1–2 lines).
+        </p>
+
+        <div class="flex flex-wrap gap-3 pt-2">
+          <a
+            class="px-4 py-2 rounded bg-white text-black font-semibold hover:opacity-90"
+            href="resume/resume.pdf"
+            target="_blank"
+            rel="noopener"
+          >
+            Download Resume (PDF)
+          </a>
+          <a class="px-4 py-2 rounded border border-white/20 hover:bg-white/5" href="#projects">
+            View Projects
+          </a>
+        </div>
+
+        <div class="pt-4 text-sm text-white/70">
+          <span class="mono">Location:</span> Phoenix, AZ ·
+          <span class="mono">Email:</span> you@example.com ·
+          <span class="mono">LinkedIn:</span> linkedin.com/in/you
+        </div>
+      </section>
+
+      <hr class="my-10 border-white/10" />
+
+      <section id="experience" class="space-y-4">
+        <h2 class="text-2xl font-bold">Experience</h2>
+        <article class="rounded-lg border border-white/10 p-5 bg-white/5">
+          <div class="flex flex-col md:flex-row md:items-baseline md:justify-between gap-1">
+            <h3 class="font-semibold">Job Title · Company</h3>
+            <p class="mono text-sm text-white/70">2023 — Present</p>
+          </div>
+          <ul class="list-disc pl-5 pt-3 space-y-2 text-white/80">
+            <li>Impact bullet with metric.</li>
+            <li>What you built + tech used.</li>
+            <li>Outcome / result.</li>
+          </ul>
+        </article>
+      </section>
+
+      <hr class="my-10 border-white/10" />
+
+      <section id="projects" class="space-y-4">
+        <h2 class="text-2xl font-bold">Projects</h2>
+        <div class="grid md:grid-cols-2 gap-4">
+          <a class="block rounded-lg border border-white/10 p-5 bg-white/5 hover:bg-white/10" href="#" target="_blank" rel="noopener">
+            <div class="font-semibold">Project Name</div>
+            <div class="mono text-sm text-white/70 pt-1">Tech: X, Y, Z</div>
+            <p class="pt-3 text-white/80">1–2 sentence description focused on outcome.</p>
+          </a>
+        </div>
+      </section>
+
+      <hr class="my-10 border-white/10" />
+
+      <section id="skills" class="space-y-4">
+        <h2 class="text-2xl font-bold">Skills</h2>
+        <div class="flex flex-wrap gap-2">
+          <span class="mono text-sm px-3 py-1 rounded bg-white/10 border border-white/10">Python</span>
+          <span class="mono text-sm px-3 py-1 rounded bg-white/10 border border-white/10">SQL</span>
+          <span class="mono text-sm px-3 py-1 rounded bg-white/10 border border-white/10">AWS</span>
+        </div>
+      </section>
+
+      <hr class="my-10 border-white/10" />
+
+      <section id="contact" class="space-y-3">
+        <h2 class="text-2xl font-bold">Contact</h2>
+        <p class="text-white/80">
+          Email: <a class="underline" href="mailto:you@example.com">you@example.com</a>
+        </p>
+      </section>
+
+      <footer class="pt-12 text-sm text-white/50">
+        © <span id="year"></span> Your Name
+      </footer>
+    </main>
+
+    <script>
+      document.getElementById("year").textContent = new Date().getFullYear();
+    </script>
+  </body>
+</html>
