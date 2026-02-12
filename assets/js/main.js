@@ -3,7 +3,7 @@
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // Set CSS var for header height so intro is perfectly centered
+  // Header height -> CSS var (keeps intro vertically centered)
   const headerEl = document.querySelector("header");
   const setHeaderHeight = () => {
     const hh = headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0;
@@ -12,7 +12,7 @@
   setHeaderHeight();
   window.addEventListener("resize", setHeaderHeight, { passive: true });
 
-  // UI smoothness respects reduce motion; background is forced to animate
+  // UI behavior respects reduce motion; background is forced to animate
   const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const smoothBehavior = reduceMotionPref ? "auto" : "smooth";
 
@@ -41,14 +41,16 @@
     menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeMenu));
   }
 
-  // ===== Projects: buttons + drag + AUTO-SCROLL every 10s =====
+  // ===== Projects drawer: buttons + drag + auto-advance =====
+  const projectsSection = document.getElementById("projects");
   const track = document.getElementById("projects-track");
   const prev = document.getElementById("projects-prev");
   const next = document.getElementById("projects-next");
 
+  const AUTO_SCROLL_MS = 10_000;
   let autoTimer = null;
   let resumeTimer = null;
-  const AUTO_SCROLL_MS = 10_000;
+  let projectsInView = false;
 
   const stopAuto = () => {
     if (!autoTimer) return;
@@ -58,15 +60,10 @@
 
   const startAuto = () => {
     if (!track) return;
+    if (!projectsInView) return;
+    if (document.hidden) return;
     if (autoTimer) return;
-    autoTimer = setInterval(() => scrollNextCard(), AUTO_SCROLL_MS);
-  };
-
-  const scheduleResume = () => {
-    clearTimeout(resumeTimer);
-    resumeTimer = setTimeout(() => {
-      if (!document.hidden) startAuto();
-    }, AUTO_SCROLL_MS);
+    autoTimer = setInterval(scrollNext, AUTO_SCROLL_MS);
   };
 
   const pauseAuto = () => {
@@ -74,36 +71,39 @@
     clearTimeout(resumeTimer);
   };
 
+  const scheduleResume = () => {
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(() => startAuto(), AUTO_SCROLL_MS);
+  };
+
   const cardDelta = () => {
-    if (!track) return 420;
+    if (!track) return 520;
     const card = track.querySelector(".project-card");
     if (!card) return Math.max(360, Math.round(track.clientWidth * 0.9));
     const styles = window.getComputedStyle(track);
-    const gap = parseFloat(styles.columnGap || styles.gap || "0") || 0;
+    const gap = parseFloat(styles.gap || styles.columnGap || "0") || 0;
     return card.getBoundingClientRect().width + gap;
   };
 
-  const scrollNextCard = () => {
+  const scrollNext = () => {
     if (!track) return;
     const maxLeft = track.scrollWidth - track.clientWidth;
     if (maxLeft <= 0) return;
 
-    const delta = cardDelta();
-    const nextLeft = track.scrollLeft + delta;
-
-    if (nextLeft >= maxLeft - 8) {
+    // If already at end, loop back to start
+    if (track.scrollLeft >= maxLeft - 8) {
       track.scrollTo({ left: 0, behavior: smoothBehavior });
-    } else {
-      track.scrollBy({ left: delta, behavior: smoothBehavior });
+      return;
     }
+
+    track.scrollBy({ left: cardDelta(), behavior: smoothBehavior });
   };
 
-  if (track) {
-    const scrollAmount = () => cardDelta();
-
+  if (track && projectsSection) {
+    // Buttons (manual = 1 card)
     const nudge = (dir) => {
       pauseAuto();
-      track.scrollBy({ left: dir * scrollAmount(), behavior: smoothBehavior });
+      track.scrollBy({ left: dir * cardDelta(), behavior: smoothBehavior });
       scheduleResume();
     };
 
@@ -142,17 +142,22 @@
     track.addEventListener("pointercancel", endDrag);
     track.addEventListener("lostpointercapture", endDrag);
 
-    // Pause while hovering (desktop) so it doesn’t fight the user
-    track.addEventListener("mouseenter", pauseAuto);
-    track.addEventListener("mouseleave", scheduleResume);
-
     // Wheel/touch counts as interaction
     track.addEventListener("wheel", () => { pauseAuto(); scheduleResume(); }, { passive: true });
     track.addEventListener("touchstart", pauseAuto, { passive: true });
     track.addEventListener("touchend", scheduleResume, { passive: true });
 
-    // Start the auto-advance
-    startAuto();
+    // Start/stop auto ONLY when section is visible
+    const io = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        projectsInView = !!entry?.isIntersecting && entry.intersectionRatio >= 0.35;
+        if (projectsInView) startAuto();
+        else stopAuto();
+      },
+      { threshold: [0, 0.35, 0.6, 1] }
+    );
+    io.observe(projectsSection);
   }
 
   // ===== Animated AI/Gaming background + Token Rain =====
@@ -162,8 +167,7 @@
   const ctx = canvas.getContext("2d", { alpha: true });
 
   const SETTINGS = {
-    fadeAlpha: 0.14, // long trails
-
+    fadeAlpha: 0.14,
     rain: {
       enabled: true,
       baseAlpha: 0.30,
@@ -174,7 +178,6 @@
       headRate: 0.18,
       fadeAfterHorizon: true,
     },
-
     network: { minNodes: 28, maxNodes: 52 },
     stars: { min: 140, max: 260 },
   };
@@ -251,7 +254,9 @@
     const maxRows = Math.ceil(h / fs);
 
     rain.y = Array.from({ length: rain.columns }, () => rand(-maxRows, 0));
-    rain.speed = Array.from({ length: rain.columns }, () => rand(SETTINGS.rain.speedMin, SETTINGS.rain.speedMax));
+    rain.speed = Array.from({ length: rain.columns }, () =>
+      rand(SETTINGS.rain.speedMin, SETTINGS.rain.speedMax)
+    );
 
     ctx.textBaseline = "top";
     ctx.font = `${rain.fontSize}px "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
@@ -458,13 +463,12 @@
   ctx.fillStyle = "rgba(5, 7, 18, 1)";
   ctx.fillRect(0, 0, w, h);
 
-  if (prefersReducedMotion) {
+  if (!prefersReducedMotion) startBg();
+  else {
     drawStarfield(16);
     drawArcadeGrid(performance.now());
     drawAINetwork(16);
     drawTokenRain(16);
-  } else {
-    startBg();
   }
 
   document.addEventListener("visibilitychange", () => {
