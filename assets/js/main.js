@@ -3,6 +3,9 @@
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const smoothBehavior = prefersReducedMotion ? "auto" : "smooth";
+
   // Mobile menu
   const btn = document.getElementById("menu-btn");
   const menu = document.getElementById("mobile-menu");
@@ -22,133 +25,263 @@
       }
     });
 
-    // Close after clicking a link
     menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeMenu));
   }
 
-  // Generative "latent space" background (Canvas)
+  // Horizontal projects controls + drag-to-scroll
+  const track = document.getElementById("projects-track");
+  const prev = document.getElementById("projects-prev");
+  const next = document.getElementById("projects-next");
+
+  if (track) {
+    const scrollAmount = () => Math.max(320, Math.round(track.clientWidth * 0.85));
+
+    if (prev) {
+      prev.addEventListener("click", () => {
+        track.scrollBy({ left: -scrollAmount(), behavior: smoothBehavior });
+      });
+    }
+    if (next) {
+      next.addEventListener("click", () => {
+        track.scrollBy({ left: scrollAmount(), behavior: smoothBehavior });
+      });
+    }
+
+    // Pointer drag (desktop “grab to scroll”)
+    let isDown = false;
+    let startX = 0;
+    let startLeft = 0;
+
+    track.classList.add("grab");
+
+    track.addEventListener("pointerdown", (e) => {
+      isDown = true;
+      track.setPointerCapture(e.pointerId);
+      startX = e.clientX;
+      startLeft = track.scrollLeft;
+      track.classList.add("grabbing");
+    });
+
+    track.addEventListener("pointermove", (e) => {
+      if (!isDown) return;
+      const dx = e.clientX - startX;
+      track.scrollLeft = startLeft - dx;
+    });
+
+    const endDrag = () => {
+      isDown = false;
+      track.classList.remove("grabbing");
+    };
+
+    track.addEventListener("pointerup", endDrag);
+    track.addEventListener("pointercancel", endDrag);
+    track.addEventListener("lostpointercapture", endDrag);
+  }
+
+  // Animated gaming-style background (dark arcade grid + starfield + subtle “AI network”)
   const canvas = document.getElementById("ai-bg");
   if (!canvas) return;
 
   const ctx = canvas.getContext("2d", { alpha: true });
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  let w = 0,
-    h = 0,
-    dpr = 1;
+  let w = 0, h = 0, dpr = 1;
+  let stars = [];
+  let nodes = [];
+
+  const rand = (min, max) => min + Math.random() * (max - min);
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+  function initStarsAndNodes() {
+    const starCount = clamp(Math.round((w * h) / 7000), 140, 280);
+    stars = Array.from({ length: starCount }, () => ({
+      // 3D-ish starfield
+      x: rand(-1, 1) * w,
+      y: rand(-1, 1) * h,
+      z: rand(0.12, 1.0),
+      s: rand(0.6, 1.25),
+    }));
+
+    const nodeCount = clamp(Math.round((w * h) / 24000), 32, 56);
+    nodes = Array.from({ length: nodeCount }, () => ({
+      x: rand(0, w),
+      y: rand(0, h * 0.55), // keep “AI network” mostly in top half
+      vx: rand(-0.18, 0.18),
+      vy: rand(-0.14, 0.14),
+      r: rand(1.1, 2.2),
+    }));
+  }
 
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     w = window.innerWidth;
     h = window.innerHeight;
+
     canvas.width = Math.floor(w * dpr);
     canvas.height = Math.floor(h * dpr);
     canvas.style.width = `${w}px`;
     canvas.style.height = `${h}px`;
+
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    initStarsAndNodes();
   }
 
   window.addEventListener("resize", resize, { passive: true });
   resize();
 
-  const rand = (min, max) => min + Math.random() * (max - min);
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  function drawStarfield(dt) {
+    const speed = 0.00022 * dt; // subtle
+    const f = Math.min(w, h) * 0.55;
 
-  // Particle count scales with viewport (keeps performance stable)
-  const targetCount = clamp(Math.round((w * h) / 12000), 70, 140);
+    for (const s of stars) {
+      s.z -= speed * s.s;
+      if (s.z <= 0.12) {
+        s.x = rand(-1, 1) * w;
+        s.y = rand(-1, 1) * h;
+        s.z = 1.0;
+        s.s = rand(0.6, 1.25);
+      }
 
-  const particles = Array.from({ length: targetCount }, () => ({
-    x: rand(0, w),
-    y: rand(0, h),
-    vx: rand(-0.2, 0.2),
-    vy: rand(-0.2, 0.2),
-    r: rand(1.0, 2.0),
-  }));
+      const k = f / (s.z * f + 80); // keeps it from exploding too fast
+      const sx = w * 0.5 + s.x * k;
+      const sy = h * 0.5 + s.y * k;
 
-  function field(x, y, t) {
-    // Cheap “vector field” using trig — looks like a soft swirling latent space.
-    const nx = (x - w * 0.5) / w;
-    const ny = (y - h * 0.5) / h;
+      // cull
+      if (sx < -20 || sx > w + 20 || sy < -20 || sy > h + 20) continue;
 
-    const a = Math.sin(nx * 6 + t * 0.00025) + Math.cos(ny * 5 - t * 0.0002);
-    const b = Math.cos(nx * 5 - t * 0.00023) - Math.sin(ny * 6 + t * 0.00027);
+      const a = clamp((1.0 - s.z) * 0.42, 0.05, 0.26);
+      const size = clamp((1.0 - s.z) * 2.2, 0.6, 2.2);
 
-    // Rotate a/b slightly for curl-ish motion
-    const fx = a * 0.6 + b * 0.2;
-    const fy = b * 0.6 - a * 0.2;
-    return { fx, fy };
+      ctx.beginPath();
+      ctx.arc(sx, sy, size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${a})`;
+      ctx.fill();
+    }
   }
 
-  function drawFrame(t) {
-    // Fade to create trails
-    ctx.fillStyle = "rgba(5, 7, 18, 0.18)";
-    ctx.fillRect(0, 0, w, h);
+  function drawArcadeGrid(t) {
+    const horizon = h * 0.63;
+    const depth = h - horizon;
 
-    // Connections
+    // faint glow ground
+    ctx.fillStyle = "rgba(34,211,238,0.018)";
+    ctx.fillRect(0, horizon, w, depth);
+
+    // horizontal lines (move “towards” viewer)
+    const lines = 18;
+    const offset = (t * 0.00012) % 1;
+
+    for (let i = 0; i < lines; i++) {
+      const d = (i / lines + offset) % 1; // 0..1
+      const y = horizon + (d * d) * depth;
+
+      const halfWidth = (w * 0.06) + (d * d) * (w * 0.58);
+      const alpha = 0.04 + d * 0.08;
+
+      ctx.strokeStyle = `rgba(34,211,238,${alpha})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(w * 0.5 - halfWidth, y);
+      ctx.lineTo(w * 0.5 + halfWidth, y);
+      ctx.stroke();
+    }
+
+    // vertical lines
+    const lanes = 12;
+    for (let i = -lanes; i <= lanes; i++) {
+      const xBottom = w * 0.5 + (i / lanes) * (w * 0.62);
+      ctx.strokeStyle = "rgba(168,85,247,0.055)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(xBottom, h);
+      ctx.lineTo(w * 0.5, horizon);
+      ctx.stroke();
+    }
+
+    // small horizon glow
+    ctx.fillStyle = "rgba(168,85,247,0.03)";
+    ctx.fillRect(0, horizon - 1, w, 2);
+  }
+
+  function drawAINetwork(dt) {
+    // move nodes gently
+    for (const p of nodes) {
+      p.x += p.vx * dt * 0.02;
+      p.y += p.vy * dt * 0.02;
+
+      // wrap in top half
+      if (p.x < -20) p.x = w + 20;
+      if (p.x > w + 20) p.x = -20;
+      if (p.y < -20) p.y = h * 0.55 + 20;
+      if (p.y > h * 0.55 + 20) p.y = -20;
+    }
+
     const maxDist = Math.min(160, Math.max(110, w * 0.12));
     const maxDist2 = maxDist * maxDist;
 
-    for (let i = 0; i < particles.length; i++) {
-      const p = particles[i];
+    // connections
+    for (let i = 0; i < nodes.length; i++) {
+      const a = nodes[i];
 
-      const f = field(p.x, p.y, t);
-      p.vx = p.vx * 0.92 + f.fx * 0.18;
-      p.vy = p.vy * 0.92 + f.fy * 0.18;
-
-      p.x += p.vx;
-      p.y += p.vy;
-
-      // Wrap
-      if (p.x < -10) p.x = w + 10;
-      if (p.x > w + 10) p.x = -10;
-      if (p.y < -10) p.y = h + 10;
-      if (p.y > h + 10) p.y = -10;
-
-      // Dot
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(255,255,255,0.45)";
-      ctx.fill();
-
-      // Lines to nearby particles (O(n^2) but small n)
-      for (let j = i + 1; j < particles.length; j++) {
-        const q = particles[j];
-        const dx = p.x - q.x;
-        const dy = p.y - q.y;
+      for (let j = i + 1; j < nodes.length; j++) {
+        const b = nodes[j];
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
         const d2 = dx * dx + dy * dy;
+
         if (d2 < maxDist2) {
-          const a = 1 - d2 / maxDist2;
-          ctx.strokeStyle = `rgba(34,211,238,${0.22 * a})`;
+          const p = 1 - d2 / maxDist2;
+          ctx.strokeStyle = `rgba(34,211,238,${0.10 * p})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          ctx.lineTo(q.x, q.y);
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
           ctx.stroke();
         }
       }
     }
 
-    // A second glow pass for depth
+    // node dots
+    for (const p of nodes) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,255,255,0.32)";
+      ctx.fill();
+    }
+  }
+
+  let last = performance.now();
+
+  function frame(now) {
+    const dt = clamp(now - last, 10, 40);
+    last = now;
+
+    // trail fade (keeps motion smooth + dark)
+    ctx.fillStyle = "rgba(5, 7, 18, 0.22)";
+    ctx.fillRect(0, 0, w, h);
+
+    drawStarfield(dt);
+    drawAINetwork(dt);
+    drawArcadeGrid(now);
+
+    // subtle additive glow pass
     ctx.globalCompositeOperation = "lighter";
-    ctx.fillStyle = "rgba(168,85,247,0.05)";
+    ctx.fillStyle = "rgba(34,211,238,0.010)";
     ctx.fillRect(0, 0, w, h);
     ctx.globalCompositeOperation = "source-over";
+
+    if (!prefersReducedMotion) requestAnimationFrame(frame);
   }
 
-  function loop(t) {
-    drawFrame(t);
-    requestAnimationFrame(loop);
-  }
+  // initial clear
+  ctx.fillStyle = "rgba(5, 7, 18, 1)";
+  ctx.fillRect(0, 0, w, h);
 
-  // If user prefers reduced motion: render one still frame
-  if (reduceMotion) {
-    ctx.fillStyle = "rgba(5, 7, 18, 1)";
-    ctx.fillRect(0, 0, w, h);
-    drawFrame(0);
+  if (prefersReducedMotion) {
+    // render a single still frame
+    drawStarfield(16);
+    drawAINetwork(16);
+    drawArcadeGrid(performance.now());
   } else {
-    // Initial clear
-    ctx.fillStyle = "rgba(5, 7, 18, 1)";
-    ctx.fillRect(0, 0, w, h);
-    requestAnimationFrame(loop);
+    requestAnimationFrame(frame);
   }
 })();

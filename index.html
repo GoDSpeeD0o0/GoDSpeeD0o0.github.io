@@ -236,59 +236,120 @@
 
       <!-- PROJECTS -->
       <section id="projects" class="mt-12">
-        <h2 class="section-title">Experiments (Projects)</h2>
+  <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+    <div>
+      <h2 class="section-title">Featured Projects</h2>
+      <p class="text-white/70 text-sm mt-1">
+        Swipe (mobile) or grab + drag (desktop). Snap-to-card horizontal scroll.
+      </p>
+    </div>
 
-        <div class="mt-4 grid md:grid-cols-2 gap-4">
-          <a class="glass card-hover p-5 block" href="#" aria-label="Faster Diffusion project">
-            <div class="flex items-baseline justify-between gap-2">
-              <div class="font-semibold">Faster Diffusion</div>
-              <div class="mono text-xs text-white/60">Spring 2025</div>
-            </div>
-            <div class="mono text-xs text-white/60 mt-2">Python · Diffusion · Performance optimization</div>
-            <p class="mt-3 text-white/80">
-              Implemented performance mechanisms to reduce diffusion inference time by 41% while maintaining visual quality
-              (team of three).
-            </p>
-          </a>
+    <div class="flex gap-2">
+      <button id="projects-prev" class="icon-btn" aria-label="Scroll projects left">
+        <span class="mono">←</span>
+      </button>
+      <button id="projects-next" class="icon-btn" aria-label="Scroll projects right">
+        <span class="mono">→</span>
+      </button>
+    </div>
+  </div>
 
-          <a class="glass card-hover p-5 block" href="#" aria-label="Slack Python QnA Bot project">
-            <div class="flex items-baseline justify-between gap-2">
-              <div class="font-semibold">Slack Python QnA Bot</div>
-              <div class="mono text-xs text-white/60">Nov 2025</div>
-            </div>
-            <div class="mono text-xs text-white/60 mt-2">Python · Slack API · Automation</div>
-            <p class="mt-3 text-white/80">
-              Automated Python technical support via Slack. Built a streamlined QnA interface and multi-step debugging workflows.
-            </p>
-          </a>
+  <div id="projects-track" class="hscroll mt-4 flex gap-4 overflow-x-auto pb-4">
+    <!-- 1) GenAIProject -->
+    <article class="glass card-hover project-card">
+      <div class="flex items-baseline justify-between gap-3">
+        <h3 class="font-semibold">Faster Diffusion</h3>
+        <span class="mono text-xs text-white/60">GenAIProject</span>
+      </div>
 
-          <a class="glass card-hover p-5 block" href="#" aria-label="Tweet Sentiment Analysis project">
-            <div class="flex items-baseline justify-between gap-2">
-              <div class="font-semibold">Tweet Sentiment Analysis</div>
-              <div class="mono text-xs text-white/60">Apr 2024</div>
-            </div>
-            <div class="mono text-xs text-white/60 mt-2">ALBERT · NLP · Python</div>
-            <p class="mt-3 text-white/80">
-              Built a classification system to track public sentiment; leveraged transformer models for high-accuracy processing.
-            </p>
-          </a>
+      <p class="mt-3 text-white/80">
+        Performance-focused diffusion work: reduced inference time by <span class="text-white font-semibold">41%</span>
+        while preserving visual quality (team of 3).
+      </p>
 
-          <a class="glass card-hover p-5 block" href="#" aria-label="Atmospheric Particle Pollution Modelling project">
-            <div class="flex items-baseline justify-between gap-2">
-              <div class="font-semibold">Atmospheric Particle Pollution Modelling</div>
-              <div class="mono text-xs text-white/60">May 2022</div>
-            </div>
-            <div class="mono text-xs text-white/60 mt-2">ML · Environmental modeling</div>
-            <p class="mt-3 text-white/80">
-              Modeled PM2.5 / carbon emissions behavior; created a data-driven framework for predicting air quality trends.
-            </p>
-          </a>
-        </div>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <span class="pill">Diffusion</span>
+        <span class="pill">Optimization</span>
+        <span class="pill">Python</span>
+      </div>
 
-        <p class="mt-3 text-xs text-white/55">
-          Next: replace the project <code class="mono">href="#"</code> with your GitHub links and add screenshots to <code class="mono">assets/img/</code>.
-        </p>
-      </section>
+      <div class="mt-4">
+        <a
+          class="mono text-sm underline decoration-white/20 hover:decoration-white/60"
+          href="https://github.com/GoDSpeeD0o0/GenAIProject"
+          target="_blank"
+          rel="noopener"
+        >
+          Open repo →
+        </a>
+      </div>
+    </article>
+
+    <!-- 2) Slackbot -->
+    <article class="glass card-hover project-card">
+      <div class="flex items-baseline justify-between gap-3">
+        <h3 class="font-semibold">Slack Python QnA Bot</h3>
+        <span class="mono text-xs text-white/60">slackbot</span>
+      </div>
+
+      <p class="mt-3 text-white/80">
+        Automated Python technical support in Slack with a streamlined QnA interface and multi-step debugging workflows.
+      </p>
+
+      <div class="mt-3 flex flex-wrap gap-2">
+        <span class="pill">Automation</span>
+        <span class="pill">Slack API</span>
+        <span class="pill">Python</span>
+      </div>
+
+      <div class="mt-4">
+        <a
+          class="mono text-sm underline decoration-white/20 hover:decoration-white/60"
+          href="https://github.com/AII-projects/slackbot"
+          target="_blank"
+          rel="noopener"
+        >
+          Open repo →
+        </a>
+      </div>
+    </article>
+
+    <!-- 3) Research-Paper -->
+    <article class="glass card-hover project-card">
+      <div class="flex items-baseline justify-between gap-3">
+        <h3 class="font-semibold">Research Paper Repo</h3>
+        <span class="mono text-xs text-white/60">Research-Paper</span>
+      </div>
+
+      <p class="mt-3 text-white/80">
+        A dedicated repo for research writing + supporting experiments/artifacts. (We can expand this card once you add
+        an abstract + key results.)
+      </p>
+
+      <div class="mt-3 flex flex-wrap gap-2">
+        <span class="pill">Research</span>
+        <span class="pill">Writing</span>
+        <span class="pill">Reproducibility</span>
+      </div>
+
+      <div class="mt-4">
+        <a
+          class="mono text-sm underline decoration-white/20 hover:decoration-white/60"
+          href="https://github.com/GoDSpeeD0o0/Research-Paper"
+          target="_blank"
+          rel="noopener"
+        >
+          Open repo →
+        </a>
+      </div>
+    </article>
+  </div>
+
+  <p class="mt-2 text-xs text-white/55">
+    To add more later: duplicate one <code class="mono">article</code> inside <code class="mono">#projects-track</code>.
+  </p>
+</section>
+
 
       <!-- SKILLS -->
       <section id="skills" class="mt-12">
