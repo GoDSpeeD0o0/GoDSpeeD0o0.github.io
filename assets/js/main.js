@@ -3,7 +3,7 @@
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // Header height -> CSS var (keeps intro vertically centered)
+  // Header height -> CSS var
   const headerEl = document.querySelector("header");
   const setHeaderHeight = () => {
     const hh = headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0;
@@ -12,7 +12,7 @@
   setHeaderHeight();
   window.addEventListener("resize", setHeaderHeight, { passive: true });
 
-  // UI behavior respects reduce motion; background is forced to animate
+  // Smoothness respects reduce motion for UI, but background is forced to animate
   const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const smoothBehavior = reduceMotionPref ? "auto" : "smooth";
 
@@ -48,6 +48,8 @@
   const next = document.getElementById("projects-next");
 
   const AUTO_SCROLL_MS = 10_000;
+  const RESUME_AFTER_MS = 2200;
+
   let autoTimer = null;
   let resumeTimer = null;
   let projectsInView = false;
@@ -73,7 +75,7 @@
 
   const scheduleResume = () => {
     clearTimeout(resumeTimer);
-    resumeTimer = setTimeout(() => startAuto(), AUTO_SCROLL_MS);
+    resumeTimer = setTimeout(() => startAuto(), RESUME_AFTER_MS);
   };
 
   const cardDelta = () => {
@@ -90,7 +92,7 @@
     const maxLeft = track.scrollWidth - track.clientWidth;
     if (maxLeft <= 0) return;
 
-    // If already at end, loop back to start
+    // loop
     if (track.scrollLeft >= maxLeft - 8) {
       track.scrollTo({ left: 0, behavior: smoothBehavior });
       return;
@@ -100,7 +102,6 @@
   };
 
   if (track && projectsSection) {
-    // Buttons (manual = 1 card)
     const nudge = (dir) => {
       pauseAuto();
       track.scrollBy({ left: dir * cardDelta(), behavior: smoothBehavior });
@@ -110,7 +111,7 @@
     if (prev) prev.addEventListener("click", () => nudge(-1));
     if (next) next.addEventListener("click", () => nudge(1));
 
-    // Drag-to-scroll
+    // drag-to-scroll
     let isDown = false;
     let startX = 0;
     let startLeft = 0;
@@ -142,69 +143,46 @@
     track.addEventListener("pointercancel", endDrag);
     track.addEventListener("lostpointercapture", endDrag);
 
-    // Wheel/touch counts as interaction
-    track.addEventListener("wheel", () => { pauseAuto(); scheduleResume(); }, { passive: true });
-    track.addEventListener("touchstart", pauseAuto, { passive: true });
-    track.addEventListener("touchend", scheduleResume, { passive: true });
-
     // Start/stop auto ONLY when section is visible
     const io = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        projectsInView = !!entry?.isIntersecting && entry.intersectionRatio >= 0.35;
+        projectsInView = !!entry?.isIntersecting && entry.intersectionRatio >= 0.25;
         if (projectsInView) startAuto();
         else stopAuto();
       },
-      { threshold: [0, 0.35, 0.6, 1] }
+      { threshold: [0, 0.25, 0.6, 1] }
     );
     io.observe(projectsSection);
   }
 
-  // ===== Animated AI/Gaming background + Token Rain =====
+  // ===== 3) New gaming+AI background =====
   const canvas = document.getElementById("ai-bg");
   if (!canvas) return;
-
   const ctx = canvas.getContext("2d", { alpha: true });
 
   const SETTINGS = {
-    fadeAlpha: 0.14,
-    rain: {
-      enabled: true,
-      baseAlpha: 0.30,
-      fontMin: 12,
-      fontMax: 16,
-      speedMin: 1.0,
-      speedMax: 2.6,
-      headRate: 0.18,
-      fadeAfterHorizon: true,
-    },
-    network: { minNodes: 28, maxNodes: 52 },
-    stars: { min: 140, max: 260 },
+    bgFade: 0.22, // higher = less trails, cleaner visuals
+    stars: { min: 80, max: 170 },
+    mesh: { minNodes: 22, maxNodes: 44 },
+    shards: { min: 34, max: 78 },
   };
 
   const rand = (min, max) => min + Math.random() * (max - min);
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
   let w = 0, h = 0, dpr = 1;
+
   let stars = [];
   let nodes = [];
-  let rain = { fontSize: 16, columns: 0, y: [], speed: [] };
+  let shards = [];
 
-  const singleGlyphs =
-    "01" +
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-    "abcdefghijklmnopqrstuvwxyz" +
-    "░▒▓█" +
-    "∙•·" +
-    "λθμσ∇ΣΔ" +
-    "<>/=+*";
-
-  const tokenGlyphs = ["AI", "ML", "∇", "Σ", "θ", "λ", "μ", "Δ", "⊕", "⊗", "∞", "[]", "{}"];
-
-  function pickGlyph() {
-    if (Math.random() < 0.08) return tokenGlyphs[(Math.random() * tokenGlyphs.length) | 0];
-    return singleGlyphs[(Math.random() * singleGlyphs.length) | 0];
-  }
+  const COLORS = {
+    bg: "rgba(9, 14, 30, ", // alpha appended
+    cyan: "rgba(34,211,238,",
+    violet: "rgba(168,85,247,",
+    white: "rgba(255,255,255,",
+  };
 
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -219,95 +197,93 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     initStars();
-    initNetwork();
-    initRain();
+    initMesh();
+    initShards();
+
+    // initial clear
+    ctx.fillStyle = "rgba(9, 14, 30, 1)";
+    ctx.fillRect(0, 0, w, h);
   }
 
   function initStars() {
-    const count = clamp(Math.round((w * h) / 7000), SETTINGS.stars.min, SETTINGS.stars.max);
+    const count = clamp(Math.round((w * h) / 10000), SETTINGS.stars.min, SETTINGS.stars.max);
     stars = Array.from({ length: count }, () => ({
-      x: rand(-1, 1) * w,
-      y: rand(-1, 1) * h,
-      z: rand(0.12, 1.0),
-      s: rand(0.6, 1.25),
+      x: rand(0, w),
+      y: rand(0, h),
+      r: rand(0.5, 1.6),
+      a: rand(0.06, 0.22),
+      vy: rand(0.010, 0.040),
+      vx: rand(-0.008, 0.008),
     }));
   }
 
-  function initNetwork() {
-    const count = clamp(Math.round((w * h) / 26000), SETTINGS.network.minNodes, SETTINGS.network.maxNodes);
+  function initMesh() {
+    const count = clamp(Math.round((w * h) / 32000), SETTINGS.mesh.minNodes, SETTINGS.mesh.maxNodes);
     nodes = Array.from({ length: count }, () => ({
       x: rand(0, w),
-      y: rand(0, h * 0.55),
-      vx: rand(-0.18, 0.18),
-      vy: rand(-0.14, 0.14),
-      r: rand(1.1, 2.2),
+      y: rand(0, h * 0.62),
+      vx: rand(-0.16, 0.16),
+      vy: rand(-0.12, 0.12),
+      r: rand(1.0, 2.1),
     }));
   }
 
-  function initRain() {
-    if (!SETTINGS.rain.enabled) return;
-
-    const fs = clamp(Math.round(w / 110), SETTINGS.rain.fontMin, SETTINGS.rain.fontMax);
-    rain.fontSize = fs;
-    rain.columns = Math.max(28, Math.floor(w / fs));
-
-    const maxRows = Math.ceil(h / fs);
-
-    rain.y = Array.from({ length: rain.columns }, () => rand(-maxRows, 0));
-    rain.speed = Array.from({ length: rain.columns }, () =>
-      rand(SETTINGS.rain.speedMin, SETTINGS.rain.speedMax)
-    );
-
-    ctx.textBaseline = "top";
-    ctx.font = `${rain.fontSize}px "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+  function initShards() {
+    const count = clamp(Math.round((w * h) / 26000), SETTINGS.shards.min, SETTINGS.shards.max);
+    shards = Array.from({ length: count }, () => {
+      const kind = (Math.random() * 3) | 0; // 0 diamond, 1 tri, 2 square
+      const tint = Math.random() < 0.55 ? "cyan" : "violet";
+      return {
+        x: rand(0, w),
+        y: rand(0, h),
+        size: rand(2.2, 6.2),
+        vx: rand(-0.20, 0.20),
+        vy: rand(0.18, 0.55),
+        rot: rand(0, Math.PI * 2),
+        vr: rand(-0.0025, 0.0025),
+        a: rand(0.06, 0.18),
+        kind,
+        tint,
+      };
+    });
   }
 
   window.addEventListener("resize", resize, { passive: true });
   resize();
 
-  function drawStarfield(dt) {
-    const speed = 0.00022 * dt;
-    const f = Math.min(w, h) * 0.55;
-
+  function drawStars(dt) {
+    const k = dt * 0.06;
     for (const s of stars) {
-      s.z -= speed * s.s;
-      if (s.z <= 0.12) {
-        s.x = rand(-1, 1) * w;
-        s.y = rand(-1, 1) * h;
-        s.z = 1.0;
-        s.s = rand(0.6, 1.25);
-      }
+      s.x += s.vx * k * 60;
+      s.y += s.vy * k * 60;
 
-      const k = f / (s.z * f + 80);
-      const sx = w * 0.5 + s.x * k;
-      const sy = h * 0.5 + s.y * k;
-
-      if (sx < -20 || sx > w + 20 || sy < -20 || sy > h + 20) continue;
-
-      const a = clamp((1.0 - s.z) * 0.40, 0.05, 0.24);
-      const size = clamp((1.0 - s.z) * 2.0, 0.6, 2.1);
+      if (s.y > h + 10) s.y = -10;
+      if (s.x < -10) s.x = w + 10;
+      if (s.x > w + 10) s.x = -10;
 
       ctx.beginPath();
-      ctx.arc(sx, sy, size, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255,255,255,${a})`;
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `${COLORS.white}${s.a})`;
       ctx.fill();
     }
   }
 
-  function drawAINetwork(dt) {
+  function drawMesh(dt) {
+    // move nodes
     for (const p of nodes) {
       p.x += p.vx * dt * 0.02;
       p.y += p.vy * dt * 0.02;
 
       if (p.x < -20) p.x = w + 20;
       if (p.x > w + 20) p.x = -20;
-      if (p.y < -20) p.y = h * 0.55 + 20;
-      if (p.y > h * 0.55 + 20) p.y = -20;
+      if (p.y < -20) p.y = h * 0.62 + 20;
+      if (p.y > h * 0.62 + 20) p.y = -20;
     }
 
-    const maxDist = Math.min(160, Math.max(110, w * 0.12));
+    const maxDist = Math.min(170, Math.max(120, w * 0.14));
     const maxDist2 = maxDist * maxDist;
 
+    // links
     for (let i = 0; i < nodes.length; i++) {
       const a = nodes[i];
       for (let j = i + 1; j < nodes.length; j++) {
@@ -318,7 +294,8 @@
 
         if (d2 < maxDist2) {
           const p = 1 - d2 / maxDist2;
-          ctx.strokeStyle = `rgba(34,211,238,${0.10 * p})`;
+          const alpha = 0.07 * p; // softer
+          ctx.strokeStyle = `${COLORS.cyan}${alpha})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(a.x, a.y);
@@ -328,32 +305,35 @@
       }
     }
 
+    // nodes
     for (const p of nodes) {
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(255,255,255,0.30)";
+      ctx.fillStyle = `${COLORS.white}0.22)`;
       ctx.fill();
     }
   }
 
-  function drawArcadeGrid(t) {
-    const horizon = h * 0.63;
+  function drawSynthGrid(t) {
+    const horizon = h * 0.68;
     const depth = h - horizon;
 
-    ctx.fillStyle = "rgba(34,211,238,0.016)";
+    // soft floor glow
+    ctx.fillStyle = "rgba(34,211,238,0.012)";
     ctx.fillRect(0, horizon, w, depth);
 
+    // moving horizontals
     const lines = 18;
-    const offset = (t * 0.00012) % 1;
+    const offset = (t * 0.00010) % 1;
 
     for (let i = 0; i < lines; i++) {
       const d = (i / lines + offset) % 1;
       const y = horizon + (d * d) * depth;
 
       const halfWidth = (w * 0.06) + (d * d) * (w * 0.58);
-      const alpha = 0.04 + d * 0.08;
+      const alpha = 0.028 + d * 0.055;
 
-      ctx.strokeStyle = `rgba(34,211,238,${alpha})`;
+      ctx.strokeStyle = `${COLORS.cyan}${alpha})`;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(w * 0.5 - halfWidth, y);
@@ -361,10 +341,11 @@
       ctx.stroke();
     }
 
+    // perspective verticals (very soft violet)
     const lanes = 12;
     for (let i = -lanes; i <= lanes; i++) {
       const xBottom = w * 0.5 + (i / lanes) * (w * 0.62);
-      ctx.strokeStyle = "rgba(168,85,247,0.050)";
+      ctx.strokeStyle = `${COLORS.violet}0.030)`;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(xBottom, h);
@@ -372,57 +353,88 @@
       ctx.stroke();
     }
 
-    ctx.fillStyle = "rgba(168,85,247,0.028)";
+    // horizon line
+    ctx.fillStyle = "rgba(168,85,247,0.020)";
     ctx.fillRect(0, horizon - 1, w, 2);
   }
 
-  function drawTokenRain(dt) {
-    if (!SETTINGS.rain.enabled) return;
+  function drawShards(dt) {
+    const horizon = h * 0.68;
+    const k = dt * 0.06;
 
-    const horizon = h * 0.63;
-    const rowStep = dt / 16;
+    for (const s of shards) {
+      s.x += s.vx * k * 60;
+      s.y += s.vy * k * 60;
+      s.rot += s.vr * dt;
 
-    ctx.shadowColor = "rgba(34,211,238,0.30)";
-    ctx.shadowBlur = 10;
+      if (s.y > h + 30) s.y = -30;
+      if (s.x < -30) s.x = w + 30;
+      if (s.x > w + 30) s.x = -30;
 
-    for (let i = 0; i < rain.columns; i++) {
-      const x = i * rain.fontSize;
-      const yPx = rain.y[i] * rain.fontSize;
-
+      // fade down below horizon so content stays readable
       let mask = 1;
-      if (SETTINGS.rain.fadeAfterHorizon && yPx > horizon) {
-        const d = (yPx - horizon) / Math.max(1, h - horizon);
-        mask = Math.max(0, 0.35 * (1 - d));
+      if (s.y > horizon) {
+        const d = (s.y - horizon) / Math.max(1, h - horizon);
+        mask = Math.max(0, 0.55 * (1 - d));
       }
 
-      const isHead = Math.random() < SETTINGS.rain.headRate;
-      const glyph = pickGlyph();
+      const color = s.tint === "cyan" ? COLORS.cyan : COLORS.violet;
+      const a = s.a * mask;
 
-      const depthFade = 1 - Math.min(0.70, (yPx / h) * 0.70);
-      const a = SETTINGS.rain.baseAlpha * depthFade * mask;
+      if (a < 0.01) continue;
 
-      if (a > 0.005) {
-        if (isHead) {
-          ctx.fillStyle = `rgba(255,255,255,${Math.min(0.55, a + 0.25)})`;
-        } else {
-          const violet = Math.random() < 0.14;
-          ctx.fillStyle = violet ? `rgba(168,85,247,${a})` : `rgba(34,211,238,${a})`;
-        }
-        ctx.fillText(glyph, x, yPx);
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.rot);
+
+      ctx.fillStyle = `${color}${a})`;
+      ctx.shadowColor = `${color}${Math.min(0.12, a)})`;
+      ctx.shadowBlur = 10;
+
+      const z = s.size;
+
+      if (s.kind === 0) {
+        // diamond
+        ctx.beginPath();
+        ctx.moveTo(0, -z);
+        ctx.lineTo(z, 0);
+        ctx.lineTo(0, z);
+        ctx.lineTo(-z, 0);
+        ctx.closePath();
+        ctx.fill();
+      } else if (s.kind === 1) {
+        // triangle
+        ctx.beginPath();
+        ctx.moveTo(0, -z);
+        ctx.lineTo(z, z);
+        ctx.lineTo(-z, z);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        // square
+        ctx.fillRect(-z * 0.75, -z * 0.75, z * 1.5, z * 1.5);
       }
 
-      rain.y[i] += rain.speed[i] * rowStep;
-
-      if (yPx > h + 20) {
-        rain.y[i] = rand(-Math.ceil(h / rain.fontSize), 0);
-        rain.speed[i] = rand(SETTINGS.rain.speedMin, SETTINGS.rain.speedMax);
-      }
+      ctx.restore();
     }
 
     ctx.shadowBlur = 0;
   }
 
-  // Background animation (pause when tab hidden)
+  function drawHudPulse(t) {
+    // subtle diagonal scan (very low alpha)
+    const phase = (t * 0.00006) % 1;
+    const x = phase * (w + 320) - 160;
+
+    ctx.strokeStyle = "rgba(255,255,255,0.025)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x - 220, h);
+    ctx.stroke();
+  }
+
+  // animation loop
   let rafId = null;
   let last = performance.now();
 
@@ -430,18 +442,15 @@
     const dt = clamp(now - last, 10, 40);
     last = now;
 
-    ctx.fillStyle = `rgba(5, 7, 18, ${SETTINGS.fadeAlpha})`;
+    // fade
+    ctx.fillStyle = `${COLORS.bg}${SETTINGS.bgFade})`;
     ctx.fillRect(0, 0, w, h);
 
-    drawStarfield(dt);
-    drawArcadeGrid(now);
-    drawAINetwork(dt);
-    drawTokenRain(dt);
-
-    ctx.globalCompositeOperation = "lighter";
-    ctx.fillStyle = "rgba(34,211,238,0.010)";
-    ctx.fillRect(0, 0, w, h);
-    ctx.globalCompositeOperation = "source-over";
+    drawStars(dt);
+    drawHudPulse(now);
+    drawMesh(dt);
+    drawShards(dt);
+    drawSynthGrid(now);
 
     rafId = requestAnimationFrame(loop);
   }
@@ -459,17 +468,7 @@
     rafId = null;
   }
 
-  // initial clear
-  ctx.fillStyle = "rgba(5, 7, 18, 1)";
-  ctx.fillRect(0, 0, w, h);
-
   if (!prefersReducedMotion) startBg();
-  else {
-    drawStarfield(16);
-    drawArcadeGrid(performance.now());
-    drawAINetwork(16);
-    drawTokenRain(16);
-  }
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
