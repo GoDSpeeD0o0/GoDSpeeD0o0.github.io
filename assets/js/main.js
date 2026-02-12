@@ -155,12 +155,11 @@
     io.observe(projectsSection);
   }
 
-  // ===== Shader background (WebGL) =====
+  // ===== Shader background (WebGL) — Neural Synthwave =====
   const canvas = document.getElementById("ai-bg");
   if (!canvas) return;
 
   function initShaderBackground() {
-    // Try WebGL first (works on GitHub Pages, no cost)
     const gl =
       canvas.getContext("webgl", {
         alpha: true,
@@ -172,10 +171,7 @@
         preserveDrawingBuffer: false,
       }) || null;
 
-    if (!gl) {
-      // WebGL disabled or unavailable -> keep CSS background
-      return null;
-    }
+    if (!gl) return null; // WebGL disabled/unavailable -> CSS bg remains
 
     const VERT = `
       attribute vec2 a_pos;
@@ -184,15 +180,30 @@
       }
     `;
 
-    // Minimal, smooth “AI aurora” (no clutter)
+    // Creative but controlled:
+    // - aurora fog
+    // - subtle voronoi neural edges
+    // - synth grid below horizon
+    // - mouse-reactive energy
+    //
+    // NOTE: No fwidth/derivatives -> no WebGL1 extension needed (compat + smooth).
     const FRAG = `
       precision highp float;
+
       uniform vec2 u_res;
       uniform float u_time;
+      uniform vec2 u_mouse; // in pixel space, origin bottom-left (like gl_FragCoord)
 
       float hash(vec2 p){
-        // fast-ish hash
         return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+      }
+
+      vec2 hash2(vec2 p){
+        vec2 q = vec2(
+          dot(p, vec2(127.1, 311.7)),
+          dot(p, vec2(269.5, 183.3))
+        );
+        return fract(sin(q) * 43758.5453123);
       }
 
       float noise(vec2 p){
@@ -211,7 +222,6 @@
       float fbm(vec2 p){
         float v = 0.0;
         float a = 0.55;
-        // 3 octaves (keeps it smooth + fast)
         for(int i = 0; i < 3; i++){
           v += a * noise(p);
           p = p * 2.02 + 10.0;
@@ -220,41 +230,140 @@
         return v;
       }
 
+      // Returns (F1, F2) distances (nearest, 2nd nearest)
+      vec2 voronoi(vec2 x){
+        vec2 n = floor(x);
+        vec2 f = fract(x);
+
+        float F1 = 8.0;
+        float F2 = 8.0;
+
+        for(int j = -1; j <= 1; j++){
+          for(int i = -1; i <= 1; i++){
+            vec2 g = vec2(float(i), float(j));
+
+            vec2 o = hash2(n + g);
+            // Smoothly animate point positions inside cells (creative, not noisy)
+            o = 0.5 + 0.5*sin(6.2831*o + u_time*0.35);
+
+            vec2 r = g + o - f;
+            float d = dot(r, r);
+
+            if(d < F1){
+              F2 = F1;
+              F1 = d;
+            } else if(d < F2){
+              F2 = d;
+            }
+          }
+        }
+        return vec2(sqrt(F1), sqrt(F2));
+      }
+
       void main() {
         vec2 uv = gl_FragCoord.xy / u_res;
-        vec2 p = (uv - 0.5) * vec2(u_res.x / u_res.y, 1.0);
+        float asp = u_res.x / u_res.y;
+
+        // scene coords (centered)
+        vec2 p = (uv - 0.5) * vec2(asp, 1.0);
+
+        // mouse coords mapped into same space
+        vec2 m = (u_mouse / u_res - 0.5) * vec2(asp, 1.0);
+        float md = length(p - m);
 
         float t = u_time;
 
-        // base: deep but not harsh
-        vec3 col = vec3(0.03, 0.05, 0.11);
-        col += vec3(0.03, 0.04, 0.07) * (1.0 - uv.y) * 0.55;
+        // Gentle mouse warp (subtle, premium feel)
+        vec2 pw = p + (p - m) * (0.06 * exp(-md * 2.2)) * sin(t * 0.7);
 
-        // smooth aurora bands
-        float n1 = fbm(p * 1.6 + vec2(0.0, t * 0.10));
-        float n2 = fbm(p * 2.4 + vec2(t * 0.06, -t * 0.04));
-
-        float bandCenter = p.y + 0.10 + (n2 - 0.5) * 0.22;
-        float band = smoothstep(0.62, 0.95, n1) * smoothstep(0.60, 0.0, abs(bandCenter));
+        // Base background (deep but not harsh)
+        vec3 col = vec3(0.030, 0.045, 0.110);
+        col += vec3(0.020, 0.024, 0.040) * (1.0 - uv.y) * 0.70;
 
         vec3 cyan = vec3(0.10, 0.88, 0.95);
         vec3 vio  = vec3(0.72, 0.40, 0.98);
+
+        // ===== Aurora fog (top) =====
+        vec2 q = pw;
+        // smooth warping
+        q += 0.10 * vec2(
+          fbm(q*1.25 + t*0.05),
+          fbm(q*1.25 - t*0.045)
+        );
+
+        float n1 = fbm(q*1.70 + vec2(0.0, t*0.12));
+        float n2 = fbm(q*2.25 + vec2(t*0.08, -t*0.06));
+
+        // bandy “curtain”
+        float band = exp(-abs(q.y*1.35 + (n2 - 0.5)*0.90) * 2.05);
+        float topMask = smoothstep(0.05, 0.62, uv.y);
+
         vec3 aurCol = mix(cyan, vio, n2);
+        float aur = smoothstep(0.45, 0.95, n1) * band * topMask;
+        col += aurCol * aur * 0.46;
 
-        col += aurCol * band * 0.42;
+        // ===== Neural edges (voronoi cell borders) =====
+        vec2 v = voronoi(q*1.25 + vec2(t*0.08, -t*0.06));
+        float edge = smoothstep(0.16, 0.03, (v.y - v.x)); // strong at borders
+        col += aurCol * edge * 0.12 * topMask;
 
-        // soft haze (very low)
-        float haze = fbm(p * 0.55 + vec2(t * 0.03, -t * 0.02));
-        col += vec3(0.05, 0.06, 0.10) * haze * 0.16;
+        // ===== Contour glints (adds “AI circuitry” feel without clutter) =====
+        float c = abs(sin((n1 + n2*0.6 + q.y*0.20)*10.0 + t*0.80));
+        float contour = smoothstep(0.12, 0.0, c) * topMask;
+        col += vec3(0.90, 0.96, 1.0) * contour * 0.05;
 
-        // ultra subtle scan (prevents banding, still minimal)
-        float scan = 0.004 * sin((uv.y * u_res.y) * 0.18 + t * 1.2);
+        // ===== Synth grid (bottom) =====
+        float horizon = 0.42;
+        float below = step(uv.y, horizon);
+
+        float y = max(0.0001, horizon - uv.y);
+        float depth = 0.14 / (y + 0.07);
+
+        vec2 g = vec2(pw.x * depth * 1.6, depth + t*0.40);
+
+        float gx = abs(fract(g.x) - 0.5);
+        float gy = abs(fract(g.y) - 0.5);
+
+        // Anti-alias approximation without fwidth
+        float aa = clamp((1.6 * depth) / u_res.y, 0.0005, 0.012);
+
+        float wx = clamp(0.055 / depth, 0.003, 0.060);
+        float wy = clamp(0.055 / depth, 0.003, 0.060);
+
+        float lx = 1.0 - smoothstep(wx, wx + aa*2.0, gx);
+        float ly = 1.0 - smoothstep(wy, wy + aa*2.2, gy);
+
+        // major lines every 5
+        float mx = abs(fract(g.x / 5.0) - 0.5);
+        float my = abs(fract(g.y / 5.0) - 0.5);
+        float mlx = 1.0 - smoothstep(wx*1.2, wx*1.2 + aa*2.6, mx);
+        float mly = 1.0 - smoothstep(wy*1.2, wy*1.2 + aa*2.6, my);
+
+        float grid = max(max(lx, ly) * 0.75, max(mlx, mly));
+        float gfade = smoothstep(horizon, 0.0, uv.y); // 1 at bottom -> 0 at horizon
+
+        vec3 gcol = mix(cyan, vio, 0.5 + 0.5*sin(pw.x*0.9 + t*0.15));
+        col += gcol * grid * gfade * below * 0.20;
+
+        // horizon glow
+        float hg = exp(-abs(uv.y - horizon) * 85.0);
+        col += aurCol * hg * 0.10;
+
+        // mouse energy (subtle highlight)
+        col += aurCol * exp(-md * 2.8) * 0.10;
+
+        // subtle CRT-ish scan + grain (tiny, keeps it alive)
+        float scan = 0.004 * sin(gl_FragCoord.y * 0.18 + t * 1.2);
         col += scan;
 
+        float gr = hash(gl_FragCoord.xy + vec2(t*60.0, -t*45.0));
+        col += (gr - 0.5) * 0.010;
+
         // vignette
-        float vig = smoothstep(1.12, 0.25, length(p));
+        float vig = smoothstep(1.15, 0.30, length(p));
         col *= vig;
 
+        col = clamp(col, 0.0, 1.0);
         gl_FragColor = vec4(col, 1.0);
       }
     `;
@@ -297,7 +406,7 @@
     const program = createProgram(VERT, FRAG);
     if (!program) return null;
 
-    // Fullscreen triangle (fastest)
+    // Fullscreen triangle
     const verts = new Float32Array([
       -1, -1,
        3, -1,
@@ -311,12 +420,14 @@
     const aPos = gl.getAttribLocation(program, "a_pos");
     const uRes = gl.getUniformLocation(program, "u_res");
     const uTime = gl.getUniformLocation(program, "u_time");
+    const uMouse = gl.getUniformLocation(program, "u_mouse");
 
-    // perf: cap DPR slightly (smooth + keeps GPU cool)
-    const DPR_MAX = 1.75;
+    // Perf: cap DPR so it stays smooth on retina
+    const DPR_MAX = 1.6;
+    let dpr = 1;
 
     function resizeGL() {
-      const dpr = Math.min(window.devicePixelRatio || 1, DPR_MAX);
+      dpr = Math.min(window.devicePixelRatio || 1, DPR_MAX);
       const w = Math.floor(window.innerWidth * dpr);
       const h = Math.floor(window.innerHeight * dpr);
 
@@ -332,13 +443,46 @@
     window.addEventListener("resize", resizeGL, { passive: true });
     resizeGL();
 
+    // Mouse tracking (smoothly lerped so it feels premium)
+    let mxT = window.innerWidth * 0.5;
+    let myT = window.innerHeight * 0.52; // slightly above center
+    let mx = mxT, my = myT;
+
+    const setPointer = (clientX, clientY) => {
+      mxT = clientX;
+      // convert to bottom-origin for shader
+      myT = window.innerHeight - clientY;
+    };
+
+    window.addEventListener("pointermove", (e) => setPointer(e.clientX, e.clientY), { passive: true });
+    window.addEventListener("touchmove", (e) => {
+      const t = e.touches && e.touches[0];
+      if (t) setPointer(t.clientX, t.clientY);
+    }, { passive: true });
+
     let rafId = null;
     const t0 = performance.now();
+
+    // Cap to ~60fps (prevents jank on high refresh displays)
+    const FRAME_MS = 1000 / 60;
+    let lastFrame = 0;
 
     function draw(now) {
       if (document.hidden) return;
 
+      // frame cap
+      if (now - lastFrame < FRAME_MS) {
+        rafId = requestAnimationFrame(draw);
+        return;
+      }
+      lastFrame = now;
+
       resizeGL();
+
+      // smooth pointer (lerp)
+      const lerp = 0.08;
+      mx = mx + (mxT - mx) * lerp;
+      my = my + (myT - my) * lerp;
 
       gl.useProgram(program);
 
@@ -348,6 +492,7 @@
 
       gl.uniform2f(uRes, canvas.width, canvas.height);
       gl.uniform1f(uTime, (now - t0) / 1000);
+      gl.uniform2f(uMouse, mx * dpr, my * dpr);
 
       gl.drawArrays(gl.TRIANGLES, 0, 3);
 
@@ -357,6 +502,7 @@
     function start() {
       if (prefersReducedMotion) return;
       if (rafId) return;
+      lastFrame = 0;
       rafId = requestAnimationFrame(draw);
     }
 
@@ -366,7 +512,6 @@
       rafId = null;
     }
 
-    // handle context loss gracefully
     canvas.addEventListener("webglcontextlost", (e) => {
       e.preventDefault();
       stop();
@@ -378,7 +523,7 @@
   const shaderBg = initShaderBackground();
   if (shaderBg && !prefersReducedMotion) shaderBg.start();
 
-  // One visibility handler for BOTH background + projects auto-scroll
+  // Visibility handler for BOTH shader + auto-scroll
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       shaderBg?.stop?.();
