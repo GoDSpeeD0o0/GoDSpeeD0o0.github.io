@@ -6,7 +6,7 @@
     <title>Prateek Parashar | Generative AI</title>
     <meta
       name="description"
-      content="Prateek Parashar — M.S. candidate (ASU, 4.0). Generative AI, diffusion optimization, NLP, automation."
+      content="Prateek Parashar — M.S. candidate (ASU). Generative AI, diffusion optimization, NLP, automation."
     />
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,7 +19,7 @@
     />
 
     <link rel="icon" href="favicon.ico" />
-    <link rel="stylesheet" href="assets/css/main.css?v=21" />
+    <link rel="stylesheet" href="assets/css/main.css?v=22" />
   </head>
 
   <body class="min-h-screen text-white">
@@ -59,13 +59,14 @@
           <a class="hover:text-white" href="#projects">Projects</a>
           <a class="hover:text-white" href="#contact">Contact</a>
 
+          <!-- changed label -->
           <button
             id="cmdk-btn"
             class="px-3 py-2 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10"
             type="button"
             aria-label="Open quick actions"
           >
-            <span class="mono text-xs">ACTIONS</span>
+            <span class="mono text-xs">Quick actions</span>
           </button>
 
           <a
@@ -107,8 +108,9 @@
 
           <h1 class="name-display name-neo3d">Prateek Parashar</h1>
 
+          <!-- removed GPA from hero -->
           <p class="headline">
-            Diffusion inference optimization <span class="gradient-text">(-41%)</span> · Python/SQL automation · M.S. (ASU, <span class="gradient-text">4.0</span>)
+            Diffusion inference optimization <span class="gradient-text">(-41%)</span> · Python/SQL automation · M.S. candidate, Arizona State University
           </p>
 
           <div class="mt-6 flex flex-wrap gap-3 justify-center">
@@ -147,10 +149,11 @@
             <div class="note">Inference time reduction while maintaining quality.</div>
           </div>
 
+          <!-- removed the DASHBOARDS SHIPPED card and replaced with CORE STACK -->
           <div class="glass stat card-hover">
-            <div class="label mono">DASHBOARDS SHIPPED</div>
-            <div class="value">5+</div>
-            <div class="note">Power BI reporting automation.</div>
+            <div class="label mono">CORE STACK</div>
+            <div class="value">Python · SQL</div>
+            <div class="note">FastAPI · automation · data modeling</div>
           </div>
 
           <div class="glass stat card-hover">
@@ -159,10 +162,11 @@
             <div class="note">Cross-browser optimization impact (reported).</div>
           </div>
 
+          <!-- removed GPA card; keep GPA only in Education -->
           <div class="glass stat card-hover">
-            <div class="label mono">GRAD GPA</div>
-            <div class="value">4.00</div>
-            <div class="note">Arizona State University (M.S.)</div>
+            <div class="label mono">GENAI FOCUS</div>
+            <div class="value">Diffusion · NLP</div>
+            <div class="note">Transformers · inference optimization</div>
           </div>
         </div>
       </section>
@@ -240,6 +244,7 @@
               <div class="mt-3 space-y-3">
                 <div>
                   <div class="font-semibold">M.S. Data Science, Analytics & Engineering</div>
+                  <!-- GPA kept ONLY here -->
                   <div class="text-white/70 text-sm">Arizona State University · 4.00 GPA · Dec 2026</div>
                   <div class="mono text-xs text-white/60 mt-1">Generative AI · Data Mining</div>
                 </div>
@@ -345,6 +350,7 @@
             <span class="mono">‹</span>
           </button>
 
+          <!-- projects track unchanged -->
           <div id="projects-track" class="hscroll drawer-track flex gap-4 overflow-x-auto pb-4">
             <article class="glass card-hover project-card" data-project="faster-diffusion">
               <div class="project-open-hint mono">OPEN</div>
@@ -631,7 +637,7 @@
     <!-- TOAST -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="assets/js/main.js?v=21"></script>
+    <script src="assets/js/main.js?v=22"></script>
 
     <script>
       // Wire hero/contact quick-action buttons without duplicating IDs
