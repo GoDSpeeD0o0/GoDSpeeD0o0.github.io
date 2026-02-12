@@ -3,11 +3,20 @@
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
+  // Set CSS var for header height so the intro hero centers perfectly
+  const headerEl = document.querySelector("header");
+  const setHeaderHeight = () => {
+    const hh = headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0;
+    document.documentElement.style.setProperty("--header-h", `${hh}px`);
+  };
+  setHeaderHeight();
+  window.addEventListener("resize", setHeaderHeight, { passive: true });
+
   // Respect reduced motion for UI behaviors, but FORCE animation for the background
   const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const smoothBehavior = reduceMotionPref ? "auto" : "smooth";
 
-  const FORCE_ANIMATION = true; // <-- IMPORTANT: always animate the background
+  const FORCE_ANIMATION = true; // always animate the background
   const prefersReducedMotion = !FORCE_ANIMATION && reduceMotionPref;
 
   // Mobile menu
@@ -79,21 +88,18 @@
 
   const ctx = canvas.getContext("2d", { alpha: true });
 
-  // --- Tuning knobs (these are now set to be VERY obviously animated)
   const SETTINGS = {
-    // Lower = longer trails (more obvious motion)
-    fadeAlpha: 0.14,
+    fadeAlpha: 0.14, // longer trails
 
-    // Token rain: denser + brighter + faster
     rain: {
       enabled: true,
-      baseAlpha: 0.30,  // brighter tokens
+      baseAlpha: 0.30,
       fontMin: 12,
-      fontMax: 16,      // smaller font => more columns
+      fontMax: 16,
       speedMin: 1.0,
-      speedMax: 2.6,    // faster falling
-      headRate: 0.18,   // more bright "heads"
-      fadeAfterHorizon: true, // keeps readability in lower section
+      speedMax: 2.6,
+      headRate: 0.18,
+      fadeAfterHorizon: true,
     },
 
     network: { minNodes: 28, maxNodes: 52 },
@@ -113,7 +119,6 @@
     speed: [],
   };
 
-  // Mostly single glyphs (Matrix vibe), with occasional short AI tokens
   const singleGlyphs =
     "01" +
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
@@ -126,7 +131,6 @@
   const tokenGlyphs = ["AI", "ML", "∇", "Σ", "θ", "λ", "μ", "Δ", "⊕", "⊗", "∞", "[]", "{}"];
 
   function pickGlyph() {
-    // occasional short token (kept low to avoid messy overlaps)
     if (Math.random() < 0.08) return tokenGlyphs[(Math.random() * tokenGlyphs.length) | 0];
     return singleGlyphs[(Math.random() * singleGlyphs.length) | 0];
   }
@@ -305,7 +309,6 @@
     const horizon = h * 0.63;
     const rowStep = dt / 16;
 
-    // visible glow (still controlled)
     ctx.shadowColor = "rgba(34,211,238,0.30)";
     ctx.shadowBlur = 10;
 
@@ -339,7 +342,6 @@
 
       rain.y[i] += rain.speed[i] * rowStep;
 
-      // Reset immediately once off-screen (guarantees constant rain)
       if (yPx > h + 20) {
         rain.y[i] = rand(-Math.ceil(h / rain.fontSize), 0);
         rain.speed[i] = rand(SETTINGS.rain.speedMin, SETTINGS.rain.speedMax);
@@ -357,17 +359,14 @@
     const dt = clamp(now - last, 10, 40);
     last = now;
 
-    // Fade (creates trails)
     ctx.fillStyle = `rgba(5, 7, 18, ${SETTINGS.fadeAlpha})`;
     ctx.fillRect(0, 0, w, h);
 
-    // draw order: far -> near
     drawStarfield(dt);
     drawArcadeGrid(now);
     drawAINetwork(dt);
     drawTokenRain(dt);
 
-    // subtle additive glow pass
     ctx.globalCompositeOperation = "lighter";
     ctx.fillStyle = "rgba(34,211,238,0.010)";
     ctx.fillRect(0, 0, w, h);
@@ -389,12 +388,10 @@
     rafId = null;
   }
 
-  // initial clear
   ctx.fillStyle = "rgba(5, 7, 18, 1)";
   ctx.fillRect(0, 0, w, h);
 
   if (prefersReducedMotion) {
-    // one still render
     drawStarfield(16);
     drawArcadeGrid(performance.now());
     drawAINetwork(16);

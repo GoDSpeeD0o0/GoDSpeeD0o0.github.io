@@ -12,18 +12,18 @@
     <!-- Tailwind CDN (no build step) -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Fonts -->
+    <!-- Fonts (added Orbitron for the big name) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Roboto+Mono:wght@400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Poppins:wght@400;600;700;800&family=Roboto+Mono:wght@400;600&display=swap"
       rel="stylesheet"
     />
 
     <link rel="icon" href="favicon.ico" />
 
     <!-- Cache bust -->
-    <link rel="stylesheet" href="assets/css/main.css?v=7" />
+    <link rel="stylesheet" href="assets/css/main.css?v=8" />
   </head>
 
   <body class="min-h-screen text-white">
@@ -94,20 +94,29 @@
       </div>
     </header>
 
-    <main id="top" class="mx-auto max-w-6xl px-4 py-10 md:py-14">
-      <!-- HERO -->
-      <section class="grid lg:grid-cols-12 gap-6 items-start">
-        <div class="lg:col-span-7">
-          <p class="mono text-xs text-white/60">
-            status: <span class="text-emerald-300">actively building</span> · focus:
-            <span class="text-cyan-300">generative ai</span>
+    <main id="top" class="mx-auto max-w-6xl px-4">
+      <!-- FULLSCREEN INTRO (FIRST THING YOU SEE) -->
+      <section id="intro" class="hero-screen">
+        <div class="w-full">
+          <h1 class="name-display name-shimmer">Prateek Parashar</h1>
+
+          <!-- Perky 1-liner that compresses your resume -->
+          <p class="mono tagline">
+            ASU M.S. (4.0) · GenAI builder optimizing diffusion (-41%) and automating real workflows in Python/SQL.
           </p>
 
-          <h1 class="mt-3 text-4xl md:text-6xl font-extrabold leading-tight">
-            Building <span class="gradient-text">fast, reliable</span> AI systems
-          </h1>
+          <a class="mono scroll-indicator" href="#overview">
+            <span>scroll</span><span>↓</span>
+          </a>
+        </div>
+      </section>
 
-          <p class="mt-4 text-white/80 text-base md:text-lg max-w-2xl">
+      <!-- OVERVIEW (REST OF CONTENT AFTER SOME SPACE) -->
+      <section id="overview" class="pt-8 md:pt-12 pb-10 md:pb-12 grid lg:grid-cols-12 gap-6 items-start">
+        <div class="lg:col-span-7">
+          <div class="mono text-xs text-white/60">OVERVIEW</div>
+
+          <p class="mt-3 text-white/80 text-base md:text-lg max-w-2xl">
             M.S. candidate (ASU, 4.0 GPA) with strong CS foundations. Python, SQL, Deep Learning (Transformers/Diffusion),
             system design — with hands-on work in diffusion inference optimization and automation.
           </p>
@@ -454,6 +463,6 @@
     </main>
 
     <!-- Cache bust -->
-    <script src="assets/js/main.js?v=7"></script>
+    <script src="assets/js/main.js?v=8"></script>
   </body>
 </html>

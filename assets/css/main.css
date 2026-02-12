@@ -11,6 +11,9 @@
   /* Slightly muted neon (gaming, not too bright) */
   --cyan: rgba(34, 211, 238, 0.75);
   --violet: rgba(168, 85, 247, 0.72);
+
+  /* JS will overwrite this with actual header height */
+  --header-h: 72px;
 }
 
 html {
@@ -31,6 +34,82 @@ body {
   font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
+/* ===== Fullscreen Intro Hero ===== */
+.hero-screen {
+  min-height: calc(100vh - var(--header-h));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 44px 0 28px;
+  text-align: center;
+}
+
+.name-display {
+  font-family: "Orbitron", Poppins, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+  font-size: clamp(2.8rem, 7.4vw, 6.2rem);
+}
+
+.name-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.98),
+    rgba(34,211,238,0.95),
+    rgba(168,85,247,0.92),
+    rgba(255,255,255,0.98)
+  );
+  background-size: 220% auto;
+  animation: nameShimmer 7s linear infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+
+  /* subtle neon depth */
+  filter:
+    drop-shadow(0 0 18px rgba(34,211,238,0.16))
+    drop-shadow(0 0 26px rgba(168,85,247,0.10));
+}
+
+@keyframes nameShimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 220% 50%; }
+}
+
+.tagline {
+  margin-top: 14px;
+  max-width: 62rem;
+  color: rgba(255,255,255,0.76);
+  font-size: clamp(0.95rem, 1.6vw, 1.18rem);
+  line-height: 1.55;
+}
+
+.scroll-indicator {
+  margin-top: 26px;
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.68);
+  animation: floaty 1.9s ease-in-out infinite;
+}
+
+.scroll-indicator:hover {
+  color: rgba(255,255,255,0.9);
+  border-color: rgba(255,255,255,0.22);
+  background: rgba(255,255,255,0.07);
+}
+
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(7px); }
+}
+
+/* ===== Background canvas ===== */
 #ai-bg {
   position: fixed;
   inset: 0;
