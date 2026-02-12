@@ -57,31 +57,37 @@ body {
 .name-neo3d {
   display: inline-block;
 
-  /* Mostly-white vertical chroma (very subtle) */
+  /* Mostly-white vertical chrome (very subtle tint so it still feels “3D”) */
   background: linear-gradient(
     180deg,
     #ffffff 0%,
-    #f8fafc 28%,
-    #eefcff 52%,   /* faint cyan tint */
-    #f8fafc 72%,
-    #f6efff 100%   /* faint violet tint */
+    #ffffff 18%,
+    #f7fbff 45%,  /* tiny cool highlight */
+    #ffffff 72%,
+    #fffaff 100%  /* tiny warm/purple highlight */
   );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 
-  /* Thin outline to separate from bright background areas */
-  -webkit-text-stroke: 0.65px rgba(0, 0, 0, 0.40);
-
-  /* Depth + halo (still only text-shadow) */
+  /* Light “edge” + glow (NO black) */
   text-shadow:
-    0 0 1px rgba(0,0,0,0.85),
-    0 0 10px rgba(0,0,0,0.45),
-    1px 1px 0 rgba(0,0,0,0.52),
-    2px 2px 0 rgba(0,0,0,0.30),
-    0 0 18px rgba(255,255,255,0.14),
-    0 0 28px rgba(255,255,255,0.08);
+    0 0 1px rgba(255,255,255,0.95),
+    1px 0 0 rgba(255,255,255,0.18),
+    -1px 0 0 rgba(255,255,255,0.18),
+    0 1px 0 rgba(255,255,255,0.14),
+    0 -1px 0 rgba(255,255,255,0.10),
+
+    /* subtle 3D lift (still light, not dark) */
+    2px 2px 0 rgba(255,255,255,0.06),
+    3px 3px 0 rgba(255,255,255,0.035),
+
+    /* glow */
+    0 0 16px rgba(255,255,255,0.18),
+    0 0 34px rgba(34,211,238,0.10),
+    0 0 48px rgba(168,85,247,0.08);
 }
+
 
 
 .headline {
