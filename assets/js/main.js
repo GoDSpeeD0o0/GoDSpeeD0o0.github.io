@@ -3,7 +3,7 @@
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // Header height -> CSS var
+  // Header height -> CSS var (keeps intro centered)
   const headerEl = document.querySelector("header");
   const setHeaderHeight = () => {
     const hh = headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0;
@@ -12,10 +12,10 @@
   setHeaderHeight();
   window.addEventListener("resize", setHeaderHeight, { passive: true });
 
+  // UI smoothness respects reduce motion; background can be forced on
   const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const smoothBehavior = reduceMotionPref ? "auto" : "smooth";
 
-  // keep background animated (your preference)
   const FORCE_ANIMATION = true;
   const prefersReducedMotion = !FORCE_ANIMATION && reduceMotionPref;
 
@@ -155,228 +155,236 @@
     io.observe(projectsSection);
   }
 
-  // ===== Smooth + minimal background (Aurora Drift) =====
+  // ===== Shader background (WebGL) =====
   const canvas = document.getElementById("ai-bg");
   if (!canvas) return;
-  const ctx = canvas.getContext("2d", { alpha: true });
 
-  const rand = (min, max) => min + Math.random() * (max - min);
+  function initShaderBackground() {
+    // Try WebGL first (works on GitHub Pages, no cost)
+    const gl =
+      canvas.getContext("webgl", {
+        alpha: true,
+        antialias: false,
+        premultipliedAlpha: false,
+        depth: false,
+        stencil: false,
+        powerPreference: "high-performance",
+        preserveDrawingBuffer: false,
+      }) || null;
 
-  const BG = {
-    // Perf knobs
-    dprMax: 1.75,          // important for smoothness on retina
-    targetFrameMs: 16,     // ~60fps cap
-    maxStepMs: 33,
-
-    // Density
-    particleMin: 46,
-    particleMax: 96,
-    pulseMax: 4,
-
-    // Look
-    base: "rgba(7, 11, 24, 1)",
-    aurora: [
-      { c: [34, 211, 238], a: 0.13, r: 0.86, bx: 0.22, by: 0.28, ax: 0.10, ay: 0.08, sx: 0.00012, sy: 0.00010, px: 0.0, py: 0.0 },
-      { c: [168, 85, 247], a: 0.11, r: 0.90, bx: 0.80, by: 0.30, ax: 0.11, ay: 0.09, sx: 0.00011, sy: 0.00009, px: 1.7, py: 0.9 },
-      { c: [56, 189, 248], a: 0.06, r: 0.78, bx: 0.52, by: 0.52, ax: 0.07, ay: 0.06, sx: 0.00013, sy: 0.00008, px: 3.0, py: 2.1 }
-    ],
-  };
-
-  let w = 0, h = 0, dpr = 1;
-  let particles = [];
-  let pulses = [];
-
-  function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, BG.dprMax);
-    w = window.innerWidth;
-    h = window.innerHeight;
-
-    canvas.width = Math.floor(w * dpr);
-    canvas.height = Math.floor(h * dpr);
-    canvas.style.width = `${w}px`;
-    canvas.style.height = `${h}px`;
-
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    initParticles();
-    pulses = [];
-    ctx.fillStyle = BG.base;
-    ctx.fillRect(0, 0, w, h);
-  }
-
-  function initParticles() {
-    const target = clamp(Math.round((w * h) / 17000), BG.particleMin, BG.particleMax);
-
-    particles = Array.from({ length: target }, () => {
-      const accent = Math.random() < 0.16;
-      return {
-        x: Math.random() * w,
-        y: Math.random() * h,
-
-        // px/sec (slow, smooth)
-        vx: rand(-10, 10),
-        vy: rand(8, 26),
-
-        s: rand(0.9, 1.9),
-        a: rand(0.06, 0.18),
-
-        accent,
-        tint: Math.random() < 0.5 ? "cyan" : "violet",
-
-        // twinkle phase
-        ph: rand(0, Math.PI * 2)
-      };
-    });
-  }
-
-  function drawAurora(t) {
-    // Base
-    ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = BG.base;
-    ctx.fillRect(0, 0, w, h);
-
-    // Aurora blobs
-    ctx.globalCompositeOperation = "lighter";
-    const s = Math.min(w, h);
-
-    for (const b of BG.aurora) {
-      const x = w * (b.bx + Math.sin(t * b.sx + b.px) * b.ax);
-      const y = h * (b.by + Math.cos(t * b.sy + b.py) * b.ay);
-      const r = s * b.r;
-
-      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0, `rgba(${b.c[0]},${b.c[1]},${b.c[2]},${b.a})`);
-      g.addColorStop(1, `rgba(${b.c[0]},${b.c[1]},${b.c[2]},0)`);
-
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, w, h);
+    if (!gl) {
+      // WebGL disabled or unavailable -> keep CSS background
+      return null;
     }
 
-    ctx.globalCompositeOperation = "source-over";
-  }
+    const VERT = `
+      attribute vec2 a_pos;
+      void main() {
+        gl_Position = vec4(a_pos, 0.0, 1.0);
+      }
+    `;
 
-  function updateParticles(dt) {
-    const k = dt / 1000;
-    for (const p of particles) {
-      p.x += p.vx * k;
-      p.y += p.vy * k;
+    // Minimal, smooth “AI aurora” (no clutter)
+    const FRAG = `
+      precision highp float;
+      uniform vec2 u_res;
+      uniform float u_time;
 
-      // wrap
-      if (p.y > h + 10) p.y = -10;
-      if (p.x < -10) p.x = w + 10;
-      if (p.x > w + 10) p.x = -10;
-    }
-  }
-
-  function maybeSpawnPulse(dt) {
-    if (pulses.length >= BG.pulseMax) return;
-
-    // ~0.12 pulses/sec (very low)
-    const chance = (dt / 1000) * 0.12;
-    if (Math.random() < chance) {
-      pulses.push({
-        x: rand(w * 0.18, w * 0.82),
-        y: rand(h * 0.18, h * 0.62),
-        r: 0,
-        vr: rand(90, 150),        // px/sec
-        a: 0.16,
-        tint: Math.random() < 0.5 ? "cyan" : "violet",
-      });
-    }
-  }
-
-  function updatePulses(dt) {
-    const k = dt / 1000;
-    for (const p of pulses) {
-      p.r += p.vr * k;
-      p.a *= Math.exp(-dt / 1100);
-    }
-    pulses = pulses.filter((p) => p.a > 0.02 && p.r < Math.max(w, h) * 1.2);
-  }
-
-  function drawPulses() {
-    for (const p of pulses) {
-      const col = p.tint === "cyan" ? "34,211,238" : "168,85,247";
-      ctx.strokeStyle = `rgba(${col},${p.a})`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-  }
-
-  function drawParticles(t) {
-    for (const p of particles) {
-      const tw = 0.70 + 0.30 * Math.sin(t * 0.001 + p.ph);
-      const a = p.a * tw;
-
-      if (!p.accent) {
-        ctx.fillStyle = `rgba(255,255,255,${a})`;
-      } else {
-        const col = p.tint === "cyan" ? "34,211,238" : "168,85,247";
-        ctx.fillStyle = `rgba(${col},${0.07 + a})`; // still subtle
+      float hash(vec2 p){
+        // fast-ish hash
+        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
       }
 
-      // ultra-light draw (fast)
-      ctx.fillRect(p.x, p.y, p.s, p.s);
+      float noise(vec2 p){
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        vec2 u = f*f*(3.0-2.0*f);
+
+        float a = hash(i + vec2(0.0, 0.0));
+        float b = hash(i + vec2(1.0, 0.0));
+        float c = hash(i + vec2(0.0, 1.0));
+        float d = hash(i + vec2(1.0, 1.0));
+
+        return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+      }
+
+      float fbm(vec2 p){
+        float v = 0.0;
+        float a = 0.55;
+        // 3 octaves (keeps it smooth + fast)
+        for(int i = 0; i < 3; i++){
+          v += a * noise(p);
+          p = p * 2.02 + 10.0;
+          a *= 0.5;
+        }
+        return v;
+      }
+
+      void main() {
+        vec2 uv = gl_FragCoord.xy / u_res;
+        vec2 p = (uv - 0.5) * vec2(u_res.x / u_res.y, 1.0);
+
+        float t = u_time;
+
+        // base: deep but not harsh
+        vec3 col = vec3(0.03, 0.05, 0.11);
+        col += vec3(0.03, 0.04, 0.07) * (1.0 - uv.y) * 0.55;
+
+        // smooth aurora bands
+        float n1 = fbm(p * 1.6 + vec2(0.0, t * 0.10));
+        float n2 = fbm(p * 2.4 + vec2(t * 0.06, -t * 0.04));
+
+        float bandCenter = p.y + 0.10 + (n2 - 0.5) * 0.22;
+        float band = smoothstep(0.62, 0.95, n1) * smoothstep(0.60, 0.0, abs(bandCenter));
+
+        vec3 cyan = vec3(0.10, 0.88, 0.95);
+        vec3 vio  = vec3(0.72, 0.40, 0.98);
+        vec3 aurCol = mix(cyan, vio, n2);
+
+        col += aurCol * band * 0.42;
+
+        // soft haze (very low)
+        float haze = fbm(p * 0.55 + vec2(t * 0.03, -t * 0.02));
+        col += vec3(0.05, 0.06, 0.10) * haze * 0.16;
+
+        // ultra subtle scan (prevents banding, still minimal)
+        float scan = 0.004 * sin((uv.y * u_res.y) * 0.18 + t * 1.2);
+        col += scan;
+
+        // vignette
+        float vig = smoothstep(1.12, 0.25, length(p));
+        col *= vig;
+
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `;
+
+    function compileShader(type, src) {
+      const sh = gl.createShader(type);
+      gl.shaderSource(sh, src);
+      gl.compileShader(sh);
+      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+        const msg = gl.getShaderInfoLog(sh) || "Shader compile failed";
+        gl.deleteShader(sh);
+        console.warn(msg);
+        return null;
+      }
+      return sh;
     }
-  }
 
-  window.addEventListener("resize", resize, { passive: true });
-  resize();
+    function createProgram(vsSrc, fsSrc) {
+      const vs = compileShader(gl.VERTEX_SHADER, vsSrc);
+      const fs = compileShader(gl.FRAGMENT_SHADER, fsSrc);
+      if (!vs || !fs) return null;
 
-  // Animation loop with ~60fps cap even on high refresh displays
-  let rafId = null;
-  let last = performance.now();
-  let accum = 0;
+      const prog = gl.createProgram();
+      gl.attachShader(prog, vs);
+      gl.attachShader(prog, fs);
+      gl.linkProgram(prog);
 
-  function loop(now) {
-    const dtRaw = now - last;
-    last = now;
+      gl.deleteShader(vs);
+      gl.deleteShader(fs);
 
-    const dt = clamp(dtRaw, 0, BG.maxStepMs);
-    accum += dt;
-
-    if (accum < BG.targetFrameMs) {
-      rafId = requestAnimationFrame(loop);
-      return;
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        const msg = gl.getProgramInfoLog(prog) || "Program link failed";
+        gl.deleteProgram(prog);
+        console.warn(msg);
+        return null;
+      }
+      return prog;
     }
 
-    const step = Math.min(accum, BG.maxStepMs);
-    accum = 0;
+    const program = createProgram(VERT, FRAG);
+    if (!program) return null;
 
-    drawAurora(now);
-    updateParticles(step);
-    maybeSpawnPulse(step);
-    updatePulses(step);
-    drawPulses();
-    drawParticles(now);
+    // Fullscreen triangle (fastest)
+    const verts = new Float32Array([
+      -1, -1,
+       3, -1,
+      -1,  3,
+    ]);
 
-    rafId = requestAnimationFrame(loop);
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
+
+    const aPos = gl.getAttribLocation(program, "a_pos");
+    const uRes = gl.getUniformLocation(program, "u_res");
+    const uTime = gl.getUniformLocation(program, "u_time");
+
+    // perf: cap DPR slightly (smooth + keeps GPU cool)
+    const DPR_MAX = 1.75;
+
+    function resizeGL() {
+      const dpr = Math.min(window.devicePixelRatio || 1, DPR_MAX);
+      const w = Math.floor(window.innerWidth * dpr);
+      const h = Math.floor(window.innerHeight * dpr);
+
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+        canvas.style.width = "100vw";
+        canvas.style.height = "100vh";
+        gl.viewport(0, 0, w, h);
+      }
+    }
+
+    window.addEventListener("resize", resizeGL, { passive: true });
+    resizeGL();
+
+    let rafId = null;
+    const t0 = performance.now();
+
+    function draw(now) {
+      if (document.hidden) return;
+
+      resizeGL();
+
+      gl.useProgram(program);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.enableVertexAttribArray(aPos);
+      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+      gl.uniform2f(uRes, canvas.width, canvas.height);
+      gl.uniform1f(uTime, (now - t0) / 1000);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+      rafId = requestAnimationFrame(draw);
+    }
+
+    function start() {
+      if (prefersReducedMotion) return;
+      if (rafId) return;
+      rafId = requestAnimationFrame(draw);
+    }
+
+    function stop() {
+      if (!rafId) return;
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+
+    // handle context loss gracefully
+    canvas.addEventListener("webglcontextlost", (e) => {
+      e.preventDefault();
+      stop();
+    }, false);
+
+    return { start, stop };
   }
 
-  function startBg() {
-    if (prefersReducedMotion) return;
-    if (rafId) return;
-    last = performance.now();
-    accum = 0;
-    rafId = requestAnimationFrame(loop);
-  }
+  const shaderBg = initShaderBackground();
+  if (shaderBg && !prefersReducedMotion) shaderBg.start();
 
-  function stopBg() {
-    if (!rafId) return;
-    cancelAnimationFrame(rafId);
-    rafId = null;
-  }
-
-  if (!prefersReducedMotion) startBg();
-
+  // One visibility handler for BOTH background + projects auto-scroll
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
-      stopBg();
+      shaderBg?.stop?.();
       stopAuto();
     } else {
-      startBg();
+      shaderBg?.start?.();
       startAuto();
     }
   });
