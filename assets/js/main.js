@@ -119,7 +119,6 @@
       if (navigator.clipboard?.writeText) {
         navigator.clipboard.writeText(text).then(() => toast("Copied")).catch(() => toast("Copy failed"));
       } else {
-        // fallback
         window.prompt("Copy:", text);
       }
     }
@@ -161,7 +160,6 @@
     const isK = e.key.toLowerCase() === "k";
     const meta = e.metaKey || e.ctrlKey;
 
-    // Toggle cmdk
     if (meta && isK) {
       e.preventDefault();
       if (cmdkOpen) closeCmdk();
@@ -224,8 +222,8 @@
     if (!track) return;
     if (!projectsInView) return;
     if (document.hidden) return;
-    if (cmdkOpen) return; // don’t scroll while palette open
-    if (modalOpen) return; // don’t scroll while modal open
+    if (cmdkOpen) return;
+    if (modalOpen) return;
     if (autoTimer) return;
     autoTimer = setInterval(() => goToIndex(getActiveIndex() + 1, true), AUTO_SCROLL_MS);
   };
@@ -286,17 +284,14 @@
 
     const idx = getActiveIndex();
 
-    // active / dim
     cards.forEach((c, i) => {
       c.classList.toggle("is-active", i === idx);
       c.classList.toggle("is-dim", i !== idx);
     });
 
-    // dots
     const dots = Array.from(dotsEl?.querySelectorAll(".dot") || []);
     dots.forEach((d, i) => d.classList.toggle("active", i === idx));
 
-    // counter
     if (currentEl) currentEl.textContent = String(idx + 1).padStart(2, "0");
     if (totalEl) totalEl.textContent = String(cards.length).padStart(2, "0");
   };
@@ -308,8 +303,9 @@
     scheduleResume();
   };
 
+  let modalOpen = false; // declared before modal logic uses it
+
   if (track && projectsSection) {
-    // build dots
     const cards = getCards();
     if (totalEl) totalEl.textContent = String(cards.length).padStart(2, "0");
 
@@ -325,11 +321,9 @@
       });
     }
 
-    // buttons
     prev?.addEventListener("click", () => goToIndex(getActiveIndex() - 1, true));
     next?.addEventListener("click", () => goToIndex(getActiveIndex() + 1, true));
 
-    // drag-to-scroll
     let isDown = false;
     let startX = 0;
     let startLeft = 0;
@@ -362,7 +356,6 @@
     track.addEventListener("pointercancel", endDrag);
     track.addEventListener("lostpointercapture", endDrag);
 
-    // scroll updates (debounced)
     let scrollRAF = 0;
     track.addEventListener("scroll", () => {
       if (scrollRAF) cancelAnimationFrame(scrollRAF);
@@ -371,7 +364,6 @@
 
     window.addEventListener("resize", () => updateProjectsUI(), { passive: true });
 
-    // start/stop auto only when visible
     const io = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
@@ -383,7 +375,6 @@
     );
     io.observe(projectsSection);
 
-    // keyboard arrows when projects are in view (and no overlays open)
     document.addEventListener("keydown", (e) => {
       if (!projectsInView) return;
       if (cmdkOpen || modalOpen) return;
@@ -397,7 +388,6 @@
       }
     });
 
-    // initial paint
     updateProjectsUI();
   }
 
@@ -413,8 +403,6 @@
   const pmResults = document.getElementById("pm-results");
   const pmStack = document.getElementById("pm-stack");
   const pmLinks = document.getElementById("pm-links");
-
-  let modalOpen = false;
 
   const PROJECT_DATA = {
     "faster-diffusion": {
@@ -540,7 +528,6 @@
         pmLinks.appendChild(a);
       });
 
-      // Always show close
       const closeBtn = document.createElement("button");
       closeBtn.className = "btn-primary";
       closeBtn.type = "button";
@@ -574,7 +561,6 @@
     }
   });
 
-  // Bind clicks on cards (except links)
   if (track) {
     getCards().forEach((card) => {
       card.addEventListener("click", (e) => {
@@ -610,11 +596,6 @@
       void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
     `;
 
-    // Cosmic Compute:
-    // - sparse stars (multi layer)
-    // - smooth nebula/aurora
-    // - occasional pulse rings (behind hero area)
-    // - subtle mouse parallax
     const FRAG = `
       precision highp float;
 
@@ -655,12 +636,10 @@
         float r = hash(id);
         float on = step(1.0 - density, r);
 
-        // randomized size
         float size = sizeBase + 0.08 * r;
         float d = length(gv);
         float star = on * smoothstep(size, 0.0, d);
 
-        // twinkle
         float t = 0.6 + 0.4 * sin(tw + r * 6.2831);
         return star * t;
       }
@@ -672,21 +651,18 @@
 
         float t = u_time;
 
-        // Mouse parallax (subtle)
         vec2 m = (u_mouse / u_res - 0.5) * vec2(asp, 1.0);
         vec2 par = 0.020 * (m - p);
 
         vec3 base = vec3(0.028, 0.040, 0.095);
         base += vec3(0.015, 0.018, 0.028) * (1.0 - uv.y) * 0.75;
 
-        // Stars (3 layers, sparse)
         float s1 = starLayer(uv + par*0.7, 120.0, 0.020, 0.24, t*1.4);
         float s2 = starLayer(uv + par*1.0, 180.0, 0.012, 0.18, t*1.1 + 2.0);
         float s3 = starLayer(uv + par*1.4, 260.0, 0.009, 0.14, t*0.9 + 4.0);
 
         float stars = s1 + s2 + s3;
 
-        // Nebula / aurora
         vec2 q = p + par*1.2;
         q += 0.06 * vec2(
           fbm(q*1.35 + t*0.05),
@@ -704,43 +680,34 @@
         float topMask = smoothstep(0.05, 0.70, uv.y);
         float neb = smoothstep(0.40, 0.95, n1) * band * topMask;
 
-        // keep center a bit calmer (safe zone for hero text)
         float safe = smoothstep(0.95, 0.25, length(p - vec2(0.0, 0.06)));
         neb *= mix(1.0, 0.70, safe);
 
-        // Pulse rings (occasional) around hero area
         vec2 c = vec2(0.0, 0.10);
         float r = length(p - c);
         float cycle = 7.5;
-        float ph = fract(t / cycle);              // 0..1
+        float ph = fract(t / cycle);
         float burst = smoothstep(0.0, 0.06, ph) * smoothstep(1.0, 0.72, ph);
         float rad = 0.10 + ph * 1.10;
         float ring = exp(-abs(r - rad) * 34.0) * burst;
 
-        // faint second ring
         float ph2 = fract((t + 2.2) / (cycle * 1.35));
         float burst2 = smoothstep(0.0, 0.06, ph2) * smoothstep(1.0, 0.70, ph2);
         float rad2 = 0.16 + ph2 * 1.25;
         float ring2 = exp(-abs(r - rad2) * 38.0) * burst2;
 
-        // Compose
         vec3 col = base;
 
-        // nebula first (soft)
         col += nebCol * neb * 0.45;
 
-        // stars (white with slight tint)
         col += vec3(1.0) * stars * 0.85;
         col += nebCol * stars * 0.06;
 
-        // rings (subtle)
         col += nebCol * (ring * 0.14 + ring2 * 0.10);
 
-        // tiny grain to avoid banding
         float gr = hash(gl_FragCoord.xy + vec2(t*70.0, -t*55.0));
         col += (gr - 0.5) * 0.010;
 
-        // vignette
         float vig = smoothstep(1.18, 0.28, length(p));
         col *= vig;
 
@@ -785,7 +752,6 @@
     const program = makeProgram(VERT, FRAG);
     if (!program) return null;
 
-    // fullscreen triangle
     const verts = new Float32Array([-1, -1, 3, -1, -1, 3]);
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -796,7 +762,6 @@
     const uTime = gl.getUniformLocation(program, "u_time");
     const uMouse = gl.getUniformLocation(program, "u_mouse");
 
-    // perf caps
     const DPR_MAX = 1.6;
     const FRAME_MS = 1000 / 60;
 
@@ -805,14 +770,13 @@
     let lastFrame = 0;
     const t0 = performance.now();
 
-    // pointer smoothing
     let mxT = window.innerWidth * 0.5;
     let myT = window.innerHeight * 0.55;
     let mx = mxT, my = myT;
 
     const setPointer = (clientX, clientY) => {
       mxT = clientX;
-      myT = window.innerHeight - clientY; // bottom-origin
+      myT = window.innerHeight - clientY;
     };
 
     window.addEventListener("pointermove", (e) => setPointer(e.clientX, e.clientY), { passive: true });
@@ -849,7 +813,6 @@
 
       resizeGL();
 
-      // lerp mouse
       const lerp = 0.08;
       mx = mx + (mxT - mx) * lerp;
       my = my + (myT - my) * lerp;
@@ -893,7 +856,6 @@
   const shaderBg = initShaderBackground();
   if (shaderBg && !prefersReducedMotion) shaderBg.start();
 
-  // Visibility handler for background + project auto-scroll
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       if (shaderBg) shaderBg.stop();

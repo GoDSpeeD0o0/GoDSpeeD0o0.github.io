@@ -68,20 +68,22 @@ input:focus-visible {
   opacity: 0.14;
 }
 
-/* ===== Model Card OS primitives ===== */
+/* ===== Model Card OS primitives (more professional) ===== */
 .os-header {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
+/* Optional small “descriptor” line (kept, but no sci-fi tone) */
 .os-kicker {
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.55);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  color: rgba(255,255,255,0.58);
 }
 
+/* We’re not using this in HTML now, but leaving it harmless */
 .os-subtitle {
   color: rgba(255,255,255,0.72);
   font-size: 0.95rem;
@@ -129,10 +131,7 @@ input:focus-visible {
   min-width: 0;
 }
 
-.window-dots {
-  display: inline-flex;
-  gap: 6px;
-}
+.window-dots { display: inline-flex; gap: 6px; }
 .window-dot {
   width: 9px;
   height: 9px;
@@ -173,7 +172,7 @@ input:focus-visible {
   position: relative;
 }
 
-/* subtle “safe zone” behind title without looking like a backdrop */
+/* subtle “safe zone” behind title without a visible panel/backdrop */
 .hero-screen::after {
   content: "";
   position: absolute;
@@ -352,16 +351,13 @@ input:focus-visible {
   font-size: 0.85rem;
 }
 
-/* ===== Eval / metrics grid ===== */
+/* ===== Metrics grid ===== */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: 12px;
 }
-.stat {
-  grid-column: span 12;
-  padding: 14px;
-}
+.stat { grid-column: span 12; padding: 14px; }
 @media (min-width: 640px) { .stat { grid-column: span 6; } }
 @media (min-width: 1024px) { .stat { grid-column: span 3; } }
 
@@ -384,7 +380,7 @@ input:focus-visible {
   font-size: 0.9rem;
 }
 
-/* ===== Skills color system (kept) ===== */
+/* ===== Skills color system ===== */
 .skill-card {
   position: relative;
   overflow: hidden;
@@ -754,13 +750,8 @@ input:focus-visible {
 
 .hidden { display: none !important; }
 
-.modal-panel {
-  width: min(920px, 96vw);
-}
-
-.modal-body {
-  padding: 16px 16px 18px;
-}
+.modal-panel { width: min(920px, 96vw); }
+.modal-body { padding: 16px 16px 18px; }
 
 .modal-title {
   font-family: "Space Grotesk", Poppins, system-ui, sans-serif;
@@ -768,21 +759,14 @@ input:focus-visible {
   font-size: 1.35rem;
   color: rgba(255,255,255,0.94);
 }
-
 .modal-sub {
   margin-top: 4px;
   color: rgba(255,255,255,0.68);
   font-size: 0.9rem;
 }
 
-.modal-grid {
-  margin-top: 14px;
-  display: grid;
-  gap: 12px;
-}
-@media (min-width: 768px) {
-  .modal-grid { grid-template-columns: 1.2fr 0.8fr; }
-}
+.modal-grid { margin-top: 14px; display: grid; gap: 12px; }
+@media (min-width: 768px) { .modal-grid { grid-template-columns: 1.2fr 0.8fr; } }
 
 .modal-section {
   padding: 14px;
@@ -802,20 +786,10 @@ input:focus-visible {
   color: rgba(255,255,255,0.78);
 }
 
-.modal-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 12px;
-}
+.modal-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 
-.cmdk-panel {
-  width: min(760px, 96vw);
-}
-
-.cmdk-body {
-  padding: 12px;
-}
+.cmdk-panel { width: min(760px, 96vw); }
+.cmdk-body { padding: 12px; }
 
 .cmdk-input {
   width: 100%;
