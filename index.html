@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prateek Parashar | Generative AI</title>
+    <title>Prateek Parashar | Model Card OS</title>
     <meta
       name="description"
-      content="Prateek Parashar — GenAI builder optimizing diffusion and automating workflows in Python/SQL."
+      content="Prateek Parashar — GenAI builder optimizing diffusion and automating workflows (Python/SQL)."
     />
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,15 +14,16 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Poppins:wght@400;600;700;800&family=Roboto+Mono:wght@400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Poppins:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700;800&display=swap"
       rel="stylesheet"
     />
 
     <link rel="icon" href="favicon.ico" />
-    <link rel="stylesheet" href="assets/css/main.css?v=12" />
+    <link rel="stylesheet" href="assets/css/main.css?v=20" />
   </head>
 
   <body class="min-h-screen text-white">
+    <!-- Shader background -->
     <canvas
       id="ai-bg"
       aria-hidden="true"
@@ -51,24 +52,37 @@
           <span class="mono text-sm">MENU</span>
         </button>
 
-        <div class="hidden md:flex items-center gap-5 text-sm text-white/80">
+        <div class="hidden md:flex items-center gap-4 text-sm text-white/80">
+          <a class="hover:text-white" href="#signals">Signals</a>
           <a class="hover:text-white" href="#skills">Skills</a>
           <a class="hover:text-white" href="#experience">Experience</a>
           <a class="hover:text-white" href="#projects">Projects</a>
           <a class="hover:text-white" href="#contact">Contact</a>
+
+          <button
+            id="cmdk-btn"
+            class="px-3 py-2 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10"
+            type="button"
+            aria-label="Open command palette"
+          >
+            <span class="mono text-xs">CTRL K</span>
+          </button>
+
           <a
             class="px-3 py-2 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10"
             href="resume/resume.pdf"
             target="_blank"
             rel="noopener"
           >
-            <span class="mono">RESUME.pdf</span>
+            <span class="mono text-xs">RESUME.pdf</span>
           </a>
         </div>
       </nav>
 
+      <!-- Mobile menu -->
       <div id="mobile-menu" class="md:hidden hidden border-t border-white/10">
         <div class="mx-auto max-w-6xl px-4 py-3 flex flex-col gap-3 text-white/80">
+          <a class="hover:text-white" href="#signals">Signals</a>
           <a class="hover:text-white" href="#skills">Skills</a>
           <a class="hover:text-white" href="#experience">Experience</a>
           <a class="hover:text-white" href="#projects">Projects</a>
@@ -79,15 +93,18 @@
             target="_blank"
             rel="noopener"
           >
-            <span class="mono">RESUME.pdf</span>
+            <span class="mono text-xs">RESUME.pdf</span>
           </a>
         </div>
       </div>
     </header>
 
     <main class="mx-auto max-w-6xl px-4">
+      <!-- INTRO -->
       <section id="intro" class="hero-screen">
         <div class="w-full">
+          <div class="mono os-kicker">MODEL CARD OS · PRATEEK-PARASHAR.v1 · GENAI</div>
+
           <h1 class="name-display name-neo3d">Prateek Parashar</h1>
 
           <p class="headline">
@@ -95,23 +112,71 @@
             ASU M.S. <span class="gradient-text">(4.0)</span>.
           </p>
 
-          <a class="mono scroll-indicator" href="#skills">
+          <div class="mt-6 flex flex-wrap gap-3 justify-center">
+            <a class="btn-primary" href="resume/resume.pdf" target="_blank" rel="noopener">Download Resume</a>
+            <a class="btn-secondary" href="#projects">View Projects</a>
+            <button class="btn-secondary" type="button" id="cmdk-btn-hero">
+              <span class="mono">Open Command Palette</span> <span class="kbd">Ctrl</span><span class="kbd">K</span>
+            </button>
+          </div>
+
+          <div class="mt-8 max-w-3xl mx-auto glass p-4">
+            <div class="mono text-xs text-white/60">SYSTEM_PROMPT</div>
+            <div class="mono text-sm mt-2 text-white/80">
+              Objective: ship measurable GenAI systems (diffusion/transformers) with clean interfaces, reproducible experiments,
+              and performance wins that survive real usage.
+            </div>
+          </div>
+
+          <a class="mono scroll-indicator" href="#signals">
             <span>enter</span><span>↓</span>
           </a>
         </div>
       </section>
 
-    <!-- SKILLS (unchanged from your current structure) -->
-      <section id="skills" class="pt-10 md:pt-12">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-          <div>
-            <h2 class="section-title">Skills & Certifications</h2>
-            <p class="text-white/70 text-sm mt-1">Separated by stack. Color-coded for quick scanning.</p>
+      <!-- SIGNALS / EVAL SUMMARY -->
+      <section id="signals" class="pt-2 md:pt-4">
+        <div class="os-header">
+          <div class="mono os-kicker">EVAL SUMMARY</div>
+          <h2 class="section-title">Signals</h2>
+          <div class="os-subtitle">High-signal metrics from shipped work. (Fast scan, recruiter-friendly.)</div>
+          <div class="os-rule"></div>
+        </div>
+
+        <div class="mt-4 stat-grid">
+          <div class="glass stat card-hover">
+            <div class="label mono">DIFFUSION SPEEDUP</div>
+            <div class="value">-41%</div>
+            <div class="note">Inference time reduction while maintaining quality.</div>
           </div>
-          <div class="flex flex-wrap gap-3">
-            <a class="btn-primary" href="resume/resume.pdf" target="_blank" rel="noopener">Download Resume</a>
-            <a class="btn-secondary" href="mailto:pparash7@asu.edu">Email</a>
+
+          <div class="glass stat card-hover">
+            <div class="label mono">DASHBOARDS SHIPPED</div>
+            <div class="value">5+</div>
+            <div class="note">Power BI reporting automation (reduced manual tracking).</div>
           </div>
+
+          <div class="glass stat card-hover">
+            <div class="label mono">RETENTION LIFT</div>
+            <div class="value">+21%</div>
+            <div class="note">Cross-browser optimization impact (reported).</div>
+          </div>
+
+          <div class="glass stat card-hover">
+            <div class="label mono">GRAD GPA</div>
+            <div class="value">4.00</div>
+            <div class="note">Arizona State University (M.S.)</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SKILLS -->
+      <section id="skills" class="mt-12">
+        <div class="os-header">
+          <div class="mono os-kicker">MODULE 01 · STACKS</div>
+          <h2 class="section-title">Skills & Certifications</h2>
+          <div class="os-subtitle">Separated by stack. Color-coded for fast parsing.</div>
+          <div class="os-rule"></div>
         </div>
 
         <div class="mt-4 grid lg:grid-cols-12 gap-4">
@@ -191,15 +256,15 @@
             </div>
 
             <div class="glass card-hover p-5">
-              <div class="mono text-xs text-white/60">SNAPSHOT</div>
-              <p class="mt-3 text-white/80">
-                I focus on measurable wins: faster inference, cleaner pipelines, and automation that removes real friction.
-              </p>
-              <div class="mt-4 flex flex-wrap gap-2">
-                <span class="badge">Diffusion -41%</span>
-                <span class="badge">5+ dashboards</span>
-                <span class="badge">Python · SQL</span>
+              <div class="mono text-xs text-white/60">QUICK LINKS</div>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <a class="btn-secondary" href="#projects">Projects</a>
+                <a class="btn-secondary" href="#experience">Experience</a>
+                <a class="btn-secondary" href="mailto:pparash7@asu.edu">Email</a>
               </div>
+              <p class="mt-3 text-xs text-white/55">
+                Tip: open palette <span class="kbd">Ctrl</span><span class="kbd">K</span> to navigate + copy links.
+              </p>
             </div>
           </aside>
         </div>
@@ -207,53 +272,87 @@
 
       <!-- EXPERIENCE -->
       <section id="experience" class="mt-12">
-        <h2 class="section-title">Work Experience</h2>
+        <div class="os-header">
+          <div class="mono os-kicker">MODULE 02 · TIMELINE</div>
+          <h2 class="section-title">Experience</h2>
+          <div class="os-subtitle">Timeline view with measurable outcomes.</div>
+          <div class="os-rule"></div>
+        </div>
 
-        <div class="mt-4 space-y-4">
-          <article class="glass card-hover p-5">
-            <div class="flex flex-col md:flex-row md:items-baseline md:justify-between gap-1">
-              <h3 class="font-semibold">Data Analyst Intern · BTP ECO Products</h3>
-              <div class="mono text-xs text-white/60">Gurugram, India · Jul 2022 — Aug 2024</div>
-            </div>
-            <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
-              <li>Deployed 5+ Power BI dashboards to automate reporting and save manual tracking time.</li>
-              <li>Used SQL + data modeling to extract insights from complex datasets for decision support.</li>
-            </ul>
-          </article>
+        <div class="timeline">
+          <div class="timeline-item">
+            <article class="glass card-hover p-5">
+              <div class="flex flex-col md:flex-row md:items-baseline md:justify-between gap-1">
+                <h3 class="font-semibold">Data Analyst Intern · BTP ECO Products</h3>
+                <div class="mono text-xs text-white/60">Gurugram, India · Jul 2022 — Aug 2024</div>
+              </div>
+              <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
+                <li>Automated database reporting by deploying 5+ Power BI dashboards (saved manual tracking hours).</li>
+                <li>Extracted insights from complex datasets to support decisions using SQL + data modeling.</li>
+              </ul>
+              <div class="mt-4 flex flex-wrap gap-2">
+                <span class="badge">Power BI 5+</span>
+                <span class="badge">SQL modeling</span>
+                <span class="badge">Reporting automation</span>
+              </div>
+            </article>
+          </div>
 
-          <article class="glass card-hover p-5">
-            <div class="flex flex-col md:flex-row md:items-baseline md:justify-between gap-1">
-              <h3 class="font-semibold">SDE Intern · BTP ECO Products</h3>
-              <div class="mono text-xs text-white/60">Gurugram, India · Jul 2021 — Sep 2021</div>
-            </div>
-            <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
-              <li>Engineered production-grade web components, improving frontend modularity.</li>
-              <li>Optimized cross-browser compatibility; reported +21% improvement in user retention.</li>
-            </ul>
-          </article>
+          <div class="timeline-item">
+            <article class="glass card-hover p-5">
+              <div class="flex flex-col md:flex-row md:items-baseline md:justify-between gap-1">
+                <h3 class="font-semibold">SDE Intern · BTP ECO Products</h3>
+                <div class="mono text-xs text-white/60">Gurugram, India · Jul 2021 — Sep 2021</div>
+              </div>
+              <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
+                <li>Engineered production-grade web components to improve frontend modularity.</li>
+                <li>Optimized cross-browser compatibility; reported +21% user retention.</li>
+              </ul>
+              <div class="mt-4 flex flex-wrap gap-2">
+                <span class="badge">+21% retention</span>
+                <span class="badge">Frontend modularity</span>
+                <span class="badge">Compatibility</span>
+              </div>
+            </article>
+          </div>
 
-          <article class="glass card-hover p-5">
-            <div class="flex flex-col md:flex-row md:items-baseline md:justify-between gap-1">
-              <h3 class="font-semibold">Cyber Security Intern · Virtually Testing Foundation</h3>
-              <div class="mono text-xs text-white/60">Remote · Jan 2021 — Mar 2021</div>
-            </div>
-            <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
-              <li>Identified vulnerabilities via security testing and managed technical campaigns.</li>
-              <li>Drafted accountability frameworks to standardize project management + remote workflows.</li>
-            </ul>
-          </article>
+          <div class="timeline-item">
+            <article class="glass card-hover p-5">
+              <div class="flex flex-col md:flex-row md:items-baseline md:justify-between gap-1">
+                <h3 class="font-semibold">Cyber Security Intern · Virtually Testing Foundation</h3>
+                <div class="mono text-xs text-white/60">Remote · Jan 2021 — Mar 2021</div>
+              </div>
+              <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
+                <li>Identified system vulnerabilities via security testing and ran technical campaigns.</li>
+                <li>Drafted accountability frameworks to standardize project management and remote workflows.</li>
+              </ul>
+              <div class="mt-4 flex flex-wrap gap-2">
+                <span class="badge">Security testing</span>
+                <span class="badge">Frameworks</span>
+                <span class="badge">Remote ops</span>
+              </div>
+            </article>
+          </div>
         </div>
       </section>
 
-      <!-- PROJECTS (drawer) -->
+      <!-- PROJECTS -->
       <section id="projects" class="mt-12">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-          <div>
-            <h2 class="section-title">Projects</h2>
-            <p class="text-white/70 text-sm mt-1">
-              Drawer-style: 2 visible on desktop. Auto-advances every 10s when this section is in view.
-            </p>
+        <div class="os-header">
+          <div class="mono os-kicker">MODULE 03 · ARTIFACTS</div>
+          <h2 class="section-title">Projects</h2>
+          <div class="os-subtitle">Drawer UI. Two visible on desktop. Click a card to open its “Model Card”.</div>
+          <div class="os-rule"></div>
+        </div>
+
+        <div class="projects-toolbar">
+          <div class="mono text-xs text-white/60">
+            <span id="projects-current">01</span>/<span id="projects-total">00</span>
+            <span class="text-white/50"> · </span>
+            <span class="text-white/70">use</span> <span class="kbd">←</span> <span class="kbd">→</span>
           </div>
+
+          <div id="projects-dots" class="projects-dots"></div>
         </div>
 
         <div class="projects-drawer mt-4">
@@ -262,9 +361,9 @@
           </button>
 
           <div id="projects-track" class="hscroll drawer-track flex gap-4 overflow-x-auto pb-4">
-            <!-- cards unchanged (keep your current project cards here) -->
-            <!-- Faster Diffusion -->
-            <article class="glass card-hover project-card">
+            <article class="glass card-hover project-card" data-project="faster-diffusion">
+              <div class="project-open-hint mono">OPEN ↗</div>
+
               <div class="project-thumb" style="--thumb:url('assets/img/faster-diffusion.jpg')">
                 <div class="project-thumb-hint mono">Thumbnail: assets/img/faster-diffusion.jpg</div>
               </div>
@@ -274,11 +373,11 @@
                 <div class="mono text-xs text-white/60">Spring 2025</div>
               </div>
 
-              <p class="project-desc">Optimized diffusion image generation for speed while keeping output quality.</p>
+              <p class="project-desc">Optimized diffusion inference for speed while keeping output quality.</p>
 
               <ul class="project-bullets">
-                <li>Implemented performance mechanisms using Python + deep learning.</li>
-                <li><span class="text-white font-semibold">Reduced inference time by 41%</span> (team of three).</li>
+                <li><span class="text-white font-semibold">-41%</span> inference time (team of three).</li>
+                <li>Profiled + improved inference path, validated outputs.</li>
               </ul>
 
               <div class="flex flex-wrap gap-2">
@@ -290,8 +389,9 @@
               </a>
             </article>
 
-            <!-- Slackbot -->
-            <article class="glass card-hover project-card">
+            <article class="glass card-hover project-card" data-project="slackbot">
+              <div class="project-open-hint mono">OPEN ↗</div>
+
               <div class="project-thumb" style="--thumb:url('assets/img/slackbot.jpg')">
                 <div class="project-thumb-hint mono">Thumbnail: assets/img/slackbot.jpg</div>
               </div>
@@ -301,11 +401,11 @@
                 <div class="mono text-xs text-white/60">Nov 2025</div>
               </div>
 
-              <p class="project-desc">Instant Python technical support inside Slack with guided debugging.</p>
+              <p class="project-desc">Instant Python support in Slack with guided debugging workflows.</p>
 
               <ul class="project-bullets">
-                <li>Built streamlined QnA interface using Python + Slack API.</li>
-                <li>Designed automated debugging workflows for multi-step queries.</li>
+                <li>Streamlined QnA interface using Python + Slack API.</li>
+                <li>Automated multi-step debugging triage.</li>
               </ul>
 
               <div class="flex flex-wrap gap-2">
@@ -317,8 +417,9 @@
               </a>
             </article>
 
-            <!-- Research -->
-            <article class="glass card-hover project-card">
+            <article class="glass card-hover project-card" data-project="research-paper">
+              <div class="project-open-hint mono">OPEN ↗</div>
+
               <div class="project-thumb" style="--thumb:url('assets/img/research-paper.jpg')">
                 <div class="project-thumb-hint mono">Thumbnail: assets/img/research-paper.jpg</div>
               </div>
@@ -328,15 +429,15 @@
                 <div class="mono text-xs text-white/60">Ongoing</div>
               </div>
 
-              <p class="project-desc">Research writing + supporting experiments/artifacts.</p>
+              <p class="project-desc">Research writing + experiments organized for reproducibility.</p>
 
               <ul class="project-bullets">
-                <li>Organized repo for reproducibility and iteration.</li>
+                <li>Repo structure for iteration + artifacts.</li>
                 <li>Next: add abstract + key results on-card.</li>
               </ul>
 
               <div class="flex flex-wrap gap-2">
-                <span class="pill">Research</span><span class="pill">Writing</span><span class="pill">Reproducibility</span>
+                <span class="pill">Research</span><span class="pill">Writing</span><span class="pill">Repro</span>
               </div>
 
               <a class="project-link" href="https://github.com/GoDSpeeD0o0/Research-Paper" target="_blank" rel="noopener">
@@ -344,7 +445,47 @@
               </a>
             </article>
 
-            <!-- keep your other cards -->
+            <article class="glass card-hover project-card" data-project="sentiment">
+              <div class="project-open-hint mono">OPEN ↗</div>
+
+              <div class="project-thumb" style="--thumb:url('assets/img/sentiment.jpg')">
+                <div class="project-thumb-hint mono">Thumbnail: assets/img/sentiment.jpg</div>
+              </div>
+
+              <div class="project-meta">
+                <div class="project-title">Tweet Sentiment Analysis</div>
+                <div class="mono text-xs text-white/60">Apr 2024</div>
+              </div>
+
+              <p class="project-desc">Transformer-based sentiment classification for large tweet datasets.</p>
+
+              <div class="flex flex-wrap gap-2">
+                <span class="pill">NLP</span><span class="pill">Transformers</span><span class="pill">ALBERT</span>
+              </div>
+
+              <span class="mono text-sm text-white/55">Link coming soon</span>
+            </article>
+
+            <article class="glass card-hover project-card" data-project="pollution">
+              <div class="project-open-hint mono">OPEN ↗</div>
+
+              <div class="project-thumb" style="--thumb:url('assets/img/pollution.jpg')">
+                <div class="project-thumb-hint mono">Thumbnail: assets/img/pollution.jpg</div>
+              </div>
+
+              <div class="project-meta">
+                <div class="project-title">Air Pollution Modeling</div>
+                <div class="mono text-xs text-white/60">May 2022</div>
+              </div>
+
+              <p class="project-desc">PM2.5 / emissions behavior modeling with ML to predict impact trends.</p>
+
+              <div class="flex flex-wrap gap-2">
+                <span class="pill">ML</span><span class="pill">Modeling</span><span class="pill">Environment</span>
+              </div>
+
+              <span class="mono text-sm text-white/55">Link coming soon</span>
+            </article>
           </div>
 
           <button id="projects-next" class="drawer-btn drawer-right" aria-label="Next project">
@@ -359,7 +500,12 @@
 
       <!-- CONTACT -->
       <section id="contact" class="mt-12">
-        <h2 class="section-title">Contact</h2>
+        <div class="os-header">
+          <div class="mono os-kicker">MODULE 04 · ENDPOINTS</div>
+          <h2 class="section-title">Contact</h2>
+          <div class="os-subtitle">Fast ways to reach me + copy actions via command palette.</div>
+          <div class="os-rule"></div>
+        </div>
 
         <div class="mt-4 glass p-5">
           <p class="text-white/80">
@@ -377,15 +523,155 @@
               github.com/GoDSpeeD0o0
             </a>
           </p>
+
+          <div class="mt-4 flex flex-wrap gap-2">
+            <a class="btn-secondary" href="mailto:pparash7@asu.edu">Email</a>
+            <a class="btn-secondary" href="resume/resume.pdf" target="_blank" rel="noopener">Open Resume</a>
+            <button class="btn-secondary" type="button" id="cmdk-btn-contact">
+              <span class="mono">Ctrl K</span> actions
+            </button>
+          </div>
         </div>
       </section>
 
-
       <footer class="mt-14 pb-10 text-xs text-white/50">
-        <span class="mono">©</span> <span id="year"></span> Prateek Parashar
+        <span class="mono">©</span> <span id="year"></span> Prateek Parashar · Model Card OS
       </footer>
     </main>
 
-    <script src="assets/js/main.js?v=16"></script>
+    <!-- PROJECT MODAL -->
+    <div id="project-modal" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pm-title">
+      <div class="window modal-panel">
+        <div class="window-bar">
+          <div class="window-left">
+            <div class="window-dots" aria-hidden="true">
+              <span class="window-dot cyan"></span>
+              <span class="window-dot violet"></span>
+              <span class="window-dot"></span>
+            </div>
+            <div class="mono text-xs text-white/60">PROJECT_MODEL_CARD</div>
+          </div>
+          <button id="pm-close" class="icon-btn" type="button" aria-label="Close project modal">
+            <span class="mono">✕</span>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="modal-title" id="pm-title">Title</div>
+          <div class="modal-sub mono" id="pm-sub">Meta</div>
+
+          <div class="modal-grid">
+            <div class="modal-section">
+              <div class="label mono">PROBLEM</div>
+              <div class="text" id="pm-problem"></div>
+
+              <div class="label mono" style="margin-top:12px;">APPROACH</div>
+              <div class="text" id="pm-approach"></div>
+
+              <div class="label mono" style="margin-top:12px;">RESULTS</div>
+              <ul class="text" id="pm-results" style="margin-top:8px; padding-left:18px; list-style:disc;"></ul>
+            </div>
+
+            <div class="modal-section">
+              <div class="label mono">STACK</div>
+              <div id="pm-stack" class="mt-3 flex flex-wrap gap-2"></div>
+
+              <div class="label mono" style="margin-top:12px;">ACTIONS</div>
+              <div id="pm-links" class="modal-actions"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMMAND PALETTE -->
+    <div id="cmdk-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="cmdk-title">
+      <div class="window cmdk-panel">
+        <div class="window-bar">
+          <div class="window-left">
+            <div class="window-dots" aria-hidden="true">
+              <span class="window-dot cyan"></span>
+              <span class="window-dot violet"></span>
+              <span class="window-dot"></span>
+            </div>
+            <div class="mono text-xs text-white/60" id="cmdk-title">COMMAND PALETTE</div>
+          </div>
+          <div class="mono text-xs text-white/50">
+            <span class="kbd">Esc</span> close
+          </div>
+        </div>
+
+        <div class="cmdk-body">
+          <input
+            id="cmdk-input"
+            class="cmdk-input"
+            type="text"
+            placeholder="Type to search actions… (e.g., projects, resume, email)"
+            autocomplete="off"
+            spellcheck="false"
+          />
+
+          <div id="cmdk-list" class="cmdk-list">
+            <!-- Navigation -->
+            <button class="cmdk-item" type="button" data-action="goto" data-target="#signals" data-search="signals eval summary metrics">
+              <span>Go to Signals</span><span class="kbd">Enter</span>
+            </button>
+            <button class="cmdk-item" type="button" data-action="goto" data-target="#skills" data-search="skills stacks certifications">
+              <span>Go to Skills</span><span class="kbd">Enter</span>
+            </button>
+            <button class="cmdk-item" type="button" data-action="goto" data-target="#experience" data-search="experience timeline work">
+              <span>Go to Experience</span><span class="kbd">Enter</span>
+            </button>
+            <button class="cmdk-item" type="button" data-action="goto" data-target="#projects" data-search="projects drawer repos">
+              <span>Go to Projects</span><span class="kbd">Enter</span>
+            </button>
+            <button class="cmdk-item" type="button" data-action="goto" data-target="#contact" data-search="contact email linkedin github">
+              <span>Go to Contact</span><span class="kbd">Enter</span>
+            </button>
+
+            <!-- Open -->
+            <button class="cmdk-item" type="button" data-action="open" data-target="resume/resume.pdf" data-search="open resume pdf">
+              <span>Open Resume (PDF)</span><span class="kbd">↗</span>
+            </button>
+            <button class="cmdk-item" type="button" data-action="open" data-target="https://github.com/GoDSpeeD0o0" data-search="open github">
+              <span>Open GitHub</span><span class="kbd">↗</span>
+            </button>
+            <button class="cmdk-item" type="button" data-action="open" data-target="https://linkedin.com/in/prateekp7" data-search="open linkedin">
+              <span>Open LinkedIn</span><span class="kbd">↗</span>
+            </button>
+
+            <!-- Copy -->
+            <button class="cmdk-item" type="button" data-action="copy" data-value="pparash7@asu.edu" data-search="copy email">
+              <span>Copy Email</span><span class="kbd">copy</span>
+            </button>
+            <button class="cmdk-item" type="button" data-action="copy" data-value="480-475-3206" data-search="copy phone">
+              <span>Copy Phone</span><span class="kbd">copy</span>
+            </button>
+          </div>
+
+          <p class="mt-3 text-xs text-white/55">
+            Tip: <span class="kbd">Ctrl</span><span class="kbd">K</span> to open anytime.
+            Use <span class="kbd">↑</span><span class="kbd">↓</span> + <span class="kbd">Enter</span>.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="assets/js/main.js?v=20"></script>
+
+    <script>
+      // Wire hero/contact CmdK buttons without duplicating IDs
+      (() => {
+        const hero = document.getElementById("cmdk-btn-hero");
+        const contact = document.getElementById("cmdk-btn-contact");
+        const mainBtn = document.getElementById("cmdk-btn");
+        const clickMain = () => mainBtn && mainBtn.click();
+        hero && hero.addEventListener("click", clickMain);
+        contact && contact.addEventListener("click", clickMain);
+      })();
+    </script>
   </body>
 </html>
