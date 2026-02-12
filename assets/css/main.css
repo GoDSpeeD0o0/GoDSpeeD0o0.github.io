@@ -56,24 +56,33 @@ body {
 /* Clean 3D with vertical chromatic gradient */
 .name-neo3d {
   display: inline-block;
+
+  /* Mostly-white vertical chroma (very subtle) */
   background: linear-gradient(
     180deg,
-    #f8fafc 0%,
-    #9ff3ff 18%,
-    #22d3ee 48%,
-    #7c5cff 75%,
-    #a855f7 100%
+    #ffffff 0%,
+    #f8fafc 28%,
+    #eefcff 52%,   /* faint cyan tint */
+    #f8fafc 72%,
+    #f6efff 100%   /* faint violet tint */
   );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 
+  /* Thin outline to separate from bright background areas */
+  -webkit-text-stroke: 0.65px rgba(0, 0, 0, 0.40);
+
+  /* Depth + halo (still only text-shadow) */
   text-shadow:
-    1px 1px 0 rgba(0,0,0,0.36),
-    2px 2px 0 rgba(0,0,0,0.24),
-    0 0 18px rgba(34,211,238,0.14),
-    0 0 30px rgba(168,85,247,0.12);
+    0 0 1px rgba(0,0,0,0.85),
+    0 0 10px rgba(0,0,0,0.45),
+    1px 1px 0 rgba(0,0,0,0.52),
+    2px 2px 0 rgba(0,0,0,0.30),
+    0 0 18px rgba(255,255,255,0.14),
+    0 0 28px rgba(255,255,255,0.08);
 }
+
 
 .headline {
   margin-top: 14px;
