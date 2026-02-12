@@ -12,10 +12,10 @@
   setHeaderHeight();
   window.addEventListener("resize", setHeaderHeight, { passive: true });
 
-  // Smoothness respects reduce motion for UI, but background is forced to animate
   const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const smoothBehavior = reduceMotionPref ? "auto" : "smooth";
 
+  // keep background animated (your preference)
   const FORCE_ANIMATION = true;
   const prefersReducedMotion = !FORCE_ANIMATION && reduceMotionPref;
 
@@ -78,6 +78,8 @@
     resumeTimer = setTimeout(() => startAuto(), RESUME_AFTER_MS);
   };
 
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
   const cardDelta = () => {
     if (!track) return 520;
     const card = track.querySelector(".project-card");
@@ -92,12 +94,10 @@
     const maxLeft = track.scrollWidth - track.clientWidth;
     if (maxLeft <= 0) return;
 
-    // loop
     if (track.scrollLeft >= maxLeft - 8) {
       track.scrollTo({ left: 0, behavior: smoothBehavior });
       return;
     }
-
     track.scrollBy({ left: cardDelta(), behavior: smoothBehavior });
   };
 
@@ -143,7 +143,6 @@
     track.addEventListener("pointercancel", endDrag);
     track.addEventListener("lostpointercapture", endDrag);
 
-    // Start/stop auto ONLY when section is visible
     const io = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
@@ -156,36 +155,39 @@
     io.observe(projectsSection);
   }
 
-  // ===== 3) New gaming+AI background =====
+  // ===== Smooth + minimal background (Aurora Drift) =====
   const canvas = document.getElementById("ai-bg");
   if (!canvas) return;
   const ctx = canvas.getContext("2d", { alpha: true });
 
-  const SETTINGS = {
-    bgFade: 0.22, // higher = less trails, cleaner visuals
-    stars: { min: 80, max: 170 },
-    mesh: { minNodes: 22, maxNodes: 44 },
-    shards: { min: 34, max: 78 },
-  };
-
   const rand = (min, max) => min + Math.random() * (max - min);
-  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+  const BG = {
+    // Perf knobs
+    dprMax: 1.75,          // important for smoothness on retina
+    targetFrameMs: 16,     // ~60fps cap
+    maxStepMs: 33,
+
+    // Density
+    particleMin: 46,
+    particleMax: 96,
+    pulseMax: 4,
+
+    // Look
+    base: "rgba(7, 11, 24, 1)",
+    aurora: [
+      { c: [34, 211, 238], a: 0.13, r: 0.86, bx: 0.22, by: 0.28, ax: 0.10, ay: 0.08, sx: 0.00012, sy: 0.00010, px: 0.0, py: 0.0 },
+      { c: [168, 85, 247], a: 0.11, r: 0.90, bx: 0.80, by: 0.30, ax: 0.11, ay: 0.09, sx: 0.00011, sy: 0.00009, px: 1.7, py: 0.9 },
+      { c: [56, 189, 248], a: 0.06, r: 0.78, bx: 0.52, by: 0.52, ax: 0.07, ay: 0.06, sx: 0.00013, sy: 0.00008, px: 3.0, py: 2.1 }
+    ],
+  };
 
   let w = 0, h = 0, dpr = 1;
-
-  let stars = [];
-  let nodes = [];
-  let shards = [];
-
-  const COLORS = {
-    bg: "rgba(9, 14, 30, ", // alpha appended
-    cyan: "rgba(34,211,238,",
-    violet: "rgba(168,85,247,",
-    white: "rgba(255,255,255,",
-  };
+  let particles = [];
+  let pulses = [];
 
   function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dpr = Math.min(window.devicePixelRatio || 1, BG.dprMax);
     w = window.innerWidth;
     h = window.innerHeight;
 
@@ -196,261 +198,159 @@
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    initStars();
-    initMesh();
-    initShards();
-
-    // initial clear
-    ctx.fillStyle = "rgba(9, 14, 30, 1)";
+    initParticles();
+    pulses = [];
+    ctx.fillStyle = BG.base;
     ctx.fillRect(0, 0, w, h);
   }
 
-  function initStars() {
-    const count = clamp(Math.round((w * h) / 10000), SETTINGS.stars.min, SETTINGS.stars.max);
-    stars = Array.from({ length: count }, () => ({
-      x: rand(0, w),
-      y: rand(0, h),
-      r: rand(0.5, 1.6),
-      a: rand(0.06, 0.22),
-      vy: rand(0.010, 0.040),
-      vx: rand(-0.008, 0.008),
-    }));
-  }
+  function initParticles() {
+    const target = clamp(Math.round((w * h) / 17000), BG.particleMin, BG.particleMax);
 
-  function initMesh() {
-    const count = clamp(Math.round((w * h) / 32000), SETTINGS.mesh.minNodes, SETTINGS.mesh.maxNodes);
-    nodes = Array.from({ length: count }, () => ({
-      x: rand(0, w),
-      y: rand(0, h * 0.62),
-      vx: rand(-0.16, 0.16),
-      vy: rand(-0.12, 0.12),
-      r: rand(1.0, 2.1),
-    }));
-  }
-
-  function initShards() {
-    const count = clamp(Math.round((w * h) / 26000), SETTINGS.shards.min, SETTINGS.shards.max);
-    shards = Array.from({ length: count }, () => {
-      const kind = (Math.random() * 3) | 0; // 0 diamond, 1 tri, 2 square
-      const tint = Math.random() < 0.55 ? "cyan" : "violet";
+    particles = Array.from({ length: target }, () => {
+      const accent = Math.random() < 0.16;
       return {
-        x: rand(0, w),
-        y: rand(0, h),
-        size: rand(2.2, 6.2),
-        vx: rand(-0.20, 0.20),
-        vy: rand(0.18, 0.55),
-        rot: rand(0, Math.PI * 2),
-        vr: rand(-0.0025, 0.0025),
+        x: Math.random() * w,
+        y: Math.random() * h,
+
+        // px/sec (slow, smooth)
+        vx: rand(-10, 10),
+        vy: rand(8, 26),
+
+        s: rand(0.9, 1.9),
         a: rand(0.06, 0.18),
-        kind,
-        tint,
+
+        accent,
+        tint: Math.random() < 0.5 ? "cyan" : "violet",
+
+        // twinkle phase
+        ph: rand(0, Math.PI * 2)
       };
     });
+  }
+
+  function drawAurora(t) {
+    // Base
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = BG.base;
+    ctx.fillRect(0, 0, w, h);
+
+    // Aurora blobs
+    ctx.globalCompositeOperation = "lighter";
+    const s = Math.min(w, h);
+
+    for (const b of BG.aurora) {
+      const x = w * (b.bx + Math.sin(t * b.sx + b.px) * b.ax);
+      const y = h * (b.by + Math.cos(t * b.sy + b.py) * b.ay);
+      const r = s * b.r;
+
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, `rgba(${b.c[0]},${b.c[1]},${b.c[2]},${b.a})`);
+      g.addColorStop(1, `rgba(${b.c[0]},${b.c[1]},${b.c[2]},0)`);
+
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    ctx.globalCompositeOperation = "source-over";
+  }
+
+  function updateParticles(dt) {
+    const k = dt / 1000;
+    for (const p of particles) {
+      p.x += p.vx * k;
+      p.y += p.vy * k;
+
+      // wrap
+      if (p.y > h + 10) p.y = -10;
+      if (p.x < -10) p.x = w + 10;
+      if (p.x > w + 10) p.x = -10;
+    }
+  }
+
+  function maybeSpawnPulse(dt) {
+    if (pulses.length >= BG.pulseMax) return;
+
+    // ~0.12 pulses/sec (very low)
+    const chance = (dt / 1000) * 0.12;
+    if (Math.random() < chance) {
+      pulses.push({
+        x: rand(w * 0.18, w * 0.82),
+        y: rand(h * 0.18, h * 0.62),
+        r: 0,
+        vr: rand(90, 150),        // px/sec
+        a: 0.16,
+        tint: Math.random() < 0.5 ? "cyan" : "violet",
+      });
+    }
+  }
+
+  function updatePulses(dt) {
+    const k = dt / 1000;
+    for (const p of pulses) {
+      p.r += p.vr * k;
+      p.a *= Math.exp(-dt / 1100);
+    }
+    pulses = pulses.filter((p) => p.a > 0.02 && p.r < Math.max(w, h) * 1.2);
+  }
+
+  function drawPulses() {
+    for (const p of pulses) {
+      const col = p.tint === "cyan" ? "34,211,238" : "168,85,247";
+      ctx.strokeStyle = `rgba(${col},${p.a})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  function drawParticles(t) {
+    for (const p of particles) {
+      const tw = 0.70 + 0.30 * Math.sin(t * 0.001 + p.ph);
+      const a = p.a * tw;
+
+      if (!p.accent) {
+        ctx.fillStyle = `rgba(255,255,255,${a})`;
+      } else {
+        const col = p.tint === "cyan" ? "34,211,238" : "168,85,247";
+        ctx.fillStyle = `rgba(${col},${0.07 + a})`; // still subtle
+      }
+
+      // ultra-light draw (fast)
+      ctx.fillRect(p.x, p.y, p.s, p.s);
+    }
   }
 
   window.addEventListener("resize", resize, { passive: true });
   resize();
 
-  function drawStars(dt) {
-    const k = dt * 0.06;
-    for (const s of stars) {
-      s.x += s.vx * k * 60;
-      s.y += s.vy * k * 60;
-
-      if (s.y > h + 10) s.y = -10;
-      if (s.x < -10) s.x = w + 10;
-      if (s.x > w + 10) s.x = -10;
-
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = `${COLORS.white}${s.a})`;
-      ctx.fill();
-    }
-  }
-
-  function drawMesh(dt) {
-    // move nodes
-    for (const p of nodes) {
-      p.x += p.vx * dt * 0.02;
-      p.y += p.vy * dt * 0.02;
-
-      if (p.x < -20) p.x = w + 20;
-      if (p.x > w + 20) p.x = -20;
-      if (p.y < -20) p.y = h * 0.62 + 20;
-      if (p.y > h * 0.62 + 20) p.y = -20;
-    }
-
-    const maxDist = Math.min(170, Math.max(120, w * 0.14));
-    const maxDist2 = maxDist * maxDist;
-
-    // links
-    for (let i = 0; i < nodes.length; i++) {
-      const a = nodes[i];
-      for (let j = i + 1; j < nodes.length; j++) {
-        const b = nodes[j];
-        const dx = a.x - b.x;
-        const dy = a.y - b.y;
-        const d2 = dx * dx + dy * dy;
-
-        if (d2 < maxDist2) {
-          const p = 1 - d2 / maxDist2;
-          const alpha = 0.07 * p; // softer
-          ctx.strokeStyle = `${COLORS.cyan}${alpha})`;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-          ctx.stroke();
-        }
-      }
-    }
-
-    // nodes
-    for (const p of nodes) {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.fillStyle = `${COLORS.white}0.22)`;
-      ctx.fill();
-    }
-  }
-
-  function drawSynthGrid(t) {
-    const horizon = h * 0.68;
-    const depth = h - horizon;
-
-    // soft floor glow
-    ctx.fillStyle = "rgba(34,211,238,0.012)";
-    ctx.fillRect(0, horizon, w, depth);
-
-    // moving horizontals
-    const lines = 18;
-    const offset = (t * 0.00010) % 1;
-
-    for (let i = 0; i < lines; i++) {
-      const d = (i / lines + offset) % 1;
-      const y = horizon + (d * d) * depth;
-
-      const halfWidth = (w * 0.06) + (d * d) * (w * 0.58);
-      const alpha = 0.028 + d * 0.055;
-
-      ctx.strokeStyle = `${COLORS.cyan}${alpha})`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(w * 0.5 - halfWidth, y);
-      ctx.lineTo(w * 0.5 + halfWidth, y);
-      ctx.stroke();
-    }
-
-    // perspective verticals (very soft violet)
-    const lanes = 12;
-    for (let i = -lanes; i <= lanes; i++) {
-      const xBottom = w * 0.5 + (i / lanes) * (w * 0.62);
-      ctx.strokeStyle = `${COLORS.violet}0.030)`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(xBottom, h);
-      ctx.lineTo(w * 0.5, horizon);
-      ctx.stroke();
-    }
-
-    // horizon line
-    ctx.fillStyle = "rgba(168,85,247,0.020)";
-    ctx.fillRect(0, horizon - 1, w, 2);
-  }
-
-  function drawShards(dt) {
-    const horizon = h * 0.68;
-    const k = dt * 0.06;
-
-    for (const s of shards) {
-      s.x += s.vx * k * 60;
-      s.y += s.vy * k * 60;
-      s.rot += s.vr * dt;
-
-      if (s.y > h + 30) s.y = -30;
-      if (s.x < -30) s.x = w + 30;
-      if (s.x > w + 30) s.x = -30;
-
-      // fade down below horizon so content stays readable
-      let mask = 1;
-      if (s.y > horizon) {
-        const d = (s.y - horizon) / Math.max(1, h - horizon);
-        mask = Math.max(0, 0.55 * (1 - d));
-      }
-
-      const color = s.tint === "cyan" ? COLORS.cyan : COLORS.violet;
-      const a = s.a * mask;
-
-      if (a < 0.01) continue;
-
-      ctx.save();
-      ctx.translate(s.x, s.y);
-      ctx.rotate(s.rot);
-
-      ctx.fillStyle = `${color}${a})`;
-      ctx.shadowColor = `${color}${Math.min(0.12, a)})`;
-      ctx.shadowBlur = 10;
-
-      const z = s.size;
-
-      if (s.kind === 0) {
-        // diamond
-        ctx.beginPath();
-        ctx.moveTo(0, -z);
-        ctx.lineTo(z, 0);
-        ctx.lineTo(0, z);
-        ctx.lineTo(-z, 0);
-        ctx.closePath();
-        ctx.fill();
-      } else if (s.kind === 1) {
-        // triangle
-        ctx.beginPath();
-        ctx.moveTo(0, -z);
-        ctx.lineTo(z, z);
-        ctx.lineTo(-z, z);
-        ctx.closePath();
-        ctx.fill();
-      } else {
-        // square
-        ctx.fillRect(-z * 0.75, -z * 0.75, z * 1.5, z * 1.5);
-      }
-
-      ctx.restore();
-    }
-
-    ctx.shadowBlur = 0;
-  }
-
-  function drawHudPulse(t) {
-    // subtle diagonal scan (very low alpha)
-    const phase = (t * 0.00006) % 1;
-    const x = phase * (w + 320) - 160;
-
-    ctx.strokeStyle = "rgba(255,255,255,0.025)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x - 220, h);
-    ctx.stroke();
-  }
-
-  // animation loop
+  // Animation loop with ~60fps cap even on high refresh displays
   let rafId = null;
   let last = performance.now();
+  let accum = 0;
 
   function loop(now) {
-    const dt = clamp(now - last, 10, 40);
+    const dtRaw = now - last;
     last = now;
 
-    // fade
-    ctx.fillStyle = `${COLORS.bg}${SETTINGS.bgFade})`;
-    ctx.fillRect(0, 0, w, h);
+    const dt = clamp(dtRaw, 0, BG.maxStepMs);
+    accum += dt;
 
-    drawStars(dt);
-    drawHudPulse(now);
-    drawMesh(dt);
-    drawShards(dt);
-    drawSynthGrid(now);
+    if (accum < BG.targetFrameMs) {
+      rafId = requestAnimationFrame(loop);
+      return;
+    }
+
+    const step = Math.min(accum, BG.maxStepMs);
+    accum = 0;
+
+    drawAurora(now);
+    updateParticles(step);
+    maybeSpawnPulse(step);
+    updatePulses(step);
+    drawPulses();
+    drawParticles(now);
 
     rafId = requestAnimationFrame(loop);
   }
@@ -459,6 +359,7 @@
     if (prefersReducedMotion) return;
     if (rafId) return;
     last = performance.now();
+    accum = 0;
     rafId = requestAnimationFrame(loop);
   }
 
