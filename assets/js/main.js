@@ -3,7 +3,7 @@
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // Set CSS var for header height so the intro hero centers perfectly
+  // Set CSS var for header height so intro is perfectly centered
   const headerEl = document.querySelector("header");
   const setHeaderHeight = () => {
     const hh = headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0;
@@ -12,11 +12,11 @@
   setHeaderHeight();
   window.addEventListener("resize", setHeaderHeight, { passive: true });
 
-  // Respect reduced motion for UI behaviors, but FORCE animation for the background
+  // UI smoothness respects reduce motion; background is forced to animate
   const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const smoothBehavior = reduceMotionPref ? "auto" : "smooth";
 
-  const FORCE_ANIMATION = true; // always animate the background
+  const FORCE_ANIMATION = true;
   const prefersReducedMotion = !FORCE_ANIMATION && reduceMotionPref;
 
   // Mobile menu
@@ -41,17 +41,76 @@
     menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeMenu));
   }
 
-  // Horizontal projects controls + drag-to-scroll
+  // ===== Projects: buttons + drag + AUTO-SCROLL every 10s =====
   const track = document.getElementById("projects-track");
   const prev = document.getElementById("projects-prev");
   const next = document.getElementById("projects-next");
 
+  let autoTimer = null;
+  let resumeTimer = null;
+  const AUTO_SCROLL_MS = 10_000;
+
+  const stopAuto = () => {
+    if (!autoTimer) return;
+    clearInterval(autoTimer);
+    autoTimer = null;
+  };
+
+  const startAuto = () => {
+    if (!track) return;
+    if (autoTimer) return;
+    autoTimer = setInterval(() => scrollNextCard(), AUTO_SCROLL_MS);
+  };
+
+  const scheduleResume = () => {
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(() => {
+      if (!document.hidden) startAuto();
+    }, AUTO_SCROLL_MS);
+  };
+
+  const pauseAuto = () => {
+    stopAuto();
+    clearTimeout(resumeTimer);
+  };
+
+  const cardDelta = () => {
+    if (!track) return 420;
+    const card = track.querySelector(".project-card");
+    if (!card) return Math.max(360, Math.round(track.clientWidth * 0.9));
+    const styles = window.getComputedStyle(track);
+    const gap = parseFloat(styles.columnGap || styles.gap || "0") || 0;
+    return card.getBoundingClientRect().width + gap;
+  };
+
+  const scrollNextCard = () => {
+    if (!track) return;
+    const maxLeft = track.scrollWidth - track.clientWidth;
+    if (maxLeft <= 0) return;
+
+    const delta = cardDelta();
+    const nextLeft = track.scrollLeft + delta;
+
+    if (nextLeft >= maxLeft - 8) {
+      track.scrollTo({ left: 0, behavior: smoothBehavior });
+    } else {
+      track.scrollBy({ left: delta, behavior: smoothBehavior });
+    }
+  };
+
   if (track) {
-    const scrollAmount = () => Math.max(320, Math.round(track.clientWidth * 0.85));
+    const scrollAmount = () => cardDelta();
 
-    if (prev) prev.addEventListener("click", () => track.scrollBy({ left: -scrollAmount(), behavior: smoothBehavior }));
-    if (next) next.addEventListener("click", () => track.scrollBy({ left: scrollAmount(), behavior: smoothBehavior }));
+    const nudge = (dir) => {
+      pauseAuto();
+      track.scrollBy({ left: dir * scrollAmount(), behavior: smoothBehavior });
+      scheduleResume();
+    };
 
+    if (prev) prev.addEventListener("click", () => nudge(-1));
+    if (next) next.addEventListener("click", () => nudge(1));
+
+    // Drag-to-scroll
     let isDown = false;
     let startX = 0;
     let startLeft = 0;
@@ -59,6 +118,7 @@
     track.classList.add("grab");
 
     track.addEventListener("pointerdown", (e) => {
+      pauseAuto();
       isDown = true;
       track.setPointerCapture(e.pointerId);
       startX = e.clientX;
@@ -75,11 +135,24 @@
     const endDrag = () => {
       isDown = false;
       track.classList.remove("grabbing");
+      scheduleResume();
     };
 
     track.addEventListener("pointerup", endDrag);
     track.addEventListener("pointercancel", endDrag);
     track.addEventListener("lostpointercapture", endDrag);
+
+    // Pause while hovering (desktop) so it doesn’t fight the user
+    track.addEventListener("mouseenter", pauseAuto);
+    track.addEventListener("mouseleave", scheduleResume);
+
+    // Wheel/touch counts as interaction
+    track.addEventListener("wheel", () => { pauseAuto(); scheduleResume(); }, { passive: true });
+    track.addEventListener("touchstart", pauseAuto, { passive: true });
+    track.addEventListener("touchend", scheduleResume, { passive: true });
+
+    // Start the auto-advance
+    startAuto();
   }
 
   // ===== Animated AI/Gaming background + Token Rain =====
@@ -89,7 +162,7 @@
   const ctx = canvas.getContext("2d", { alpha: true });
 
   const SETTINGS = {
-    fadeAlpha: 0.14, // longer trails
+    fadeAlpha: 0.14, // long trails
 
     rain: {
       enabled: true,
@@ -112,12 +185,7 @@
   let w = 0, h = 0, dpr = 1;
   let stars = [];
   let nodes = [];
-  let rain = {
-    fontSize: 16,
-    columns: 0,
-    y: [],
-    speed: [],
-  };
+  let rain = { fontSize: 16, columns: 0, y: [], speed: [] };
 
   const singleGlyphs =
     "01" +
@@ -333,9 +401,7 @@
           ctx.fillStyle = `rgba(255,255,255,${Math.min(0.55, a + 0.25)})`;
         } else {
           const violet = Math.random() < 0.14;
-          ctx.fillStyle = violet
-            ? `rgba(168,85,247,${a})`
-            : `rgba(34,211,238,${a})`;
+          ctx.fillStyle = violet ? `rgba(168,85,247,${a})` : `rgba(34,211,238,${a})`;
         }
         ctx.fillText(glyph, x, yPx);
       }
@@ -351,7 +417,7 @@
     ctx.shadowBlur = 0;
   }
 
-  // Pause when tab hidden (saves CPU/GPU)
+  // Background animation (pause when tab hidden)
   let rafId = null;
   let last = performance.now();
 
@@ -375,19 +441,20 @@
     rafId = requestAnimationFrame(loop);
   }
 
-  function start() {
+  function startBg() {
     if (prefersReducedMotion) return;
     if (rafId) return;
     last = performance.now();
     rafId = requestAnimationFrame(loop);
   }
 
-  function stop() {
+  function stopBg() {
     if (!rafId) return;
     cancelAnimationFrame(rafId);
     rafId = null;
   }
 
+  // initial clear
   ctx.fillStyle = "rgba(5, 7, 18, 1)";
   ctx.fillRect(0, 0, w, h);
 
@@ -397,11 +464,16 @@
     drawAINetwork(16);
     drawTokenRain(16);
   } else {
-    start();
+    startBg();
   }
 
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) stop();
-    else start();
+    if (document.hidden) {
+      stopBg();
+      stopAuto();
+    } else {
+      startBg();
+      startAuto();
+    }
   });
 })();

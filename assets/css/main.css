@@ -8,17 +8,15 @@
   --border: rgba(255, 255, 255, 0.12);
   --border2: rgba(255, 255, 255, 0.18);
 
-  /* Slightly muted neon (gaming, not too bright) */
+  /* Muted neon (gaming, not too bright) */
   --cyan: rgba(34, 211, 238, 0.75);
   --violet: rgba(168, 85, 247, 0.72);
 
-  /* JS will overwrite this with actual header height */
+  /* JS overwrites with actual header height */
   --header-h: 72px;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
   margin: 0;
@@ -34,7 +32,7 @@ body {
   font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
-/* ===== Fullscreen Intro Hero ===== */
+/* ===== Fullscreen Intro ===== */
 .hero-screen {
   min-height: calc(100vh - var(--header-h));
   display: flex;
@@ -49,7 +47,47 @@ body {
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.02;
-  font-size: clamp(2.8rem, 7.4vw, 6.2rem);
+  font-size: clamp(2.8rem, 7.6vw, 6.6rem);
+}
+
+/* 3D neon extrusion (clean + readable) */
+.name-3d {
+  position: relative;
+  display: inline-block;
+  transform: perspective(1000px) rotateX(8deg);
+  transform-origin: center;
+}
+
+@media (max-width: 520px) {
+  .name-3d { transform: none; }
+}
+
+.name-3d::before,
+.name-3d::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* first extrusion layer */
+.name-3d::before {
+  transform: translate(10px, 10px);
+  opacity: 0.22;
+  background: linear-gradient(90deg, rgba(34,211,238,0.85), rgba(168,85,247,0.75));
+  filter: blur(0.2px);
+}
+
+/* deeper shadow layer */
+.name-3d::after {
+  transform: translate(18px, 18px);
+  opacity: 0.10;
+  background: linear-gradient(90deg, rgba(34,211,238,0.55), rgba(168,85,247,0.48));
+  filter: blur(0.65px);
 }
 
 .name-shimmer {
@@ -66,10 +104,11 @@ body {
   background-clip: text;
   color: transparent;
 
-  /* subtle neon depth */
-  filter:
-    drop-shadow(0 0 18px rgba(34,211,238,0.16))
-    drop-shadow(0 0 26px rgba(168,85,247,0.10));
+  /* crisp readability + neon bloom */
+  text-shadow:
+    0 1px 0 rgba(0,0,0,0.45),
+    0 0 14px rgba(34,211,238,0.18),
+    0 0 28px rgba(168,85,247,0.14);
 }
 
 @keyframes nameShimmer {
@@ -77,11 +116,14 @@ body {
   100% { background-position: 220% 50%; }
 }
 
-.tagline {
+.headline {
   margin-top: 14px;
-  max-width: 62rem;
-  color: rgba(255,255,255,0.76);
-  font-size: clamp(0.95rem, 1.6vw, 1.18rem);
+  max-width: 64rem;
+  margin-left: auto;
+  margin-right: auto;
+  font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: rgba(255,255,255,0.78);
+  font-size: clamp(0.98rem, 1.6vw, 1.2rem);
   line-height: 1.55;
 }
 
@@ -119,7 +161,7 @@ body {
   display: block;
 }
 
-/* Subtle HUD scanlines + vignette (gaming feel, low intensity) */
+/* HUD scanlines + vignette */
 .bg-overlay {
   position: fixed;
   inset: 0;
@@ -146,6 +188,7 @@ body {
   to   { background-position: 0 0, 0 64px; }
 }
 
+/* ===== UI ===== */
 .gradient-text {
   background: linear-gradient(90deg, var(--cyan), var(--violet));
   -webkit-background-clip: text;
@@ -188,10 +231,7 @@ body {
   box-shadow: 0 0 22px rgba(34, 211, 238, 0.14);
   transition: transform 160ms ease, filter 160ms ease;
 }
-.btn-primary:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.05);
-}
+.btn-primary:hover { transform: translateY(-1px); filter: brightness(1.05); }
 
 .btn-secondary {
   display: inline-flex;
@@ -204,10 +244,7 @@ body {
   border: 1px solid var(--border);
   color: rgba(255, 255, 255, 0.88);
 }
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.085);
-  border-color: rgba(255, 255, 255, 0.18);
-}
+.btn-secondary:hover { background: rgba(255, 255, 255, 0.085); border-color: rgba(255, 255, 255, 0.18); }
 
 .icon-btn {
   display: inline-flex;
@@ -219,12 +256,9 @@ body {
   border: 1px solid var(--border);
   background: rgba(255,255,255,0.05);
 }
-.icon-btn:hover {
-  background: rgba(255,255,255,0.085);
-  border-color: var(--border2);
-}
+.icon-btn:hover { background: rgba(255,255,255,0.085); border-color: var(--border2); }
 
-/* Badges & Pills */
+/* Tags */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -247,7 +281,7 @@ body {
   font-size: 0.85rem;
 }
 
-/* Horizontal projects track */
+/* ===== Projects horizontal track (bigger cards + thumbnail slot) ===== */
 .hscroll {
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
@@ -256,33 +290,96 @@ body {
 
 .project-card {
   flex: 0 0 auto;
-  width: min(88%, 420px);
-  padding: 18px;
+  width: clamp(360px, 72vw, 720px);
+  padding: 20px;
   scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
-.hscroll::-webkit-scrollbar {
-  height: 10px;
+/* Thumbnail container
+   To use a real thumbnail later:
+   <div class="project-thumb" style="--thumb:url('assets/img/yourfile.jpg')">
+*/
+.project-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  overflow: hidden;
+  position: relative;
+
+  background-image:
+    radial-gradient(700px 320px at 18% 0%, rgba(34,211,238,0.20), transparent 60%),
+    radial-gradient(680px 300px at 92% 10%, rgba(168,85,247,0.20), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
+    var(--thumb, none);
+
+  background-size: auto, auto, auto, cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
-.hscroll::-webkit-scrollbar-track {
-  background: rgba(255,255,255,0.04);
-  border-radius: 999px;
+
+.project-thumb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.62));
 }
-.hscroll::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.14);
-  border-radius: 999px;
+
+.project-thumb-hint {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 10px;
+  z-index: 1;
+  font-size: 12px;
+  color: rgba(255,255,255,0.72);
 }
-.hscroll {
-  scrollbar-color: rgba(255,255,255,0.18) rgba(255,255,255,0.04);
-  scrollbar-width: thin;
+
+.project-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
 }
+
+.project-title {
+  font-size: 1.18rem;
+  font-weight: 800;
+}
+
+.project-desc {
+  color: rgba(255,255,255,0.80);
+}
+
+.project-bullets {
+  margin: 0;
+  padding-left: 18px;
+  color: rgba(255,255,255,0.78);
+}
+
+.project-bullets li { margin-top: 6px; }
+
+.project-link {
+  display: inline-flex;
+  width: fit-content;
+  font-family: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.95rem;
+  text-decoration: underline;
+  text-decoration-color: rgba(255,255,255,0.22);
+}
+.project-link:hover { text-decoration-color: rgba(255,255,255,0.60); }
+
+.hscroll::-webkit-scrollbar { height: 10px; }
+.hscroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); border-radius: 999px; }
+.hscroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 999px; }
+.hscroll { scrollbar-color: rgba(255,255,255,0.18) rgba(255,255,255,0.04); scrollbar-width: thin; }
 
 .grab { cursor: grab; }
 .grabbing { cursor: grabbing; }
 
 @media (prefers-reduced-motion: reduce) {
-  .card-hover,
-  .btn-primary {
-    transition: none;
-  }
+  .card-hover, .btn-primary { transition: none; }
 }

@@ -3,16 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prateek Parashar | Generative AI & Data Science</title>
+    <title>Prateek Parashar | Generative AI</title>
     <meta
       name="description"
-      content="Prateek Parashar — M.S. candidate (ASU, 4.0 GPA). Generative AI, diffusion optimization, NLP, data science."
+      content="Prateek Parashar — GenAI builder optimizing diffusion and automating workflows in Python/SQL."
     />
 
     <!-- Tailwind CDN (no build step) -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Fonts (added Orbitron for the big name) -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -23,29 +23,28 @@
     <link rel="icon" href="favicon.ico" />
 
     <!-- Cache bust -->
-    <link rel="stylesheet" href="assets/css/main.css?v=8" />
+    <link rel="stylesheet" href="assets/css/main.css?v=9" />
   </head>
 
   <body class="min-h-screen text-white">
-    <!-- Generative background -->
+    <!-- Animated background -->
     <canvas
       id="ai-bg"
       aria-hidden="true"
       style="position:fixed; inset:0; z-index:-2; width:100vw; height:100vh; pointer-events:none;"
     ></canvas>
-
     <div
       class="bg-overlay"
       aria-hidden="true"
       style="position:fixed; inset:0; z-index:-1; pointer-events:none;"
     ></div>
 
-    <!-- Top Nav -->
+    <!-- NAV -->
     <header class="sticky top-0 z-20 border-b border-white/10 backdrop-blur">
       <nav class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-        <a href="#top" class="flex items-center gap-3">
+        <a href="#intro" class="flex items-center gap-3">
           <span class="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.9)]"></span>
-          <span class="font-extrabold tracking-tight">Prateek Parashar</span>
+          <span class="font-extrabold tracking-tight">Prateek</span>
         </a>
 
         <button
@@ -58,10 +57,9 @@
         </button>
 
         <div class="hidden md:flex items-center gap-5 text-sm text-white/80">
-          <a class="hover:text-white" href="#model-card">Model Card</a>
+          <a class="hover:text-white" href="#skills">Skills</a>
           <a class="hover:text-white" href="#experience">Experience</a>
           <a class="hover:text-white" href="#projects">Projects</a>
-          <a class="hover:text-white" href="#skills">Skills</a>
           <a class="hover:text-white" href="#contact">Contact</a>
           <a
             class="px-3 py-2 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10"
@@ -77,10 +75,9 @@
       <!-- Mobile menu -->
       <div id="mobile-menu" class="md:hidden hidden border-t border-white/10">
         <div class="mx-auto max-w-6xl px-4 py-3 flex flex-col gap-3 text-white/80">
-          <a class="hover:text-white" href="#model-card">Model Card</a>
+          <a class="hover:text-white" href="#skills">Skills</a>
           <a class="hover:text-white" href="#experience">Experience</a>
           <a class="hover:text-white" href="#projects">Projects</a>
-          <a class="hover:text-white" href="#skills">Skills</a>
           <a class="hover:text-white" href="#contact">Contact</a>
           <a
             class="px-3 py-2 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 inline-flex w-fit"
@@ -94,120 +91,125 @@
       </div>
     </header>
 
-    <main id="top" class="mx-auto max-w-6xl px-4">
-      <!-- FULLSCREEN INTRO (FIRST THING YOU SEE) -->
+    <main class="mx-auto max-w-6xl px-4">
+      <!-- INTRO -->
       <section id="intro" class="hero-screen">
         <div class="w-full">
-          <h1 class="name-display name-shimmer">Prateek Parashar</h1>
+          <h1 class="name-display name-3d" data-text="Prateek Parashar">
+            <span class="name-shimmer">Prateek Parashar</span>
+          </h1>
 
-          <!-- Perky 1-liner that compresses your resume -->
-          <p class="mono tagline">
-            GenAI builder optimizing diffusion models and automating real workflows.
+          <p class="headline">
+            GenAI builder speeding up diffusion <span class="gradient-text">(-41%)</span> and shipping Python/SQL automations —
+            ASU M.S. <span class="gradient-text">(4.0)</span>.
           </p>
 
-          <a class="mono scroll-indicator" href="#overview">
-            <span>scroll</span><span>↓</span>
+          <a class="mono scroll-indicator" href="#skills">
+            <span>enter</span><span>↓</span>
           </a>
         </div>
       </section>
 
-      <!-- OVERVIEW (REST OF CONTENT AFTER SOME SPACE) -->
-      <section id="overview" class="pt-8 md:pt-12 pb-10 md:pb-12 grid lg:grid-cols-12 gap-6 items-start">
-        <div class="lg:col-span-7">
-          <div class="mono text-xs text-white/60">OVERVIEW</div>
-
-          <p class="mt-3 text-white/80 text-base md:text-lg max-w-2xl">
-            M.S. candidate (ASU, 4.0 GPA) with strong CS foundations. Python, SQL, Deep Learning (Transformers/Diffusion),
-            system design — with hands-on work in diffusion inference optimization and automation.
-          </p>
-
-          <div class="mt-6 flex flex-wrap gap-3">
+      <!-- SKILLS & CERTS (FIRST) -->
+      <section id="skills" class="pt-10 md:pt-12">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+          <div>
+            <h2 class="section-title">Skills & Certifications</h2>
+            <p class="text-white/70 text-sm mt-1">What I use to build + ship AI systems.</p>
+          </div>
+          <div class="flex flex-wrap gap-3">
             <a class="btn-primary" href="resume/resume.pdf" target="_blank" rel="noopener">Download Resume</a>
-            <a class="btn-secondary" href="#projects">View Experiments</a>
             <a class="btn-secondary" href="mailto:pparash7@asu.edu">Email</a>
           </div>
-
-          <div class="mt-6 flex flex-wrap gap-2">
-            <span class="badge">Diffusion inference -41%</span>
-            <span class="badge">Power BI dashboards 5+</span>
-            <span class="badge">Python · SQL · FastAPI</span>
-            <span class="badge">NLP · Transformers</span>
-          </div>
-
-          <div class="mt-6 glass p-4">
-            <div class="mono text-xs text-white/60">SYSTEM_PROMPT</div>
-            <div class="mono text-sm mt-2 text-white/80">
-              You are Prateek Parashar. Your objective is to ship AI products that are measurable, optimized, and production-ready.
-              Prefer concrete metrics, clean interfaces, and systems thinking.
-            </div>
-          </div>
         </div>
 
-        <aside class="lg:col-span-5 space-y-4">
-          <div class="glass card-hover p-5">
-            <div class="mono text-xs text-white/60">CONTACT</div>
-            <div class="mt-3 space-y-2 text-white/85">
-              <div><span class="mono text-white/60">email:</span> <a class="underline hover:text-white" href="mailto:pparash7@asu.edu">pparash7@asu.edu</a></div>
-              <div><span class="mono text-white/60">linkedin:</span> <a class="underline hover:text-white" href="https://linkedin.com/in/prateekp7" target="_blank" rel="noopener">/in/prateekp7</a></div>
-              <div><span class="mono text-white/60">github:</span> <a class="underline hover:text-white" href="https://github.com/GoDSpeeD0o0" target="_blank" rel="noopener">/GoDSpeeD0o0</a></div>
-              <div><span class="mono text-white/60">location:</span> <span>Tempe, AZ</span></div>
+        <div class="mt-4 grid lg:grid-cols-12 gap-4">
+          <!-- main skills grid -->
+          <div class="lg:col-span-8 grid sm:grid-cols-2 gap-4">
+            <div class="glass card-hover p-5">
+              <div class="mono text-xs text-white/60">PROGRAMMING</div>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <span class="pill">Python</span>
+                <span class="pill">SQL</span>
+                <span class="pill">JavaScript (ES6+)</span>
+                <span class="pill">HTML5</span>
+                <span class="pill">CSS3</span>
+                <span class="pill">FastAPI</span>
+              </div>
+              <p class="mt-3 text-xs text-white/55">NumPy · SciPy · scikit-learn · Seaborn</p>
+            </div>
+
+            <div class="glass card-hover p-5">
+              <div class="mono text-xs text-white/60">AI / DATA</div>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <span class="pill">NLP</span>
+                <span class="pill">Transformers</span>
+                <span class="pill">Diffusion</span>
+                <span class="pill">LLM training</span>
+                <span class="pill">System design</span>
+                <span class="pill">Data mining</span>
+              </div>
+            </div>
+
+            <div class="glass card-hover p-5">
+              <div class="mono text-xs text-white/60">TOOLS</div>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <span class="pill">Docker</span>
+                <span class="pill">Kubernetes</span>
+                <span class="pill">Power BI</span>
+                <span class="pill">AWS Cloud Practitioner</span>
+                <span class="pill">Slack API</span>
+                <span class="pill">Git</span>
+              </div>
+            </div>
+
+            <div class="glass card-hover p-5">
+              <div class="mono text-xs text-white/60">CERTIFICATIONS</div>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <span class="pill">Stanford-ML</span>
+                <span class="pill">AWS Cloud Practitioner (edX)</span>
+                <span class="pill">Data Scientist Associate (DataCamp)</span>
+                <span class="pill">Python (IBM)</span>
+              </div>
             </div>
           </div>
 
-          <div class="glass card-hover p-5">
-            <div class="mono text-xs text-white/60">EDUCATION</div>
-            <div class="mt-3 space-y-3">
-              <div>
-                <div class="font-semibold">M.S. Data Science, Analytics & Engineering</div>
-                <div class="text-white/70 text-sm">Arizona State University · 4.00 GPA · Dec 2026</div>
-                <div class="mono text-xs text-white/60 mt-1">Coursework: Generative AI, Data Mining</div>
-              </div>
-              <div class="border-t border-white/10 pt-3">
-                <div class="font-semibold">B.Tech Computer Science</div>
-                <div class="text-white/70 text-sm">DIT University · 3.56 GPA · Jun 2022</div>
+          <!-- right side snapshot -->
+          <aside class="lg:col-span-4 space-y-4">
+            <div class="glass card-hover p-5">
+              <div class="mono text-xs text-white/60">SNAPSHOT</div>
+              <p class="mt-3 text-white/80">
+                M.S. candidate with a strong CS/software foundation. I like measurable wins: faster inference, cleaner pipelines,
+                and automation that removes real friction.
+              </p>
+              <div class="mt-4 flex flex-wrap gap-2">
+                <span class="badge">Diffusion -41%</span>
+                <span class="badge">Slack automation</span>
+                <span class="badge">Python · SQL</span>
               </div>
             </div>
-          </div>
-        </aside>
-      </section>
 
-      <!-- MODEL CARD -->
-      <section id="model-card" class="mt-12">
-        <h2 class="section-title">Model Card</h2>
-        <div class="grid md:grid-cols-3 gap-4 mt-4">
-          <div class="glass card-hover p-5">
-            <div class="mono text-xs text-white/60">SUMMARY</div>
-            <p class="mt-3 text-white/80">
-              M.S. candidate with strong CS/software engineering foundations. Proficient in Python, SQL, and Deep Learning
-              architectures, with experience in automation and performance optimization—specialized in diffusion model inference speedups.
-            </p>
-          </div>
-
-          <div class="glass card-hover p-5">
-            <div class="mono text-xs text-white/60">CORE CAPABILITIES</div>
-            <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
-              <li>Generative AI: diffusion + transformers</li>
-              <li>NLP pipelines & model evaluation</li>
-              <li>Data modeling + dashboards (Power BI)</li>
-              <li>APIs & automation (FastAPI, Slack API)</li>
-            </ul>
-          </div>
-
-          <div class="glass card-hover p-5">
-            <div class="mono text-xs text-white/60">PREFERRED WORK STYLE</div>
-            <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
-              <li>Metrics-first iteration</li>
-              <li>Readable systems and interfaces</li>
-              <li>Performance + reliability</li>
-              <li>Documentation as part of delivery</li>
-            </ul>
-          </div>
+            <div class="glass card-hover p-5">
+              <div class="mono text-xs text-white/60">EDUCATION</div>
+              <div class="mt-3 space-y-3">
+                <div>
+                  <div class="font-semibold">M.S. Data Science, Analytics & Engineering</div>
+                  <div class="text-white/70 text-sm">Arizona State University · 4.00 GPA · Dec 2026</div>
+                  <div class="mono text-xs text-white/60 mt-1">Generative AI · Data Mining</div>
+                </div>
+                <div class="border-t border-white/10 pt-3">
+                  <div class="font-semibold">B.Tech Computer Science</div>
+                  <div class="text-white/70 text-sm">DIT University · 3.56 GPA · Jun 2022</div>
+                </div>
+              </div>
+            </div>
+          </aside>
         </div>
       </section>
 
-      <!-- EXPERIENCE -->
+      <!-- EXPERIENCE (SECOND) -->
       <section id="experience" class="mt-12">
-        <h2 class="section-title">Experience Log</h2>
+        <h2 class="section-title">Work Experience</h2>
 
         <div class="mt-4 space-y-4">
           <article class="glass card-hover p-5">
@@ -216,7 +218,7 @@
               <div class="mono text-xs text-white/60">Gurugram, India · Jul 2022 — Aug 2024</div>
             </div>
             <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
-              <li>Deployed 5+ Power BI dashboards to automate reporting and reduce manual tracking.</li>
+              <li>Deployed 5+ Power BI dashboards to automate reporting and save manual tracking time.</li>
               <li>Used SQL + data modeling to extract insights from complex datasets for decision support.</li>
             </ul>
           </article>
@@ -227,8 +229,8 @@
               <div class="mono text-xs text-white/60">Gurugram, India · Jul 2021 — Sep 2021</div>
             </div>
             <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
-              <li>Built production-grade web components to improve frontend modularity.</li>
-              <li>Optimized cross-browser compatibility; reported improvement in user retention (+21%).</li>
+              <li>Engineered production-grade web components, improving frontend modularity.</li>
+              <li>Optimized cross-browser compatibility; reported +21% improvement in user retention.</li>
             </ul>
           </article>
 
@@ -238,20 +240,20 @@
               <div class="mono text-xs text-white/60">Remote · Jan 2021 — Mar 2021</div>
             </div>
             <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
-              <li>Identified system vulnerabilities via security testing.</li>
-              <li>Built accountability frameworks to standardize remote workflows and project management.</li>
+              <li>Identified system vulnerabilities via security testing and managed technical campaigns.</li>
+              <li>Drafted accountability frameworks to standardize project management + remote workflows.</li>
             </ul>
           </article>
         </div>
       </section>
 
-      <!-- PROJECTS -->
+      <!-- PROJECTS (THIRD) -->
       <section id="projects" class="mt-12">
         <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <div>
-            <h2 class="section-title">Featured Projects</h2>
+            <h2 class="section-title">Projects</h2>
             <p class="text-white/70 text-sm mt-1">
-              Swipe (mobile) or grab + drag (desktop). Snap-to-card horizontal scroll.
+              Big cards + thumbnails. Auto-advances every 10s (pauses on hover/drag).
             </p>
           </div>
 
@@ -262,207 +264,197 @@
         </div>
 
         <div id="projects-track" class="hscroll mt-4 flex gap-4 overflow-x-auto pb-4">
+          <!-- Faster Diffusion -->
           <article class="glass card-hover project-card">
-            <div class="flex items-baseline justify-between gap-3">
-              <h3 class="font-semibold">Faster Diffusion</h3>
-              <span class="mono text-xs text-white/60">GenAIProject</span>
+            <div class="project-thumb" style="--thumb:url('assets/img/faster-diffusion.jpg')">
+              <div class="project-thumb-hint mono">Add thumbnail: assets/img/faster-diffusion.jpg</div>
             </div>
 
-            <p class="mt-3 text-white/80">
-              Reduced diffusion inference time by <span class="text-white font-semibold">41%</span> while maintaining visual quality
-              (team of three).
+            <div class="project-meta">
+              <div class="project-title">Faster Diffusion</div>
+              <div class="mono text-xs text-white/60">Spring 2025</div>
+            </div>
+
+            <p class="project-desc">
+              Optimized diffusion image generation for speed while keeping output quality.
             </p>
 
-            <div class="mt-3 flex flex-wrap gap-2">
+            <ul class="project-bullets">
+              <li>Implemented performance mechanisms in Python + deep learning.</li>
+              <li><span class="text-white font-semibold">Reduced inference time by 41%</span> (team of three).</li>
+            </ul>
+
+            <div class="flex flex-wrap gap-2">
               <span class="pill">Diffusion</span>
               <span class="pill">Optimization</span>
               <span class="pill">Python</span>
             </div>
 
-            <div class="mt-4">
-              <a class="mono text-sm underline decoration-white/20 hover:decoration-white/60"
-                 href="https://github.com/GoDSpeeD0o0/GenAIProject" target="_blank" rel="noopener">
-                Open repo →
-              </a>
-            </div>
+            <a class="project-link" href="https://github.com/GoDSpeeD0o0/GenAIProject" target="_blank" rel="noopener">
+              Open repo →
+            </a>
           </article>
 
+          <!-- Slackbot -->
           <article class="glass card-hover project-card">
-            <div class="flex items-baseline justify-between gap-3">
-              <h3 class="font-semibold">Slack Python QnA Bot</h3>
-              <span class="mono text-xs text-white/60">slackbot</span>
+            <div class="project-thumb" style="--thumb:url('assets/img/slackbot.jpg')">
+              <div class="project-thumb-hint mono">Add thumbnail: assets/img/slackbot.jpg</div>
             </div>
 
-            <p class="mt-3 text-white/80">
-              Automated instant Python technical support in Slack with a streamlined QnA interface and debugging workflows.
+            <div class="project-meta">
+              <div class="project-title">Slack Python QnA Bot</div>
+              <div class="mono text-xs text-white/60">Nov 2025</div>
+            </div>
+
+            <p class="project-desc">
+              Instant Python technical support inside Slack with guided debugging.
             </p>
 
-            <div class="mt-3 flex flex-wrap gap-2">
+            <ul class="project-bullets">
+              <li>Built streamlined QnA interface with Python + Slack API.</li>
+              <li>Designed multi-step workflows to solve debugging queries.</li>
+            </ul>
+
+            <div class="flex flex-wrap gap-2">
               <span class="pill">Automation</span>
               <span class="pill">Slack API</span>
               <span class="pill">Python</span>
             </div>
 
-            <div class="mt-4">
-              <a class="mono text-sm underline decoration-white/20 hover:decoration-white/60"
-                 href="https://github.com/AII-projects/slackbot" target="_blank" rel="noopener">
-                Open repo →
-              </a>
-            </div>
+            <a class="project-link" href="https://github.com/AII-projects/slackbot" target="_blank" rel="noopener">
+              Open repo →
+            </a>
           </article>
 
+          <!-- Research -->
           <article class="glass card-hover project-card">
-            <div class="flex items-baseline justify-between gap-3">
-              <h3 class="font-semibold">Research Paper Repo</h3>
-              <span class="mono text-xs text-white/60">Research-Paper</span>
+            <div class="project-thumb" style="--thumb:url('assets/img/research-paper.jpg')">
+              <div class="project-thumb-hint mono">Add thumbnail: assets/img/research-paper.jpg</div>
             </div>
 
-            <p class="mt-3 text-white/80">
-              Research writing + supporting artifacts/experiments. (We can upgrade this card once you add an abstract + results.)
+            <div class="project-meta">
+              <div class="project-title">Research Paper Repo</div>
+              <div class="mono text-xs text-white/60">Ongoing</div>
+            </div>
+
+            <p class="project-desc">
+              Research writing + supporting experiments/artifacts.
             </p>
 
-            <div class="mt-3 flex flex-wrap gap-2">
+            <ul class="project-bullets">
+              <li>Organized repo for reproducibility and iteration.</li>
+              <li>Next upgrade: add abstract + key results on the card.</li>
+            </ul>
+
+            <div class="flex flex-wrap gap-2">
               <span class="pill">Research</span>
               <span class="pill">Writing</span>
               <span class="pill">Reproducibility</span>
             </div>
 
-            <div class="mt-4">
-              <a class="mono text-sm underline decoration-white/20 hover:decoration-white/60"
-                 href="https://github.com/GoDSpeeD0o0/Research-Paper" target="_blank" rel="noopener">
-                Open repo →
-              </a>
-            </div>
+            <a class="project-link" href="https://github.com/GoDSpeeD0o0/Research-Paper" target="_blank" rel="noopener">
+              Open repo →
+            </a>
           </article>
 
+          <!-- Case study: sentiment -->
           <article class="glass card-hover project-card">
-            <div class="flex items-baseline justify-between gap-3">
-              <h3 class="font-semibold">Tweet Sentiment Analysis</h3>
-              <span class="mono text-xs text-white/60">case study</span>
+            <div class="project-thumb" style="--thumb:url('assets/img/sentiment.jpg')">
+              <div class="project-thumb-hint mono">Add thumbnail: assets/img/sentiment.jpg</div>
             </div>
 
-            <p class="mt-3 text-white/80">
-              Sentiment classifier using transformer models (ALBERT) to categorize large-scale tweet datasets.
+            <div class="project-meta">
+              <div class="project-title">Tweet Sentiment Analysis</div>
+              <div class="mono text-xs text-white/60">Apr 2024</div>
+            </div>
+
+            <p class="project-desc">
+              Transformer-based sentiment classification for large-scale tweets.
             </p>
 
-            <div class="mt-3 flex flex-wrap gap-2">
+            <ul class="project-bullets">
+              <li>Used ALBERT + Python for high-accuracy classification.</li>
+              <li>Produced clean sentiment categories for trend tracking.</li>
+            </ul>
+
+            <div class="flex flex-wrap gap-2">
               <span class="pill">NLP</span>
               <span class="pill">Transformers</span>
               <span class="pill">ALBERT</span>
             </div>
 
-            <div class="mt-4"><span class="mono text-sm text-white/55">Link coming soon</span></div>
+            <span class="mono text-sm text-white/55">Link coming soon</span>
           </article>
 
+          <!-- Case study: pollution -->
           <article class="glass card-hover project-card">
-            <div class="flex items-baseline justify-between gap-3">
-              <h3 class="font-semibold">Air Pollution Modeling</h3>
-              <span class="mono text-xs text-white/60">case study</span>
+            <div class="project-thumb" style="--thumb:url('assets/img/pollution.jpg')">
+              <div class="project-thumb-hint mono">Add thumbnail: assets/img/pollution.jpg</div>
             </div>
 
-            <p class="mt-3 text-white/80">
-              PM2.5 / carbon emission behavior modeling with ML to predict environmental impact trends (team of two).
+            <div class="project-meta">
+              <div class="project-title">Air Pollution Modeling</div>
+              <div class="mono text-xs text-white/60">May 2022</div>
+            </div>
+
+            <p class="project-desc">
+              PM2.5 / carbon emissions modeling to predict environmental impact trends.
             </p>
 
-            <div class="mt-3 flex flex-wrap gap-2">
+            <ul class="project-bullets">
+              <li>Applied ML algorithms to complex pollutant datasets (team of two).</li>
+              <li>Built a data-driven framework for predicting air quality trends.</li>
+            </ul>
+
+            <div class="flex flex-wrap gap-2">
               <span class="pill">ML</span>
-              <span class="pill">Time series</span>
               <span class="pill">Modeling</span>
+              <span class="pill">Environment</span>
             </div>
 
-            <div class="mt-4"><span class="mono text-sm text-white/55">Link coming soon</span></div>
+            <span class="mono text-sm text-white/55">Link coming soon</span>
           </article>
         </div>
 
         <p class="mt-2 text-xs text-white/55">
-          Adding more later: duplicate a <code class="mono">project-card</code> inside <code class="mono">#projects-track</code>.
+          To add thumbnails: drop images into <code class="mono">assets/img/</code> and update each card’s
+          <code class="mono">--thumb:url(...)</code>.
         </p>
       </section>
 
-      <!-- SKILLS -->
-      <section id="skills" class="mt-12">
-        <h2 class="section-title">Capabilities</h2>
-
-        <div class="mt-4 grid lg:grid-cols-2 gap-4">
-          <div class="glass card-hover p-5">
-            <div class="mono text-xs text-white/60">PROGRAMMING</div>
-            <div class="mt-3 flex flex-wrap gap-2">
-              <span class="pill">Python</span>
-              <span class="pill">SQL</span>
-              <span class="pill">JavaScript (ES6+)</span>
-              <span class="pill">HTML5</span>
-              <span class="pill">CSS3</span>
-              <span class="pill">FastAPI</span>
-            </div>
-            <p class="mt-3 text-xs text-white/55">
-              Python stack: NumPy, SciPy, scikit-learn, Seaborn.
-            </p>
-          </div>
-
-          <div class="glass card-hover p-5">
-            <div class="mono text-xs text-white/60">AI / DATA</div>
-            <div class="mt-3 flex flex-wrap gap-2">
-              <span class="pill">NLP</span>
-              <span class="pill">Transformers</span>
-              <span class="pill">Diffusion</span>
-              <span class="pill">LLM training</span>
-              <span class="pill">System design</span>
-              <span class="pill">Data mining</span>
-            </div>
-          </div>
-
-          <div class="glass card-hover p-5">
-            <div class="mono text-xs text-white/60">TOOLS</div>
-            <div class="mt-3 flex flex-wrap gap-2">
-              <span class="pill">Docker</span>
-              <span class="pill">Kubernetes</span>
-              <span class="pill">Power BI</span>
-              <span class="pill">AWS Cloud Practitioner</span>
-              <span class="pill">Slack API</span>
-              <span class="pill">Git</span>
-            </div>
-          </div>
-
-          <div class="glass card-hover p-5">
-            <div class="mono text-xs text-white/60">CERTIFICATIONS</div>
-            <div class="mt-3 flex flex-wrap gap-2">
-              <span class="pill">Stanford-ML</span>
-              <span class="pill">AWS Cloud Practitioner (edX)</span>
-              <span class="pill">Data Scientist Associate (DataCamp)</span>
-              <span class="pill">Python (IBM)</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- CONTACT -->
+      <!-- CONTACT (LAST) -->
       <section id="contact" class="mt-12">
         <h2 class="section-title">Contact</h2>
 
         <div class="mt-4 glass p-5">
           <p class="text-white/80">
-            Email is best:
+            Email:
             <a class="underline hover:text-white" href="mailto:pparash7@asu.edu">pparash7@asu.edu</a>
           </p>
+
           <p class="text-white/70 text-sm mt-2">
             LinkedIn:
-            <a class="underline hover:text-white" href="https://linkedin.com/in/prateekp7" target="_blank" rel="noopener"
-              >linkedin.com/in/prateekp7</a
-            >
+            <a class="underline hover:text-white" href="https://linkedin.com/in/prateekp7" target="_blank" rel="noopener">
+              linkedin.com/in/prateekp7
+            </a>
             · GitHub:
-            <a class="underline hover:text-white" href="https://github.com/GoDSpeeD0o0" target="_blank" rel="noopener"
-              >github.com/GoDSpeeD0o0</a
-            >
+            <a class="underline hover:text-white" href="https://github.com/GoDSpeeD0o0" target="_blank" rel="noopener">
+              github.com/GoDSpeeD0o0
+            </a>
+          </p>
+
+          <p class="text-white/55 text-xs mt-3">
+            (If you want, we can add a “copy email” button + contact icons next.)
           </p>
         </div>
       </section>
 
-      <footer class="mt-14 pb-8 text-xs text-white/50">
-        <span class="mono">©</span> <span id="year"></span> Prateek Parashar · generated with care, not randomness
+      <footer class="mt-14 pb-10 text-xs text-white/50">
+        <span class="mono">©</span> <span id="year"></span> Prateek Parashar
       </footer>
     </main>
 
     <!-- Cache bust -->
-    <script src="assets/js/main.js?v=8"></script>
+    <script src="assets/js/main.js?v=9"></script>
   </body>
 </html>
