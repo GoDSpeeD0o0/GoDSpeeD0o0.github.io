@@ -405,83 +405,72 @@
   const pmLinks = document.getElementById("pm-links");
 
   const PROJECT_DATA = {
-    "faster-diffusion": {
-      title: "Faster Diffusion",
-      meta: "Spring 2025 · GenAIProject",
-      problem:
-        "Diffusion generation was too slow for iterative workflows. The objective was to reduce inference time while preserving output quality.",
-      approach:
-        "Profiled inference bottlenecks and introduced optimization mechanisms in the inference path while validating perceptual quality.",
-      results: [
-        "Reduced diffusion inference time by 41% while maintaining high-quality results.",
-        "Built as a team of three with clear experiment logging and comparisons."
-      ],
-      stack: ["Python", "Diffusion", "Optimization", "Deep Learning"],
-      links: [
-        { label: "Open repo →", url: "https://github.com/GoDSpeeD0o0/GenAIProject" }
-      ]
-    },
-    "slackbot": {
-      title: "Slack Python QnA Bot",
-      meta: "Nov 2025 · slackbot",
-      problem:
-        "Python support in team chats is slow when questions require multi-step debugging and context across messages.",
-      approach:
-        "Designed a streamlined Slack QnA flow with structured prompts, triage-style questioning, and automated debugging workflows.",
-      results: [
-        "Automated instant Python technical support inside Slack.",
-        "Designed workflows to resolve multi-step technical queries."
-      ],
-      stack: ["Python", "Slack API", "Automation"],
-      links: [
-        { label: "Open repo →", url: "https://github.com/AII-projects/slackbot" }
-      ]
-    },
-    "research-paper": {
-      title: "Research Paper Repo",
-      meta: "Ongoing · Research-Paper",
-      problem:
-        "Research artifacts get messy fast without structure. Goal: keep experiments, writing, and results reproducible.",
-      approach:
-        "Organized experiments + writing into a single repo structure aimed at reproducibility and iteration speed.",
-      results: [
-        "Centralized research writing + supporting artifacts.",
-        "Set up a foundation for adding an abstract, results, and reproducible runs."
-      ],
-      stack: ["Research", "Writing", "Reproducibility"],
-      links: [
-        { label: "Open repo →", url: "https://github.com/GoDSpeeD0o0/Research-Paper" }
-      ]
-    },
-    "sentiment": {
-      title: "Tweet Sentiment Analysis",
-      meta: "Apr 2024 · Case Study",
-      problem:
-        "Need a reliable sentiment classifier to track public sentiment at scale on social data.",
-      approach:
-        "Used transformer-based classification (ALBERT) and Python pipelines to process large tweet datasets.",
-      results: [
-        "Categorized large-scale tweet datasets into sentiment classes.",
-        "Built a classification workflow for tracking social sentiment."
-      ],
-      stack: ["NLP", "Transformers", "ALBERT", "Python"],
-      links: []
-    },
-    "pollution": {
-      title: "Atmospheric Particle Pollution Modeling",
-      meta: "May 2022 · Case Study",
-      problem:
-        "Forecast PM2.5 / emissions behavior to understand environmental impact trends.",
-      approach:
-        "Applied ML algorithms to pollutant datasets and built a predictive framework (team of two).",
-      results: [
-        "Modeled PM2.5 and carbon emission behavior to predict impact.",
-        "Built a data-driven framework for trend prediction."
-      ],
-      stack: ["ML", "Modeling", "Environment"],
-      links: []
-    }
-  };
+  slackbot: {
+    title: "Slack Python QnA Bot",
+    meta: "Nov 2025 · AII-projects/slackbot",
+    problem:
+      "Python support in chat is slow when issues require multi-step debugging and context across messages.",
+    approach:
+      "Built a Slack bot with a structured QnA flow and automated debugging steps using Python and the Slack API.",
+    results: [
+      "Automated instant Python technical support in Slack.",
+      "Designed workflows to handle multi-step technical queries."
+    ],
+    stack: ["Python", "Slack API", "Automation"],
+    links: [{ label: "Open repo →", url: "https://github.com/AII-projects/slackbot" }]
+  },
+
+  "faster-diffusion": {
+    title: "Faster Diffusion",
+    meta: "Spring 2025 · GoDSpeeD0o0/GenAIProject",
+    problem:
+      "Diffusion generation was too slow for iterative workflows. The goal was to reduce inference time while preserving output quality.",
+    approach:
+      "Profiled inference bottlenecks and introduced optimizations in the inference path while validating perceptual quality.",
+    results: [
+      "Reduced diffusion inference time by 41% while maintaining high-quality results.",
+      "Built as a team of three with experiment comparisons and logging."
+    ],
+    stack: ["Python", "Diffusion", "Optimization", "Deep Learning"],
+    links: [{ label: "Open repo →", url: "https://github.com/GoDSpeeD0o0/GenAIProject" }]
+  },
+
+  "particle-pollution": {
+    title: "Particle Pollution Analysis (Research)",
+    meta: "May 2022 · MachineLearningAnalysis_Particle_Pollution",
+    problem:
+      "Model air-quality indicators (PM2.5, emissions) to understand and predict environmental impact trends.",
+    approach:
+      "Applied ML algorithms to pollutant datasets and evaluated patterns to build a data-driven predictive framework.",
+    results: [
+      "Modeled PM2.5 and carbon emission behavior to estimate air-quality trends.",
+      "Established an analysis framework (team of two)."
+    ],
+    stack: ["Machine Learning", "Data Analysis", "Research", "Air Quality"],
+    links: [
+      {
+        label: "Open folder →",
+        url: "https://github.com/GoDSpeeD0o0/Research-Paper/tree/main/MachineLearningAnalysis_Particle_Pollution"
+      }
+    ]
+  },
+
+  "tweet-sentiment": {
+    title: "Tweet Sentiment Analysis",
+    meta: "Apr 2024 · GoDSpeeD0o0/TextSentimentAnalysis",
+    problem:
+      "Track public sentiment in large social datasets with reliable classification.",
+    approach:
+      "Implemented a transformer-based classifier (ALBERT) and processing pipeline to label large tweet datasets.",
+    results: [
+      "Categorized large-scale tweet datasets into sentiment classes.",
+      "Built an end-to-end NLP workflow for evaluation and iteration."
+    ],
+    stack: ["NLP", "Transformers", "ALBERT", "Python"],
+    links: [{ label: "Open repo →", url: "https://github.com/GoDSpeeD0o0/TextSentimentAnalysis" }]
+  }
+};
+
 
   const openModal = (key) => {
     const d = PROJECT_DATA[key];
