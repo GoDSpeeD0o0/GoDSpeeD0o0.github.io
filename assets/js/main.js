@@ -331,7 +331,16 @@
 
     track.classList.add("grab");
 
+    // ✅ FIX: don't start pointer-capture dragging when clicking interactive elements
+    const isInteractive = (el) => !!el?.closest?.("a, button, input, textarea, select, label");
+
     track.addEventListener("pointerdown", (e) => {
+      // allow anchor clicks, buttons, etc.
+      if (isInteractive(e.target)) return;
+
+      // only primary mouse button
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+
       pauseAuto();
       isDown = true;
       track.setPointerCapture(e.pointerId);
@@ -358,10 +367,14 @@
     track.addEventListener("lostpointercapture", endDrag);
 
     let scrollRAF = 0;
-    track.addEventListener("scroll", () => {
-      if (scrollRAF) cancelAnimationFrame(scrollRAF);
-      scrollRAF = requestAnimationFrame(() => updateProjectsUI());
-    }, { passive: true });
+    track.addEventListener(
+      "scroll",
+      () => {
+        if (scrollRAF) cancelAnimationFrame(scrollRAF);
+        scrollRAF = requestAnimationFrame(() => updateProjectsUI());
+      },
+      { passive: true }
+    );
 
     window.addEventListener("resize", () => updateProjectsUI(), { passive: true });
 
@@ -550,10 +563,12 @@
     }
   });
 
+  // Card click opens modal — but anchor clicks should behave normally
   if (track) {
-    getCards().forEach((card) => {
+    const cards = Array.from(track.querySelectorAll(".project-card"));
+    cards.forEach((card) => {
       card.addEventListener("click", (e) => {
-        if (e.target.closest("a")) return;
+        if (e.target.closest("a")) return; // ✅ keep link clicks working
         const key = card.getAttribute("data-project");
         if (key) openModal(key);
       });
