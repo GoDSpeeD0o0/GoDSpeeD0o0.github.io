@@ -485,7 +485,6 @@
       void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
     `;
 
-    // Slightly lighter + calmer “cosmic compute” shader
     const FRAG = `
       precision highp float;
 
@@ -736,80 +735,214 @@
   };
   const stopBg = () => bg && bg.stop();
 
-  // Start background on initial visible load
-  startBgIfVisible();
-
   // =========================
-  // Animatronic flyby
+  // Pixel animatronic rover (moves around constantly)
   // =========================
-  const flyby = document.getElementById("flyby");
-  let flyTimer = null;
-  let flyAnim = null;
+  function initRover() {
+    const el = document.getElementById("flyby");
+    if (!el) return null;
 
-  const stopFlyby = () => {
-    if (flyTimer) clearTimeout(flyTimer);
-    flyTimer = null;
-    if (flyAnim) flyAnim.cancel();
-    flyAnim = null;
-    if (flyby) flyby.style.opacity = "0";
-  };
+    let rafId = null;
+    let running = false;
 
-  const scheduleFlyby = (ms) => {
-    if (!flyby) return;
-    if (flyTimer) clearTimeout(flyTimer);
-    flyTimer = setTimeout(spawnFlyby, ms);
-  };
+    let x = 0, y = 0;
+    let vx = 0, vy = 0;
+    let targetX = 0, targetY = 0;
 
-  function spawnFlyby() {
-    if (!flyby) return;
-    if (prefersReducedMotion) return;
+    let last = performance.now();
+    let cruise = rand(32, 66);
 
-    if (document.hidden) {
-      scheduleFlyby(rand(6000, 12000));
-      return;
-    }
+    let nextTargetAt = 0;
+    let nextBoostAt = performance.now() + rand(14000, 26000);
+    let boostUntil = 0;
 
-    const dir = Math.random() < 0.5 ? 1 : -1; // 1 = left->right, -1 = right->left
-    const y = rand(window.innerHeight * 0.10, window.innerHeight * 0.42);
-    const scale = rand(0.70, 1.05);
-    const duration = rand(6500, 9800);
+    let size = { w: 144, h: 96 };
 
-    const startX = dir === 1 ? -260 : window.innerWidth + 260;
-    const endX = dir === 1 ? window.innerWidth + 260 : -260;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      size = { w: r.width || 144, h: r.height || 96 };
+    };
 
-    const wobble = rand(-10, 10);
-    const rot0 = dir === 1 ? 2 : -2;
-    const rot1 = wobble;
+    const safeZone = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      return {
+        x0: w * 0.22,
+        x1: w * 0.78,
+        y0: h * 0.20,
+        y1: h * 0.72,
+      };
+    };
 
-    flyby.style.top = `${Math.round(y)}px`;
-    flyby.style.opacity = "0";
+    const pickTarget = (force = false) => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
 
-    if (flyAnim) flyAnim.cancel();
+      const minX = -size.w * 0.10;
+      const maxX = w - size.w + size.w * 0.10;
+      const minY = -size.h * 0.10;
+      const maxY = h - size.h + size.h * 0.10;
 
-    flyAnim = flyby.animate(
-      [
-        { transform: `translateX(${startX}px) translateY(0px) scale(${scale}) rotate(${rot0}deg)`, opacity: 0 },
-        { transform: `translateX(${startX + (endX - startX) * 0.10}px) translateY(-6px) scale(${scale}) rotate(${rot1}deg)`, opacity: 0.62 },
-        { transform: `translateX(${startX + (endX - startX) * 0.50}px) translateY(10px) scale(${scale}) rotate(${rot1 * 0.35}deg)`, opacity: 0.70 },
-        { transform: `translateX(${startX + (endX - startX) * 0.90}px) translateY(-4px) scale(${scale}) rotate(${rot1}deg)`, opacity: 0.60 },
-        { transform: `translateX(${endX}px) translateY(0px) scale(${scale}) rotate(${-rot0}deg)`, opacity: 0 }
-      ],
-      {
-        duration,
-        easing: "cubic-bezier(0.22, 0.61, 0.36, 1)",
-        fill: "forwards",
+      const z = safeZone();
+
+      let tx = 0, ty = 0;
+      for (let k = 0; k < 10; k++) {
+        tx = rand(minX, maxX);
+        ty = rand(minY, maxY);
+
+        const cx = tx + size.w * 0.5;
+        const cy = ty + size.h * 0.5;
+        const insideSafe = cx > z.x0 && cx < z.x1 && cy > z.y0 && cy < z.y1;
+
+        if (!insideSafe) break;
       }
-    );
 
-    flyAnim.onfinish = () => {
-      flyby.style.opacity = "0";
-      flyAnim = null;
-      scheduleFlyby(rand(12000, 26000)); // “once in a while”
+      targetX = tx;
+      targetY = ty;
+
+      if (force || Math.random() < 0.45) cruise = rand(32, 66);
+      nextTargetAt = performance.now() + rand(2400, 5200);
+    };
+
+    const pickFarTarget = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+
+      const minX = -size.w * 0.10;
+      const maxX = w - size.w + size.w * 0.10;
+      const minY = -size.h * 0.10;
+      const maxY = h - size.h + size.h * 0.10;
+
+      let tx = 0, ty = 0;
+      for (let k = 0; k < 12; k++) {
+        tx = rand(minX, maxX);
+        ty = rand(minY, maxY);
+        const d = Math.hypot(tx - x, ty - y);
+        if (d > Math.min(w, h) * 0.55) break;
+      }
+
+      targetX = tx;
+      targetY = ty;
+      nextTargetAt = performance.now() + rand(1600, 2800);
+    };
+
+    const clampToBounds = () => {
+      const minX = -size.w * 0.10;
+      const maxX = window.innerWidth - size.w + size.w * 0.10;
+      const minY = -size.h * 0.10;
+      const maxY = window.innerHeight - size.h + size.h * 0.10;
+
+      if (x < minX) { x = minX; vx = Math.abs(vx) * 0.7; }
+      if (x > maxX) { x = maxX; vx = -Math.abs(vx) * 0.7; }
+      if (y < minY) { y = minY; vy = Math.abs(vy) * 0.7; }
+      if (y > maxY) { y = maxY; vy = -Math.abs(vy) * 0.7; }
+    };
+
+    const tick = (now) => {
+      if (!running) return;
+
+      const dt = clamp((now - last) / 1000, 0.01, 0.05);
+      last = now;
+
+      if (now > nextTargetAt) pickTarget(false);
+
+      // occasional “boost sprint”
+      if (now > nextBoostAt) {
+        boostUntil = now + rand(1800, 3600);
+        nextBoostAt = now + rand(16000, 30000);
+        cruise = rand(92, 150);
+        pickFarTarget();
+      }
+
+      const boosting = now < boostUntil;
+      el.classList.toggle("boost", boosting);
+
+      // steering toward target
+      const dx = targetX - x;
+      const dy = targetY - y;
+      const dist = Math.hypot(dx, dy) || 0.0001;
+
+      const desiredVX = (dx / dist) * cruise;
+      const desiredVY = (dy / dist) * cruise;
+
+      const steer = boosting ? 0.10 : 0.08;
+      vx += (desiredVX - vx) * steer;
+      vy += (desiredVY - vy) * steer;
+
+      // clamp speed
+      const maxSpeed = boosting ? 175 : 85;
+      const sp = Math.hypot(vx, vy) || 0.0001;
+      if (sp > maxSpeed) {
+        vx = (vx / sp) * maxSpeed;
+        vy = (vy / sp) * maxSpeed;
+      }
+
+      // integrate
+      x += vx * dt;
+      y += vy * dt;
+
+      // bounce edges
+      clampToBounds();
+
+      // visuals
+      const dir = vx >= 0 ? 1 : -1;
+      const bob = Math.sin(now * 0.003 + 1.7) * (boosting ? 3.0 : 4.5);
+      const trail = clamp((sp - 20) / 120, 0, 1);
+
+      el.style.setProperty("--trail", trail.toFixed(3));
+
+      // subtle at rest, stronger when moving
+      const op = clamp(0.14 + trail * 0.38, 0.12, 0.54);
+      el.style.opacity = String(op);
+
+      // pixel vibe: no rotation, just flip + step-like positioning
+      el.style.transform =
+        `translate3d(${Math.round(x)}px, ${Math.round(y + bob)}px, 0) scaleX(${dir})`;
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    return {
+      start() {
+        if (prefersReducedMotion) return;
+        if (running) return;
+        running = true;
+
+        measure();
+
+        // init near a corner-ish area (feels like “entering the scene”)
+        x = rand(window.innerWidth * 0.06, window.innerWidth * 0.22);
+        y = rand(window.innerHeight * 0.10, window.innerHeight * 0.26);
+        vx = rand(-12, 12);
+        vy = rand(-10, 10);
+
+        pickTarget(true);
+        last = performance.now();
+        rafId = requestAnimationFrame(tick);
+      },
+
+      stop() {
+        running = false;
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = null;
+        el.style.opacity = "0";
+      },
+
+      resize() {
+        measure();
+        x = clamp(x, -size.w * 0.10, window.innerWidth - size.w + size.w * 0.10);
+        y = clamp(y, -size.h * 0.10, window.innerHeight - size.h + size.h * 0.10);
+        pickTarget(true);
+      },
     };
   }
 
-  // initial schedule
-  scheduleFlyby(rand(9000, 16000));
+  const rover = initRover();
+  if (rover && !document.hidden) rover.start();
+  window.addEventListener("resize", () => rover?.resize(), { passive: true });
+
+  // Start background on initial visible load
+  startBgIfVisible();
 
   // =========================
   // Visibility handling
@@ -818,11 +951,12 @@
     if (document.hidden) {
       stopBg();
       stopAuto();
-      stopFlyby();
+      rover?.stop();
     } else {
       startBgIfVisible();
       startAuto();
-      scheduleFlyby(rand(5000, 12000));
+      rover?.start();
+      rover?.resize();
     }
   });
 })();
