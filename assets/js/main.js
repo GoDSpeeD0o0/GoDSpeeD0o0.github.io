@@ -3,12 +3,13 @@
   // Utilities
   // =========================
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const rand = (a, b) => a + Math.random() * (b - a);
 
   // Footer year
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // Header height -> CSS var (keeps intro centered)
+  // Header height -> CSS var
   const headerEl = document.querySelector("header");
   const setHeaderHeight = () => {
     const hh = headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0;
@@ -24,28 +25,6 @@
   // Keep background animated (your preference)
   const FORCE_ANIMATION = true;
   const prefersReducedMotion = !FORCE_ANIMATION && reduceMotionPref;
-
-  // Scroll lock manager (cmdk)
-  let scrollLocks = 0;
-  const lockScroll = () => {
-    scrollLocks += 1;
-    if (scrollLocks === 1) document.body.style.overflow = "hidden";
-  };
-  const unlockScroll = () => {
-    scrollLocks = Math.max(0, scrollLocks - 1);
-    if (scrollLocks === 0) document.body.style.overflow = "";
-  };
-
-  // Toast
-  const toastEl = document.getElementById("toast");
-  let toastTimer = null;
-  const toast = (msg) => {
-    if (!toastEl) return;
-    toastEl.textContent = msg;
-    toastEl.classList.remove("hidden");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toastEl.classList.add("hidden"), 1600);
-  };
 
   // =========================
   // Mobile menu
@@ -72,133 +51,11 @@
   }
 
   // =========================
-  // Command Palette (Ctrl+K)
-  // =========================
-  const cmdkBtn = document.getElementById("cmdk-btn");
-  const cmdkOverlay = document.getElementById("cmdk-overlay");
-  const cmdkInput = document.getElementById("cmdk-input");
-  const cmdkList = document.getElementById("cmdk-list");
-
-  let cmdkOpen = false;
-  let cmdkIndex = 0;
-
-  const getCmdkItems = () => Array.from(cmdkList?.querySelectorAll(".cmdk-item") || []);
-  const setCmdkActive = (idx) => {
-    const items = getCmdkItems().filter((b) => !b.classList.contains("hidden"));
-    if (items.length === 0) return;
-    cmdkIndex = ((idx % items.length) + items.length) % items.length;
-    items.forEach((it, i) => it.classList.toggle("active", i === cmdkIndex));
-    items[cmdkIndex].scrollIntoView({ block: "nearest" });
-  };
-
-  const filterCmdk = (q) => {
-    const query = (q || "").trim().toLowerCase();
-    const all = getCmdkItems();
-    all.forEach((btn) => {
-      const text = (btn.getAttribute("data-search") || btn.textContent || "").toLowerCase();
-      btn.classList.toggle("hidden", query && !text.includes(query));
-    });
-    setCmdkActive(0);
-  };
-
-  const runCmdkAction = (btnEl) => {
-    if (!btnEl) return;
-    const action = btnEl.getAttribute("data-action");
-    const target = btnEl.getAttribute("data-target") || "";
-    const value = btnEl.getAttribute("data-value") || "";
-
-    closeCmdk();
-
-    if (action === "goto" && target) {
-      document.querySelector(target)?.scrollIntoView({ behavior: smoothBehavior, block: "start" });
-    } else if (action === "open" && target) {
-      window.open(target, "_blank", "noopener");
-    } else if (action === "copy") {
-      const text = value || target;
-      if (!text) return;
-      if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(text).then(() => toast("Copied")).catch(() => toast("Copy failed"));
-      } else {
-        window.prompt("Copy:", text);
-      }
-    }
-  };
-
-  const openCmdk = () => {
-    if (!cmdkOverlay || !cmdkInput || !cmdkList) return;
-    if (cmdkOpen) return;
-    cmdkOpen = true;
-    cmdkOverlay.classList.remove("hidden");
-    lockScroll();
-    cmdkInput.value = "";
-    filterCmdk("");
-    setTimeout(() => cmdkInput.focus(), 0);
-  };
-
-  const closeCmdk = () => {
-    if (!cmdkOverlay) return;
-    if (!cmdkOpen) return;
-    cmdkOpen = false;
-    cmdkOverlay.classList.add("hidden");
-    unlockScroll();
-  };
-
-  cmdkBtn?.addEventListener("click", openCmdk);
-  cmdkOverlay?.addEventListener("click", (e) => {
-    if (e.target === cmdkOverlay) closeCmdk();
-  });
-
-  cmdkInput?.addEventListener("input", (e) => filterCmdk(e.target.value));
-
-  cmdkList?.addEventListener("click", (e) => {
-    const btn = e.target.closest(".cmdk-item");
-    if (!btn || btn.classList.contains("hidden")) return;
-    runCmdkAction(btn);
-  });
-
-  document.addEventListener("keydown", (e) => {
-    const isK = e.key.toLowerCase() === "k";
-    const meta = e.metaKey || e.ctrlKey;
-
-    if (meta && isK) {
-      e.preventDefault();
-      if (cmdkOpen) closeCmdk();
-      else openCmdk();
-      return;
-    }
-
-    if (!cmdkOpen) return;
-
-    if (e.key === "Escape") {
-      e.preventDefault();
-      closeCmdk();
-      return;
-    }
-
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setCmdkActive(cmdkIndex + 1);
-      return;
-    }
-
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setCmdkActive(cmdkIndex - 1);
-      return;
-    }
-
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const items = getCmdkItems().filter((b) => !b.classList.contains("hidden"));
-      runCmdkAction(items[cmdkIndex]);
-    }
-  });
-
-  // =========================
   // Projects drawer
-  // - single click: lock selection + stop auto
-  // - double click: open repo
-  // - click elsewhere: unlock selection
+  // - auto scroll when not locked
+  // - click card = lock selection (no auto)
+  // - double click = open repo
+  // - click outside = unlock (auto resumes)
   // =========================
   const projectsSection = document.getElementById("projects");
   const track = document.getElementById("projects-track");
@@ -215,138 +72,133 @@
   let resumeTimer = null;
   let projectsInView = false;
 
-  // Selection lock state (single click)
   let manualLock = false;
   let selectedIndex = 0;
 
-  // Drag tracking to avoid accidental “click select” after a drag
   let lastDragTime = 0;
 
-  const stopAuto = () => {
-    if (!autoTimer) return;
-    clearInterval(autoTimer);
-    autoTimer = null;
-  };
-
-  const startAuto = () => {
-    if (!track) return;
-    if (!projectsInView) return;
-    if (document.hidden) return;
-    if (cmdkOpen) return;
-    if (manualLock) return;
-    if (autoTimer) return;
-
-    autoTimer = setInterval(() => {
-      if (manualLock) return;
-      const nextIdx = getScrollActiveIndex() + 1;
-      scrollToCard(nextIdx, true);
-      updateProjectsUI();
-    }, AUTO_SCROLL_MS);
-  };
-
-  const pauseAuto = () => {
-    stopAuto();
-    clearTimeout(resumeTimer);
-  };
-
-  const scheduleResume = () => {
-    if (manualLock) return;
-    clearTimeout(resumeTimer);
-    resumeTimer = setTimeout(() => startAuto(), RESUME_AFTER_MS);
-  };
-
-  const getCards = () => Array.from(track?.querySelectorAll(".project-card") || []);
-  const normIndex = (idx) => {
-    const cards = getCards();
-    if (cards.length === 0) return 0;
-    return ((idx % cards.length) + cards.length) % cards.length;
-  };
-
-  const getTrackPadLeft = () => {
-    if (!track) return 0;
-    const s = getComputedStyle(track);
-    return parseFloat(s.paddingLeft || "0") || 0;
-  };
-
-  const scrollToCard = (idx, smooth) => {
-    if (!track) return;
-    const cards = getCards();
-    if (cards.length === 0) return;
-
-    const i = normIndex(idx);
-    const padLeft = getTrackPadLeft();
-    const left = Math.max(0, cards[i].offsetLeft - padLeft);
-
-    track.scrollTo({ left, behavior: smooth ? smoothBehavior : "auto" });
-  };
-
-  const getScrollActiveIndex = () => {
-    const cards = getCards();
-    if (!track || cards.length === 0) return 0;
-
-    const center = track.scrollLeft + track.clientWidth * 0.5;
-    let best = 0;
-    let bestD = Infinity;
-
-    for (let i = 0; i < cards.length; i++) {
-      const c = cards[i];
-      const cx = c.offsetLeft + c.offsetWidth * 0.5;
-      const d = Math.abs(cx - center);
-      if (d < bestD) {
-        bestD = d;
-        best = i;
-      }
-    }
-    return best;
-  };
-
-  const getActiveIndex = () => (manualLock ? normIndex(selectedIndex) : getScrollActiveIndex());
-
-  const updateProjectsUI = () => {
-    const cards = getCards();
-    if (!track || cards.length === 0) return;
-
-    const idx = getActiveIndex();
-
-    cards.forEach((c, i) => {
-      c.classList.toggle("is-active", i === idx);
-      c.classList.toggle("is-dim", i !== idx);
-    });
-
-    const dots = Array.from(dotsEl?.querySelectorAll(".dot") || []);
-    dots.forEach((d, i) => d.classList.toggle("active", i === idx));
-
-    if (currentEl) currentEl.textContent = String(idx + 1).padStart(2, "0");
-    if (totalEl) totalEl.textContent = String(cards.length).padStart(2, "0");
-  };
-
-  const lockToIndex = (idx, smooth = true) => {
-    if (!track) return;
-    manualLock = true;
-    selectedIndex = normIndex(idx);
-    pauseAuto();
-    scrollToCard(selectedIndex, smooth);
-    updateProjectsUI();
-  };
-
-  const unlockSelection = () => {
-    if (!manualLock) return;
-    manualLock = false;
-    updateProjectsUI();
-    startAuto();
-  };
-
-  const openRepoForCard = (cardEl) => {
-    const url = cardEl?.dataset?.repo;
-    if (!url) return;
-    window.open(url, "_blank", "noopener");
-  };
+  // Provide no-op functions so visibility handler can safely call them
+  let startAuto = () => {};
+  let stopAuto = () => {};
 
   if (track && projectsSection) {
+    const getCards = () => Array.from(track.querySelectorAll(".project-card"));
+
+    const normIndex = (idx) => {
+      const cards = getCards();
+      if (cards.length === 0) return 0;
+      return ((idx % cards.length) + cards.length) % cards.length;
+    };
+
+    const getTrackPadLeft = () => {
+      const s = getComputedStyle(track);
+      return parseFloat(s.paddingLeft || "0") || 0;
+    };
+
+    const scrollToCard = (idx, smooth) => {
+      const cards = getCards();
+      if (cards.length === 0) return;
+
+      const i = normIndex(idx);
+      const padLeft = getTrackPadLeft();
+      const left = Math.max(0, cards[i].offsetLeft - padLeft);
+
+      track.scrollTo({ left, behavior: smooth ? smoothBehavior : "auto" });
+    };
+
+    const getScrollActiveIndex = () => {
+      const cards = getCards();
+      if (cards.length === 0) return 0;
+
+      const center = track.scrollLeft + track.clientWidth * 0.5;
+      let best = 0;
+      let bestD = Infinity;
+
+      for (let i = 0; i < cards.length; i++) {
+        const c = cards[i];
+        const cx = c.offsetLeft + c.offsetWidth * 0.5;
+        const d = Math.abs(cx - center);
+        if (d < bestD) {
+          bestD = d;
+          best = i;
+        }
+      }
+      return best;
+    };
+
+    const getActiveIndex = () => (manualLock ? normIndex(selectedIndex) : getScrollActiveIndex());
+
+    const updateProjectsUI = () => {
+      const cards = getCards();
+      if (cards.length === 0) return;
+
+      const idx = getActiveIndex();
+
+      cards.forEach((c, i) => {
+        c.classList.toggle("is-active", i === idx);
+        c.classList.toggle("is-dim", i !== idx);
+      });
+
+      const dots = Array.from(dotsEl?.querySelectorAll(".dot") || []);
+      dots.forEach((d, i) => d.classList.toggle("active", i === idx));
+
+      if (currentEl) currentEl.textContent = String(idx + 1).padStart(2, "0");
+      if (totalEl) totalEl.textContent = String(cards.length).padStart(2, "0");
+    };
+
+    const pauseAutoInternal = () => {
+      if (autoTimer) clearInterval(autoTimer);
+      autoTimer = null;
+      clearTimeout(resumeTimer);
+    };
+
+    stopAuto = () => pauseAutoInternal();
+
+    startAuto = () => {
+      if (!track) return;
+      if (!projectsInView) return;
+      if (document.hidden) return;
+      if (manualLock) return;
+      if (autoTimer) return;
+
+      autoTimer = setInterval(() => {
+        if (manualLock) return;
+        scrollToCard(getScrollActiveIndex() + 1, true);
+        updateProjectsUI();
+      }, AUTO_SCROLL_MS);
+    };
+
+    const scheduleResume = () => {
+      if (manualLock) return;
+      clearTimeout(resumeTimer);
+      resumeTimer = setTimeout(() => startAuto(), RESUME_AFTER_MS);
+    };
+
+    const lockToIndex = (idx, smooth = true) => {
+      manualLock = true;
+      selectedIndex = normIndex(idx);
+      pauseAutoInternal();
+      scrollToCard(selectedIndex, smooth);
+      updateProjectsUI();
+    };
+
+    const unlockSelection = () => {
+      if (!manualLock) return;
+      manualLock = false;
+      updateProjectsUI();
+      startAuto();
+    };
+
+    const openRepoForCard = (cardEl) => {
+      const url = cardEl?.dataset?.repo;
+      if (!url) return;
+      window.open(url, "_blank", "noopener");
+    };
+
+    // Dots
     const cards = getCards();
     if (totalEl) totalEl.textContent = String(cards.length).padStart(2, "0");
 
-    // dots
     if (dotsEl) {
       dotsEl.innerHTML = "";
       cards.forEach((_, i) => {
@@ -359,11 +211,11 @@
       });
     }
 
-    // arrow buttons = manual lock navigation
+    // Arrow buttons lock navigation
     prev?.addEventListener("click", () => lockToIndex(getActiveIndex() - 1, true));
     next?.addEventListener("click", () => lockToIndex(getActiveIndex() + 1, true));
 
-    // click + dblclick behavior on each card
+    // Click / double click per card
     cards.forEach((card, i) => {
       card.addEventListener("click", () => {
         if (performance.now() - lastDragTime < 240) return;
@@ -375,7 +227,6 @@
         openRepoForCard(card);
       });
 
-      // keyboard: Enter opens repo
       card.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
           e.preventDefault();
@@ -384,7 +235,7 @@
       });
     });
 
-    // drag-to-scroll (captures pointer only after threshold)
+    // Drag-to-scroll (only capture after threshold)
     let pointerActive = false;
     let dragging = false;
     let startX = 0;
@@ -405,14 +256,11 @@
         updateProjectsUI();
         scheduleResume();
       }
-
       pid = null;
     };
 
     track.addEventListener("pointerdown", (e) => {
-      // only primary mouse
       if (e.pointerType === "mouse" && e.button !== 0) return;
-
       pointerActive = true;
       dragging = false;
       startX = e.clientX;
@@ -422,13 +270,12 @@
 
     track.addEventListener("pointermove", (e) => {
       if (!pointerActive) return;
-
       const dx = e.clientX - startX;
 
       if (!dragging) {
         if (Math.abs(dx) < DRAG_THRESHOLD) return;
         dragging = true;
-        pauseAuto();
+        pauseAutoInternal();
         try { track.setPointerCapture(pid); } catch (_) {}
         track.classList.add("grabbing");
       }
@@ -440,7 +287,7 @@
     track.addEventListener("pointercancel", endPointer);
     track.addEventListener("lostpointercapture", endPointer);
 
-    // scroll updates
+    // Scroll updates
     let scrollRAF = 0;
     track.addEventListener(
       "scroll",
@@ -453,7 +300,7 @@
 
     window.addEventListener("resize", () => updateProjectsUI(), { passive: true });
 
-    // in-view detection for auto scroll
+    // In-view detection
     const io = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
@@ -465,7 +312,7 @@
     );
     io.observe(projectsSection);
 
-    // click elsewhere unlocks
+    // Click outside unlocks
     document.addEventListener("pointerdown", (e) => {
       if (!manualLock) return;
 
@@ -488,7 +335,7 @@
   }
 
   // =========================
-  // Background Animation (WebGL primary + 2D fallback)
+  // Background animation (WebGL primary + 2D fallback)
   // =========================
   const canvas = document.getElementById("ai-bg");
   if (!canvas) return;
@@ -504,26 +351,24 @@
     let stars = [];
     let nodes = [];
 
-    const rand = (a, b) => a + Math.random() * (b - a);
-
     function resize() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       w = window.innerWidth;
       h = window.innerHeight;
+
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
       canvas.style.width = "100vw";
       canvas.style.height = "100vh";
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // minimal, clean
       const starCount = clamp(Math.round((w * h) / 9000), 120, 220);
       stars = Array.from({ length: starCount }, () => ({
         x: rand(0, w),
         y: rand(0, h),
         r: rand(0.6, 1.6),
-        a: rand(0.05, 0.22),
-        vy: rand(0.03, 0.10),
+        a: rand(0.05, 0.20),
+        vy: rand(0.02, 0.09),
         vx: rand(-0.03, 0.03),
       }));
 
@@ -547,10 +392,8 @@
       const dt = clamp(now - last, 10, 40);
       last = now;
 
-      // clear
       ctx.clearRect(0, 0, w, h);
 
-      // stars
       for (const s of stars) {
         s.x += s.vx * dt;
         s.y += s.vy * dt;
@@ -565,7 +408,6 @@
         ctx.fill();
       }
 
-      // subtle AI-network lines (low density)
       const maxD = Math.min(170, Math.max(120, w * 0.16));
       const maxD2 = maxD * maxD;
 
@@ -597,11 +439,10 @@
         }
       }
 
-      // nodes
       for (const p of nodes) {
         ctx.beginPath();
         ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255,255,255,0.20)";
+        ctx.fillStyle = "rgba(255,255,255,0.18)";
         ctx.fill();
       }
 
@@ -611,6 +452,7 @@
     return {
       type: "2d",
       start() {
+        if (prefersReducedMotion) return;
         if (running) return;
         running = true;
         last = performance.now();
@@ -643,6 +485,7 @@
       void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
     `;
 
+    // Slightly lighter + calmer “cosmic compute” shader
     const FRAG = `
       precision highp float;
 
@@ -697,61 +540,53 @@
         vec2 p = (uv - 0.5) * vec2(asp, 1.0);
 
         float t = u_time;
-
         vec2 m = (u_mouse / u_res - 0.5) * vec2(asp, 1.0);
-        vec2 par = 0.020 * (m - p);
+        vec2 par = 0.018 * (m - p);
 
-        vec3 base = vec3(0.028, 0.040, 0.095);
-        base += vec3(0.015, 0.018, 0.028) * (1.0 - uv.y) * 0.75;
+        vec3 base = vec3(0.045, 0.060, 0.125);
+        base += vec3(0.020, 0.026, 0.038) * (1.0 - uv.y) * 0.75;
 
-        float s1 = starLayer(uv + par*0.7, 120.0, 0.020, 0.24, t*1.4);
-        float s2 = starLayer(uv + par*1.0, 180.0, 0.012, 0.18, t*1.1 + 2.0);
-        float s3 = starLayer(uv + par*1.4, 260.0, 0.009, 0.14, t*0.9 + 4.0);
+        float s1 = starLayer(uv + par*0.7, 120.0, 0.018, 0.24, t*1.2);
+        float s2 = starLayer(uv + par*1.0, 180.0, 0.011, 0.18, t*1.0 + 2.0);
+        float s3 = starLayer(uv + par*1.4, 260.0, 0.008, 0.14, t*0.85 + 4.0);
         float stars = s1 + s2 + s3;
 
         vec2 q = p + par*1.2;
-        q += 0.06 * vec2(
-          fbm(q*1.35 + t*0.05),
-          fbm(q*1.20 - t*0.045)
+        q += 0.055 * vec2(
+          fbm(q*1.35 + t*0.045),
+          fbm(q*1.20 - t*0.040)
         );
 
-        float n1 = fbm(q*1.35 + vec2(0.0, t*0.08));
-        float n2 = fbm(q*2.10 + vec2(t*0.06, -t*0.05));
+        float n1 = fbm(q*1.25 + vec2(0.0, t*0.070));
+        float n2 = fbm(q*2.00 + vec2(t*0.050, -t*0.040));
 
-        vec3 cyan = vec3(0.10, 0.88, 0.95);
-        vec3 vio  = vec3(0.72, 0.40, 0.98);
+        vec3 cyan = vec3(0.12, 0.88, 0.95);
+        vec3 vio  = vec3(0.70, 0.42, 0.98);
 
         vec3 nebCol = mix(cyan, vio, n2);
-        float band = exp(-abs(q.y*1.20 + (n2 - 0.5)*0.80) * 2.2);
-        float topMask = smoothstep(0.05, 0.70, uv.y);
-        float neb = smoothstep(0.40, 0.95, n1) * band * topMask;
 
-        float safe = smoothstep(0.95, 0.25, length(p - vec2(0.0, 0.06)));
-        neb *= mix(1.0, 0.70, safe);
+        float band = exp(-abs(q.y*1.15 + (n2 - 0.5)*0.75) * 2.1);
+        float topMask = smoothstep(0.06, 0.72, uv.y);
+        float neb = smoothstep(0.42, 0.95, n1) * band * topMask;
 
         vec2 c = vec2(0.0, 0.10);
         float r = length(p - c);
-        float cycle = 7.5;
+        float cycle = 8.4;
         float ph = fract(t / cycle);
-        float burst = smoothstep(0.0, 0.06, ph) * smoothstep(1.0, 0.72, ph);
+        float burst = smoothstep(0.0, 0.06, ph) * smoothstep(1.0, 0.74, ph);
         float rad = 0.10 + ph * 1.10;
-        float ring = exp(-abs(r - rad) * 34.0) * burst;
-
-        float ph2 = fract((t + 2.2) / (cycle * 1.35));
-        float burst2 = smoothstep(0.0, 0.06, ph2) * smoothstep(1.0, 0.70, ph2);
-        float rad2 = 0.16 + ph2 * 1.25;
-        float ring2 = exp(-abs(r - rad2) * 38.0) * burst2;
+        float ring = exp(-abs(r - rad) * 32.0) * burst;
 
         vec3 col = base;
-        col += nebCol * neb * 0.45;
-        col += vec3(1.0) * stars * 0.85;
-        col += nebCol * stars * 0.06;
-        col += nebCol * (ring * 0.14 + ring2 * 0.10);
+        col += nebCol * neb * 0.38;
+        col += vec3(1.0) * stars * 0.78;
+        col += nebCol * stars * 0.05;
+        col += nebCol * ring * 0.11;
 
-        float gr = hash(gl_FragCoord.xy + vec2(t*70.0, -t*55.0));
-        col += (gr - 0.5) * 0.010;
+        float gr = hash(gl_FragCoord.xy + vec2(t*60.0, -t*50.0));
+        col += (gr - 0.5) * 0.008;
 
-        float vig = smoothstep(1.18, 0.28, length(p));
+        float vig = smoothstep(1.20, 0.28, length(p));
         col *= vig;
 
         col = clamp(col, 0.0, 1.0);
@@ -814,7 +649,6 @@
     let mxT = window.innerWidth * 0.5;
     let myT = window.innerHeight * 0.55;
     let mx = mxT, my = myT;
-
     let dpr = 1;
 
     const setPointer = (clientX, clientY) => {
@@ -848,7 +682,6 @@
     function draw(now) {
       if (!running) return;
 
-      // throttle
       if (now - lastFrame < FRAME_MS) {
         rafId = requestAnimationFrame(draw);
         return;
@@ -872,7 +705,6 @@
       gl.uniform2f(uMouse, mx * dpr, my * dpr);
 
       gl.drawArrays(gl.TRIANGLES, 0, 3);
-
       rafId = requestAnimationFrame(draw);
     }
 
@@ -893,7 +725,6 @@
     };
   }
 
-  // Primary: WebGL shader. Fallback: 2D star/network.
   let bg = initShaderBackground();
   if (!bg) bg = init2DBackground();
 
@@ -903,34 +734,95 @@
     if (document.hidden) return;
     bg.start();
   };
-
   const stopBg = () => bg && bg.stop();
 
-  // Start ONLY if visible (fixes “opened in background tab” issue)
+  // Start background on initial visible load
   startBgIfVisible();
 
-  // visibility handling
+  // =========================
+  // Animatronic flyby
+  // =========================
+  const flyby = document.getElementById("flyby");
+  let flyTimer = null;
+  let flyAnim = null;
+
+  const stopFlyby = () => {
+    if (flyTimer) clearTimeout(flyTimer);
+    flyTimer = null;
+    if (flyAnim) flyAnim.cancel();
+    flyAnim = null;
+    if (flyby) flyby.style.opacity = "0";
+  };
+
+  const scheduleFlyby = (ms) => {
+    if (!flyby) return;
+    if (flyTimer) clearTimeout(flyTimer);
+    flyTimer = setTimeout(spawnFlyby, ms);
+  };
+
+  function spawnFlyby() {
+    if (!flyby) return;
+    if (prefersReducedMotion) return;
+
+    if (document.hidden) {
+      scheduleFlyby(rand(6000, 12000));
+      return;
+    }
+
+    const dir = Math.random() < 0.5 ? 1 : -1; // 1 = left->right, -1 = right->left
+    const y = rand(window.innerHeight * 0.10, window.innerHeight * 0.42);
+    const scale = rand(0.70, 1.05);
+    const duration = rand(6500, 9800);
+
+    const startX = dir === 1 ? -260 : window.innerWidth + 260;
+    const endX = dir === 1 ? window.innerWidth + 260 : -260;
+
+    const wobble = rand(-10, 10);
+    const rot0 = dir === 1 ? 2 : -2;
+    const rot1 = wobble;
+
+    flyby.style.top = `${Math.round(y)}px`;
+    flyby.style.opacity = "0";
+
+    if (flyAnim) flyAnim.cancel();
+
+    flyAnim = flyby.animate(
+      [
+        { transform: `translateX(${startX}px) translateY(0px) scale(${scale}) rotate(${rot0}deg)`, opacity: 0 },
+        { transform: `translateX(${startX + (endX - startX) * 0.10}px) translateY(-6px) scale(${scale}) rotate(${rot1}deg)`, opacity: 0.62 },
+        { transform: `translateX(${startX + (endX - startX) * 0.50}px) translateY(10px) scale(${scale}) rotate(${rot1 * 0.35}deg)`, opacity: 0.70 },
+        { transform: `translateX(${startX + (endX - startX) * 0.90}px) translateY(-4px) scale(${scale}) rotate(${rot1}deg)`, opacity: 0.60 },
+        { transform: `translateX(${endX}px) translateY(0px) scale(${scale}) rotate(${-rot0}deg)`, opacity: 0 }
+      ],
+      {
+        duration,
+        easing: "cubic-bezier(0.22, 0.61, 0.36, 1)",
+        fill: "forwards",
+      }
+    );
+
+    flyAnim.onfinish = () => {
+      flyby.style.opacity = "0";
+      flyAnim = null;
+      scheduleFlyby(rand(12000, 26000)); // “once in a while”
+    };
+  }
+
+  // initial schedule
+  scheduleFlyby(rand(9000, 16000));
+
+  // =========================
+  // Visibility handling
+  // =========================
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       stopBg();
-      // stop projects auto too
-      // (safe even if projects not present)
-      const ev = new Event("bg-hidden");
-      window.dispatchEvent(ev);
+      stopAuto();
+      stopFlyby();
     } else {
       startBgIfVisible();
-      const ev = new Event("bg-visible");
-      window.dispatchEvent(ev);
+      startAuto();
+      scheduleFlyby(rand(5000, 12000));
     }
-  });
-
-  // Hook auto-scroll stop/start into these events without global refs
-  window.addEventListener("bg-hidden", () => {
-    // auto scroll pause when hidden
-    if (typeof stopAuto === "function") stopAuto();
-  });
-  window.addEventListener("bg-visible", () => {
-    // auto scroll resume when visible
-    if (typeof startAuto === "function") startAuto();
   });
 })();

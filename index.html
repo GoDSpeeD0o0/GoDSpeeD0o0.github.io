@@ -6,29 +6,69 @@
     <title>Prateek Parashar | Generative AI</title>
     <meta
       name="description"
-      content="Prateek Parashar — M.S. candidate (ASU). Generative AI, diffusion optimization, NLP, automation."
+      content="Prateek Parashar — Generative AI, diffusion optimization, NLP, automation. M.S. candidate, Arizona State University."
     />
 
+    <!-- Tailwind CDN (no build step) -->
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Poppins:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Poppins:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700;800&display=swap"
       rel="stylesheet"
     />
 
     <link rel="icon" href="favicon.ico" />
-    <link rel="stylesheet" href="assets/css/main.css?v=28" />
+    <link rel="stylesheet" href="assets/css/main.css?v=29" />
   </head>
 
   <body class="min-h-screen text-white">
-    <!-- Shader background -->
+    <!-- Background -->
     <canvas
       id="ai-bg"
       aria-hidden="true"
-      style="position:fixed; inset:0; z-index:-2; width:100vw; height:100vh; pointer-events:none;"
+      style="position:fixed; inset:0; z-index:-3; width:100vw; height:100vh; pointer-events:none;"
     ></canvas>
+
+    <!-- Little animatronic flyby (in-between canvas and overlay) -->
+    <div id="flyby" aria-hidden="true">
+      <!-- Simple “animatronic drone” SVG -->
+      <svg viewBox="0 0 220 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="">
+        <defs>
+          <linearGradient id="gBody" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="rgba(255,255,255,0.92)"/>
+            <stop offset="1" stop-color="rgba(220,240,255,0.70)"/>
+          </linearGradient>
+          <linearGradient id="gWing" x1="0" x2="1">
+            <stop offset="0" stop-color="rgba(34,211,238,0.70)"/>
+            <stop offset="1" stop-color="rgba(168,85,247,0.62)"/>
+          </linearGradient>
+        </defs>
+
+        <!-- wings -->
+        <path d="M28 62 C55 40, 85 40, 104 60 C78 66, 55 72, 28 62 Z" fill="url(#gWing)" opacity="0.55"/>
+        <path d="M192 62 C165 40, 135 40, 116 60 C142 66, 165 72, 192 62 Z" fill="url(#gWing)" opacity="0.55"/>
+
+        <!-- body -->
+        <ellipse cx="110" cy="66" rx="58" ry="26" fill="url(#gBody)" opacity="0.85"/>
+        <ellipse cx="110" cy="66" rx="58" ry="26" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="2"/>
+
+        <!-- visor -->
+        <path d="M78 66 C92 50, 128 50, 142 66 C128 76, 92 76, 78 66 Z"
+              fill="rgba(0,0,0,0.26)" stroke="rgba(255,255,255,0.14)" stroke-width="1.5"/>
+
+        <!-- “eye” -->
+        <circle cx="110" cy="64" r="7" fill="rgba(34,211,238,0.60)"/>
+        <circle cx="110" cy="64" r="3" fill="rgba(255,255,255,0.75)"/>
+
+        <!-- tiny vents -->
+        <rect x="92" y="83" width="36" height="5" rx="2.5" fill="rgba(0,0,0,0.18)"/>
+        <rect x="102" y="88" width="16" height="3" rx="1.5" fill="rgba(0,0,0,0.14)"/>
+      </svg>
+    </div>
+
     <div
       class="bg-overlay"
       aria-hidden="true"
@@ -37,9 +77,9 @@
 
     <!-- NAV -->
     <header class="sticky top-0 z-20 border-b border-white/10 backdrop-blur">
-      <nav class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
+      <nav class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-3">
         <a href="#intro" class="flex items-center gap-3">
-          <span class="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.9)]"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.8)]"></span>
           <span class="font-extrabold tracking-tight">Prateek</span>
         </a>
 
@@ -52,48 +92,39 @@
           <span class="mono text-sm">MENU</span>
         </button>
 
-        <div class="hidden md:flex items-center gap-4 text-sm text-white/80">
-          <a class="hover:text-white" href="#signals">Highlights</a>
-          <a class="hover:text-white" href="#skills">Skills</a>
-          <a class="hover:text-white" href="#experience">Experience</a>
-          <a class="hover:text-white" href="#projects">Projects</a>
-          <a class="hover:text-white" href="#contact">Contact</a>
-
-          <button
-            id="cmdk-btn"
-            class="px-3 py-2 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10"
-            type="button"
-            aria-label="Open quick actions"
-          >
-            <span class="mono text-xs">Quick actions</span>
-          </button>
+        <div class="hidden md:flex items-center gap-2">
+          <a class="nav-pill" href="#signals">Highlights</a>
+          <a class="nav-pill" href="#skills">Skills</a>
+          <a class="nav-pill" href="#experience">Experience</a>
+          <a class="nav-pill" href="#projects">Projects</a>
+          <a class="nav-pill" href="#contact">Contact</a>
 
           <a
-            class="px-3 py-2 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10"
+            class="nav-pill nav-pill-strong"
             href="resume/resume.pdf"
             target="_blank"
             rel="noopener"
           >
-            <span class="mono text-xs">RESUME.pdf</span>
+            Resume PDF
           </a>
         </div>
       </nav>
 
       <!-- Mobile menu -->
       <div id="mobile-menu" class="md:hidden hidden border-t border-white/10">
-        <div class="mx-auto max-w-6xl px-4 py-3 flex flex-col gap-3 text-white/80">
-          <a class="hover:text-white" href="#signals">Highlights</a>
-          <a class="hover:text-white" href="#skills">Skills</a>
-          <a class="hover:text-white" href="#experience">Experience</a>
-          <a class="hover:text-white" href="#projects">Projects</a>
-          <a class="hover:text-white" href="#contact">Contact</a>
+        <div class="mx-auto max-w-6xl px-4 py-3 flex flex-col gap-3 text-white/85">
+          <a class="nav-pill w-fit" href="#signals">Highlights</a>
+          <a class="nav-pill w-fit" href="#skills">Skills</a>
+          <a class="nav-pill w-fit" href="#experience">Experience</a>
+          <a class="nav-pill w-fit" href="#projects">Projects</a>
+          <a class="nav-pill w-fit" href="#contact">Contact</a>
           <a
-            class="px-3 py-2 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 inline-flex w-fit"
+            class="nav-pill nav-pill-strong w-fit"
             href="resume/resume.pdf"
             target="_blank"
             rel="noopener"
           >
-            <span class="mono text-xs">RESUME.pdf</span>
+            Resume PDF
           </a>
         </div>
       </div>
@@ -108,28 +139,24 @@
           <h1 class="name-display name-neo3d">Prateek Parashar</h1>
 
           <p class="headline">
-            Diffusion inference optimization <span class="gradient-text">(-41%)</span> · Python/SQL automation · M.S. candidate, Arizona State University
+            Diffusion inference optimization <span class="gradient-text">(-41%)</span> · Python/SQL automation · production-minded AI engineering
           </p>
 
           <div class="mt-6 flex flex-wrap gap-3 justify-center">
             <a class="btn-primary" href="resume/resume.pdf" target="_blank" rel="noopener">Download Resume</a>
-            <a class="btn-secondary" href="#projects">Projects</a>
-            <button class="btn-secondary" type="button" id="cmdk-btn-hero">
-              <span class="mono">Quick actions</span> <span class="kbd">Ctrl</span><span class="kbd">K</span>
-            </button>
+            <a class="btn-secondary" href="#projects">View Projects</a>
+            <a class="btn-secondary" href="#contact">Contact</a>
           </div>
 
           <div class="mt-8 max-w-3xl mx-auto glass p-4">
             <div class="mono text-xs text-white/60">SUMMARY</div>
             <div class="mt-2 text-white/80">
-              M.S. candidate with a strong CS/software foundation. Proficient in Python, SQL, and deep learning (Transformers/Diffusion),
-              with hands-on work in diffusion inference speedups and automated technical support bots.
+              M.S. candidate with a strong CS/software foundation. Proficient in Python, SQL, and deep learning
+              (Transformers/Diffusion), with hands-on work in diffusion inference speedups and automated technical support bots.
             </div>
           </div>
 
-          <a class="mono scroll-indicator" href="#signals">
-            <span>scroll</span><span>↓</span>
-          </a>
+          <a class="mono scroll-indicator" href="#signals"><span>scroll</span><span>↓</span></a>
         </div>
       </section>
 
@@ -150,7 +177,7 @@
           <div class="glass stat card-hover">
             <div class="label mono">CORE STACK</div>
             <div class="value">Python · SQL</div>
-            <div class="note">FastAPI · automation · data modeling</div>
+            <div class="note">Automation · APIs · data modeling</div>
           </div>
 
           <div class="glass stat card-hover">
@@ -160,9 +187,9 @@
           </div>
 
           <div class="glass stat card-hover">
-            <div class="label mono">GENAI FOCUS</div>
-            <div class="value">Diffusion · NLP</div>
-            <div class="note">Transformers · inference optimization</div>
+            <div class="label mono">FOCUS</div>
+            <div class="value">GenAI · NLP</div>
+            <div class="note">Transformers · diffusion · evaluation</div>
           </div>
         </div>
       </section>
@@ -179,43 +206,13 @@
             <div class="glass card-hover p-5 skill-card skill-cyan">
               <div class="mono text-xs skill-kicker"><span class="skill-dot"></span>LANGUAGES & APIS</div>
               <div class="mt-3 flex flex-wrap gap-2">
-  <a
-    class="pill pill-link"
-    href="https://www.coursera.org/account/accomplishments/certificate/44QVAZ7MNHXM"
-    target="_blank"
-    rel="noopener"
-  >
-    Stanford ML (Coursera)
-  </a>
-
-  <a
-    class="pill pill-link"
-    href="https://courses.edx.org/certificates/c969dba9ef0d46008f3fd4ab2c95e0b2"
-    target="_blank"
-    rel="noopener"
-  >
-    AWS Cloud Practitioner (edX)
-  </a>
-
-  <a
-    class="pill pill-link"
-    href="https://www.datacamp.com/certificate/DSA0010484817422"
-    target="_blank"
-    rel="noopener"
-  >
-    Data Scientist Associate (DataCamp)
-  </a>
-
-  <a
-    class="pill pill-link"
-    href="https://courses.edx.org/certificates/3a8fb4789d4f4ab48f3c7ccb2211e9ed"
-    target="_blank"
-    rel="noopener"
-  >
-    Python for Data Science (IBM, edX)
-  </a>
-</div>
-
+                <span class="pill">Python</span>
+                <span class="pill">SQL</span>
+                <span class="pill">JavaScript (ES6+)</span>
+                <span class="pill">FastAPI</span>
+                <span class="pill">HTML5</span>
+                <span class="pill">CSS3</span>
+              </div>
               <p class="mt-3 text-xs text-white/60">NumPy · SciPy · scikit-learn · Seaborn</p>
             </div>
 
@@ -248,18 +245,47 @@
                 <span class="pill">Docker</span>
                 <span class="pill">Kubernetes</span>
                 <span class="pill">Git</span>
-                <span class="pill">AWS (Cloud Practitioner)</span>
+                <span class="pill">AWS (Cloud)</span>
                 <span class="pill">Slack API</span>
               </div>
             </div>
 
+            <!-- ✅ CERTIFICATIONS: ONLY HERE -->
             <div class="glass card-hover p-5 skill-card skill-violet skill-cert sm:col-span-2">
               <div class="mono text-xs skill-kicker"><span class="skill-dot"></span>CERTIFICATIONS</div>
               <div class="mt-3 flex flex-wrap gap-2">
-                <span class="pill">Stanford-ML</span>
-                <span class="pill">AWS Cloud Practitioner (edX)</span>
-                <span class="pill">Data Scientist Associate (DataCamp)</span>
-                <span class="pill">Python (IBM)</span>
+                <a
+                  class="pill pill-link"
+                  href="https://www.coursera.org/account/accomplishments/certificate/44QVAZ7MNHXM"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  Machine Learning (Stanford, Coursera)
+                </a>
+                <a
+                  class="pill pill-link"
+                  href="https://courses.edx.org/certificates/c969dba9ef0d46008f3fd4ab2c95e0b2"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  AWS Cloud Practitioner Essentials (edX)
+                </a>
+                <a
+                  class="pill pill-link"
+                  href="https://www.datacamp.com/certificate/DSA0010484817422"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  Data Scientist Associate (DataCamp)
+                </a>
+                <a
+                  class="pill pill-link"
+                  href="https://courses.edx.org/certificates/3a8fb4789d4f4ab48f3c7ccb2211e9ed"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  Python for Data Science (IBM, edX)
+                </a>
               </div>
             </div>
           </div>
@@ -311,9 +337,9 @@
                 <li>Extracted insights using SQL + data modeling to support decisions.</li>
               </ul>
               <div class="mt-4 flex flex-wrap gap-2">
-                <span class="badge">Power BI 5+</span>
+                <span class="badge">Power BI</span>
                 <span class="badge">SQL modeling</span>
-                <span class="badge">Reporting automation</span>
+                <span class="badge">Automation</span>
               </div>
             </article>
           </div>
@@ -329,8 +355,8 @@
                 <li>Optimized cross-browser compatibility; reported +21% retention.</li>
               </ul>
               <div class="mt-4 flex flex-wrap gap-2">
+                <span class="badge">Frontend</span>
                 <span class="badge">+21% retention</span>
-                <span class="badge">Frontend modularity</span>
                 <span class="badge">Compatibility</span>
               </div>
             </article>
@@ -343,8 +369,8 @@
                 <div class="mono text-xs text-white/60">Remote · Jan 2021 — Mar 2021</div>
               </div>
               <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
-                <li>Identified vulnerabilities via security testing and supported technical campaigns.</li>
-                <li>Drafted accountability frameworks to standardize remote workflows.</li>
+                <li>Identified system vulnerabilities via security testing and supported technical campaigns.</li>
+                <li>Drafted accountability frameworks to standardize project management and remote workflows.</li>
               </ul>
               <div class="mt-4 flex flex-wrap gap-2">
                 <span class="badge">Security testing</span>
@@ -366,6 +392,7 @@
         <div class="projects-toolbar">
           <div class="mono text-xs text-white/60">
             Project <span id="projects-current">01</span> of <span id="projects-total">00</span>
+            <span class="mono text-xs text-white/50 ml-3">• click to pin • double-click to open repo</span>
           </div>
           <div id="projects-dots" class="projects-dots"></div>
         </div>
@@ -375,18 +402,18 @@
             <span class="mono">‹</span>
           </button>
 
-          <div id="projects-track" class="hscroll drawer-track flex gap-4 overflow-x-auto pb-4">
-            <!-- 1) Slackbot -->
+          <div id="projects-track" class="hscroll drawer-track flex gap-4 overflow-x-auto pb-6">
             <article
               class="glass card-hover project-card"
               tabindex="0"
               role="button"
-              aria-label="Slack Python QnA Bot (double-click to open)"
-              data-project="slackbot"
+              aria-label="Slack Python QnA Bot"
               data-repo="https://github.com/AII-projects/slackbot"
             >
               <div class="project-open-hint mono">DBL‑CLICK</div>
-              <div class="project-thumb" style="--thumb:url('../img/1.png')"></div>
+              <div class="project-thumb">
+                <img src="assets/img/1.png" alt="Slackbot thumbnail" loading="lazy" />
+              </div>
 
               <div class="project-meta">
                 <div class="project-title">Slack Python QnA Bot</div>
@@ -397,7 +424,7 @@
 
               <ul class="project-bullets">
                 <li>Streamlined QnA flow using Python + Slack API.</li>
-                <li>Automated debugging steps for multi-step queries.</li>
+                <li>Automated debugging workflows for multi-step queries.</li>
               </ul>
 
               <div class="flex flex-wrap gap-2">
@@ -407,17 +434,17 @@
               </div>
             </article>
 
-            <!-- 2) Faster Diffusion -->
             <article
               class="glass card-hover project-card"
               tabindex="0"
               role="button"
-              aria-label="Faster Diffusion (double-click to open)"
-              data-project="faster-diffusion"
+              aria-label="Faster Diffusion"
               data-repo="https://github.com/GoDSpeeD0o0/GenAIProject"
             >
               <div class="project-open-hint mono">DBL‑CLICK</div>
-              <div class="project-thumb" style="--thumb:url('../img/2.png')"></div>
+              <div class="project-thumb">
+                <img src="assets/img/2.png" alt="Faster Diffusion thumbnail" loading="lazy" />
+              </div>
 
               <div class="project-meta">
                 <div class="project-title">Faster Diffusion</div>
@@ -438,17 +465,17 @@
               </div>
             </article>
 
-            <!-- 3) Particle Pollution Analysis (Research folder) -->
             <article
               class="glass card-hover project-card"
               tabindex="0"
               role="button"
-              aria-label="Particle Pollution Analysis research (double-click to open)"
-              data-project="particle-pollution"
+              aria-label="Particle Pollution Analysis research"
               data-repo="https://github.com/GoDSpeeD0o0/Research-Paper/tree/main/MachineLearningAnalysis_Particle_Pollution"
             >
               <div class="project-open-hint mono">DBL‑CLICK</div>
-              <div class="project-thumb" style="--thumb:url('../img/3.png')"></div>
+              <div class="project-thumb">
+                <img src="assets/img/3.png" alt="Particle Pollution Analysis thumbnail" loading="lazy" />
+              </div>
 
               <div class="project-meta">
                 <div class="project-title">Particle Pollution Analysis (Research)</div>
@@ -458,7 +485,7 @@
               <p class="project-desc">ML analysis of pollutant datasets to model PM2.5 and air-quality trends.</p>
 
               <ul class="project-bullets">
-                <li>Applied ML algorithms to analyze complex pollutant data.</li>
+                <li>Applied ML algorithms to analyze pollutant data.</li>
                 <li>Built a framework for predicting air-quality trends.</li>
               </ul>
 
@@ -469,17 +496,17 @@
               </div>
             </article>
 
-            <!-- 4) Tweet Sentiment Analysis -->
             <article
               class="glass card-hover project-card"
               tabindex="0"
               role="button"
-              aria-label="Tweet Sentiment Analysis (double-click to open)"
-              data-project="tweet-sentiment"
+              aria-label="Tweet Sentiment Analysis"
               data-repo="https://github.com/GoDSpeeD0o0/TextSentimentAnalysis"
             >
               <div class="project-open-hint mono">DBL‑CLICK</div>
-              <div class="project-thumb" style="--thumb:url('../img/4.png')"></div>
+              <div class="project-thumb">
+                <img src="assets/img/4.png" alt="Tweet Sentiment Analysis thumbnail" loading="lazy" />
+              </div>
 
               <div class="project-meta">
                 <div class="project-title">Tweet Sentiment Analysis</div>
@@ -519,6 +546,9 @@
             Email:
             <a class="underline hover:text-white" href="mailto:pparash7@asu.edu">pparash7@asu.edu</a>
           </p>
+          <p class="text-white/80 mt-2">
+            Phone: <span class="mono">480-475-3206</span>
+          </p>
 
           <p class="text-white/70 text-sm mt-2">
             LinkedIn:
@@ -530,14 +560,6 @@
               github.com/GoDSpeeD0o0
             </a>
           </p>
-
-          <div class="mt-4 flex flex-wrap gap-2">
-            <a class="btn-secondary" href="mailto:pparash7@asu.edu">Email</a>
-            <a class="btn-secondary" href="resume/resume.pdf" target="_blank" rel="noopener">Open Resume</a>
-            <button class="btn-secondary" type="button" id="cmdk-btn-contact">
-              <span class="mono">Quick actions</span>
-            </button>
-          </div>
         </div>
       </section>
 
@@ -546,86 +568,6 @@
       </footer>
     </main>
 
-    <!-- COMMAND PALETTE -->
-    <div id="cmdk-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="cmdk-title">
-      <div class="window cmdk-panel">
-        <div class="window-bar">
-          <div class="window-left">
-            <div class="window-dots" aria-hidden="true">
-              <span class="window-dot cyan"></span>
-              <span class="window-dot violet"></span>
-              <span class="window-dot"></span>
-            </div>
-            <div class="mono text-xs text-white/60" id="cmdk-title">Quick actions</div>
-          </div>
-          <div class="mono text-xs text-white/50">
-            <span class="kbd">Esc</span>
-          </div>
-        </div>
-
-        <div class="cmdk-body">
-          <input
-            id="cmdk-input"
-            class="cmdk-input"
-            type="text"
-            placeholder="Search… (projects, resume, email)"
-            autocomplete="off"
-            spellcheck="false"
-          />
-
-          <div id="cmdk-list" class="cmdk-list">
-            <button class="cmdk-item" type="button" data-action="goto" data-target="#signals" data-search="highlights metrics">
-              <span>Go to Highlights</span><span class="kbd">Enter</span>
-            </button>
-            <button class="cmdk-item" type="button" data-action="goto" data-target="#skills" data-search="skills certifications">
-              <span>Go to Skills</span><span class="kbd">Enter</span>
-            </button>
-            <button class="cmdk-item" type="button" data-action="goto" data-target="#experience" data-search="experience">
-              <span>Go to Experience</span><span class="kbd">Enter</span>
-            </button>
-            <button class="cmdk-item" type="button" data-action="goto" data-target="#projects" data-search="projects repos">
-              <span>Go to Projects</span><span class="kbd">Enter</span>
-            </button>
-            <button class="cmdk-item" type="button" data-action="goto" data-target="#contact" data-search="contact email">
-              <span>Go to Contact</span><span class="kbd">Enter</span>
-            </button>
-
-            <button class="cmdk-item" type="button" data-action="open" data-target="resume/resume.pdf" data-search="open resume pdf">
-              <span>Open Resume (PDF)</span><span class="kbd">↗</span>
-            </button>
-            <button class="cmdk-item" type="button" data-action="open" data-target="https://github.com/GoDSpeeD0o0" data-search="open github">
-              <span>Open GitHub</span><span class="kbd">↗</span>
-            </button>
-            <button class="cmdk-item" type="button" data-action="open" data-target="https://linkedin.com/in/prateekp7" data-search="open linkedin">
-              <span>Open LinkedIn</span><span class="kbd">↗</span>
-            </button>
-
-            <button class="cmdk-item" type="button" data-action="copy" data-value="pparash7@asu.edu" data-search="copy email">
-              <span>Copy Email</span><span class="kbd">copy</span>
-            </button>
-            <button class="cmdk-item" type="button" data-action="copy" data-value="480-475-3206" data-search="copy phone">
-              <span>Copy Phone</span><span class="kbd">copy</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- TOAST -->
-    <div id="toast" class="toast hidden"></div>
-
-    <script src="assets/js/main.js?v=28"></script>
-
-    <script>
-      // Wire hero/contact quick-action buttons without duplicating IDs
-      (() => {
-        const hero = document.getElementById("cmdk-btn-hero");
-        const contact = document.getElementById("cmdk-btn-contact");
-        const mainBtn = document.getElementById("cmdk-btn");
-        const clickMain = () => mainBtn && mainBtn.click();
-        hero && hero.addEventListener("click", clickMain);
-        contact && contact.addEventListener("click", clickMain);
-      })();
-    </script>
+    <script src="assets/js/main.js?v=29"></script>
   </body>
 </html>
