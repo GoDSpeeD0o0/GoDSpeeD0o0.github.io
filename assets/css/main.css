@@ -357,6 +357,23 @@ input:focus-visible {
   color: rgba(255, 255, 255, 0.84);
   font-size: 0.85rem;
 }
+/* Clickable certification pills */
+.pill-link {
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pill-link:hover {
+  filter: brightness(1.06);
+}
+
+.pill-link:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(34,211,238,0.30),
+    0 0 0 1px rgba(255,255,255,0.12) inset;
+}
 
 /* ===== Metrics grid ===== */
 .stat-grid {
