@@ -19,7 +19,7 @@
     />
 
     <link rel="icon" href="favicon.ico" />
-    <link rel="stylesheet" href="assets/css/main.css?v=25" />
+    <link rel="stylesheet" href="assets/css/main.css?v=27" />
   </head>
 
   <body class="min-h-screen text-white">
@@ -347,8 +347,15 @@
 
           <div id="projects-track" class="hscroll drawer-track flex gap-4 overflow-x-auto pb-4">
             <!-- 1) Slackbot -->
-            <article class="glass card-hover project-card" data-project="slackbot">
-              <div class="project-open-hint mono">OPEN</div>
+            <article
+              class="glass card-hover project-card"
+              tabindex="0"
+              role="button"
+              aria-label="Slack Python QnA Bot (double-click to open)"
+              data-project="slackbot"
+              data-repo="https://github.com/AII-projects/slackbot"
+            >
+              <div class="project-open-hint mono">DBL‑CLICK</div>
               <div class="project-thumb" style="--thumb:url('../img/1.png')"></div>
 
               <div class="project-meta">
@@ -368,15 +375,18 @@
                 <span class="pill">Slack API</span>
                 <span class="pill">Automation</span>
               </div>
-
-              <a class="project-link" href="https://github.com/AII-projects/slackbot" target="_blank" rel="noopener">
-                Open repo →
-              </a>
             </article>
 
             <!-- 2) Faster Diffusion -->
-            <article class="glass card-hover project-card" data-project="faster-diffusion">
-              <div class="project-open-hint mono">OPEN</div>
+            <article
+              class="glass card-hover project-card"
+              tabindex="0"
+              role="button"
+              aria-label="Faster Diffusion (double-click to open)"
+              data-project="faster-diffusion"
+              data-repo="https://github.com/GoDSpeeD0o0/GenAIProject"
+            >
+              <div class="project-open-hint mono">DBL‑CLICK</div>
               <div class="project-thumb" style="--thumb:url('../img/2.png')"></div>
 
               <div class="project-meta">
@@ -396,15 +406,18 @@
                 <span class="pill">Optimization</span>
                 <span class="pill">Python</span>
               </div>
-
-              <a class="project-link" href="https://github.com/GoDSpeeD0o0/GenAIProject" target="_blank" rel="noopener">
-                Open repo →
-              </a>
             </article>
 
             <!-- 3) Particle Pollution Analysis (Research folder) -->
-            <article class="glass card-hover project-card" data-project="particle-pollution">
-              <div class="project-open-hint mono">OPEN</div>
+            <article
+              class="glass card-hover project-card"
+              tabindex="0"
+              role="button"
+              aria-label="Particle Pollution Analysis research (double-click to open)"
+              data-project="particle-pollution"
+              data-repo="https://github.com/GoDSpeeD0o0/Research-Paper/tree/main/MachineLearningAnalysis_Particle_Pollution"
+            >
+              <div class="project-open-hint mono">DBL‑CLICK</div>
               <div class="project-thumb" style="--thumb:url('../img/3.png')"></div>
 
               <div class="project-meta">
@@ -424,20 +437,18 @@
                 <span class="pill">Data Analysis</span>
                 <span class="pill">Research</span>
               </div>
-
-              <a
-                class="project-link"
-                href="https://github.com/GoDSpeeD0o0/Research-Paper/tree/main/MachineLearningAnalysis_Particle_Pollution"
-                target="_blank"
-                rel="noopener"
-              >
-                Open folder →
-              </a>
             </article>
 
             <!-- 4) Tweet Sentiment Analysis -->
-            <article class="glass card-hover project-card" data-project="tweet-sentiment">
-              <div class="project-open-hint mono">OPEN</div>
+            <article
+              class="glass card-hover project-card"
+              tabindex="0"
+              role="button"
+              aria-label="Tweet Sentiment Analysis (double-click to open)"
+              data-project="tweet-sentiment"
+              data-repo="https://github.com/GoDSpeeD0o0/TextSentimentAnalysis"
+            >
+              <div class="project-open-hint mono">DBL‑CLICK</div>
               <div class="project-thumb" style="--thumb:url('../img/4.png')"></div>
 
               <div class="project-meta">
@@ -457,10 +468,6 @@
                 <span class="pill">Transformers</span>
                 <span class="pill">ALBERT</span>
               </div>
-
-              <a class="project-link" href="https://github.com/GoDSpeeD0o0/TextSentimentAnalysis" target="_blank" rel="noopener">
-                Open repo →
-              </a>
             </article>
           </div>
 
@@ -508,51 +515,6 @@
         <span class="mono">©</span> <span id="year"></span> Prateek Parashar
       </footer>
     </main>
-
-    <!-- PROJECT MODAL -->
-    <div id="project-modal" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pm-title">
-      <div class="window modal-panel">
-        <div class="window-bar">
-          <div class="window-left">
-            <div class="window-dots" aria-hidden="true">
-              <span class="window-dot cyan"></span>
-              <span class="window-dot violet"></span>
-              <span class="window-dot"></span>
-            </div>
-            <div class="mono text-xs text-white/60">Project details</div>
-          </div>
-          <button id="pm-close" class="icon-btn" type="button" aria-label="Close project modal">
-            <span class="mono">✕</span>
-          </button>
-        </div>
-
-        <div class="modal-body">
-          <div class="modal-title" id="pm-title">Title</div>
-          <div class="modal-sub mono" id="pm-sub">Meta</div>
-
-          <div class="modal-grid">
-            <div class="modal-section">
-              <div class="label mono">Problem</div>
-              <div class="text" id="pm-problem"></div>
-
-              <div class="label mono" style="margin-top:12px;">Approach</div>
-              <div class="text" id="pm-approach"></div>
-
-              <div class="label mono" style="margin-top:12px;">Results</div>
-              <ul class="text" id="pm-results" style="margin-top:8px; padding-left:18px; list-style:disc;"></ul>
-            </div>
-
-            <div class="modal-section">
-              <div class="label mono">Stack</div>
-              <div id="pm-stack" class="mt-3 flex flex-wrap gap-2"></div>
-
-              <div class="label mono" style="margin-top:12px;">Links</div>
-              <div id="pm-links" class="modal-actions"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- COMMAND PALETTE -->
     <div id="cmdk-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="cmdk-title">
@@ -622,7 +584,7 @@
     <!-- TOAST -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="assets/js/main.js?v=26"></script>
+    <script src="assets/js/main.js?v=27"></script>
 
     <script>
       // Wire hero/contact quick-action buttons without duplicating IDs
