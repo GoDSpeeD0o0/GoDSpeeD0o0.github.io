@@ -212,6 +212,9 @@
   let resumeTimer = null;
   let projectsInView = false;
 
+  // declared early so no TDZ surprises
+  let modalOpen = false;
+
   const stopAuto = () => {
     if (!autoTimer) return;
     clearInterval(autoTimer);
@@ -302,8 +305,6 @@
     updateProjectsUI();
     scheduleResume();
   };
-
-  let modalOpen = false; // used by auto-scroll guards
 
   if (track && projectsSection) {
     const cards = getCards();
@@ -404,7 +405,6 @@
   const pmStack = document.getElementById("pm-stack");
   const pmLinks = document.getElementById("pm-links");
 
-  // UPDATED: matches your 4 projects + keys used in HTML data-project
   const PROJECT_DATA = {
     slackbot: {
       title: "Slack Python QnA Bot",
