@@ -375,7 +375,7 @@
         openRepoForCard(card);
       });
 
-      // optional keyboard: Enter opens repo
+      // keyboard: Enter opens repo
       card.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
           e.preventDefault();
@@ -384,7 +384,7 @@
       });
     });
 
-    // drag-to-scroll (only captures pointer after threshold -> keeps click behavior clean)
+    // drag-to-scroll (captures pointer only after threshold)
     let pointerActive = false;
     let dragging = false;
     let startX = 0;
@@ -440,7 +440,7 @@
     track.addEventListener("pointercancel", endPointer);
     track.addEventListener("lostpointercapture", endPointer);
 
-    // scroll updates (when not locked, this updates active index)
+    // scroll updates
     let scrollRAF = 0;
     track.addEventListener(
       "scroll",
@@ -465,17 +465,14 @@
     );
     io.observe(projectsSection);
 
-    // click anywhere else (outside card/controls) unlocks selection
+    // click elsewhere unlocks
     document.addEventListener("pointerdown", (e) => {
       if (!manualLock) return;
 
       const insideCard = e.target.closest(".project-card");
       if (insideCard) return;
 
-      const insideControl =
-        e.target.closest(".drawer-btn") ||
-        e.target.closest(".dot");
-
+      const insideControl = e.target.closest(".drawer-btn") || e.target.closest(".dot");
       if (insideControl) return;
 
       const insideProjects = e.target.closest("#projects");
@@ -484,7 +481,6 @@
         return;
       }
 
-      // inside projects area but not on a card/control = unlock
       unlockSelection();
     });
 
@@ -492,10 +488,141 @@
   }
 
   // =========================
-  // Cosmic Compute Shader (Theme 3)
+  // Background Animation (WebGL primary + 2D fallback)
   // =========================
   const canvas = document.getElementById("ai-bg");
   if (!canvas) return;
+
+  function init2DBackground() {
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if (!ctx) return null;
+
+    let rafId = null;
+    let running = false;
+
+    let w = 0, h = 0, dpr = 1;
+    let stars = [];
+    let nodes = [];
+
+    const rand = (a, b) => a + Math.random() * (b - a);
+
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = window.innerWidth;
+      h = window.innerHeight;
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      canvas.style.width = "100vw";
+      canvas.style.height = "100vh";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // minimal, clean
+      const starCount = clamp(Math.round((w * h) / 9000), 120, 220);
+      stars = Array.from({ length: starCount }, () => ({
+        x: rand(0, w),
+        y: rand(0, h),
+        r: rand(0.6, 1.6),
+        a: rand(0.05, 0.22),
+        vy: rand(0.03, 0.10),
+        vx: rand(-0.03, 0.03),
+      }));
+
+      const nodeCount = clamp(Math.round((w * h) / 70000), 14, 22);
+      nodes = Array.from({ length: nodeCount }, () => ({
+        x: rand(0, w),
+        y: rand(0, h * 0.65),
+        vx: rand(-0.08, 0.08),
+        vy: rand(-0.06, 0.06),
+      }));
+    }
+
+    window.addEventListener("resize", resize, { passive: true });
+    resize();
+
+    let last = performance.now();
+
+    function frame(now) {
+      if (!running) return;
+
+      const dt = clamp(now - last, 10, 40);
+      last = now;
+
+      // clear
+      ctx.clearRect(0, 0, w, h);
+
+      // stars
+      for (const s of stars) {
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+
+        if (s.y > h + 10) s.y = -10;
+        if (s.x < -10) s.x = w + 10;
+        if (s.x > w + 10) s.x = -10;
+
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${s.a})`;
+        ctx.fill();
+      }
+
+      // subtle AI-network lines (low density)
+      const maxD = Math.min(170, Math.max(120, w * 0.16));
+      const maxD2 = maxD * maxD;
+
+      for (const p of nodes) {
+        p.x += p.vx * dt * 0.05;
+        p.y += p.vy * dt * 0.05;
+
+        if (p.x < -20) p.x = w + 20;
+        if (p.x > w + 20) p.x = -20;
+        if (p.y < -20) p.y = h * 0.65 + 20;
+        if (p.y > h * 0.65 + 20) p.y = -20;
+      }
+
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = nodes[i], b = nodes[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 > maxD2) continue;
+
+          const p = 1 - d2 / maxD2;
+          ctx.strokeStyle = `rgba(34,211,238,${0.08 * p})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+
+      // nodes
+      for (const p of nodes) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255,0.20)";
+        ctx.fill();
+      }
+
+      rafId = requestAnimationFrame(frame);
+    }
+
+    return {
+      type: "2d",
+      start() {
+        if (running) return;
+        running = true;
+        last = performance.now();
+        rafId = requestAnimationFrame(frame);
+      },
+      stop() {
+        running = false;
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = null;
+      },
+    };
+  }
 
   function initShaderBackground() {
     const gl =
@@ -580,7 +707,6 @@
         float s1 = starLayer(uv + par*0.7, 120.0, 0.020, 0.24, t*1.4);
         float s2 = starLayer(uv + par*1.0, 180.0, 0.012, 0.18, t*1.1 + 2.0);
         float s3 = starLayer(uv + par*1.4, 260.0, 0.009, 0.14, t*0.9 + 4.0);
-
         float stars = s1 + s2 + s3;
 
         vec2 q = p + par*1.2;
@@ -617,12 +743,9 @@
         float ring2 = exp(-abs(r - rad2) * 38.0) * burst2;
 
         vec3 col = base;
-
         col += nebCol * neb * 0.45;
-
         col += vec3(1.0) * stars * 0.85;
         col += nebCol * stars * 0.06;
-
         col += nebCol * (ring * 0.14 + ring2 * 0.10);
 
         float gr = hash(gl_FragCoord.xy + vec2(t*70.0, -t*55.0));
@@ -641,7 +764,6 @@
       gl.shaderSource(sh, src);
       gl.compileShader(sh);
       if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
-        console.warn(gl.getShaderInfoLog(sh) || "Shader compile failed");
         gl.deleteShader(sh);
         return null;
       }
@@ -662,7 +784,6 @@
       gl.deleteShader(fs);
 
       if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
-        console.warn(gl.getProgramInfoLog(p) || "Program link failed");
         gl.deleteProgram(p);
         return null;
       }
@@ -685,14 +806,16 @@
     const DPR_MAX = 1.6;
     const FRAME_MS = 1000 / 60;
 
-    let dpr = 1;
     let rafId = null;
+    let running = false;
     let lastFrame = 0;
     const t0 = performance.now();
 
     let mxT = window.innerWidth * 0.5;
     let myT = window.innerHeight * 0.55;
     let mx = mxT, my = myT;
+
+    let dpr = 1;
 
     const setPointer = (clientX, clientY) => {
       mxT = clientX;
@@ -723,8 +846,9 @@
     resizeGL();
 
     function draw(now) {
-      if (document.hidden) return;
+      if (!running) return;
 
+      // throttle
       if (now - lastFrame < FRAME_MS) {
         rafId = requestAnimationFrame(draw);
         return;
@@ -752,37 +876,61 @@
       rafId = requestAnimationFrame(draw);
     }
 
-    function start() {
-      if (prefersReducedMotion) return;
-      if (rafId) return;
-      lastFrame = 0;
-      rafId = requestAnimationFrame(draw);
-    }
-
-    function stop() {
-      if (!rafId) return;
-      cancelAnimationFrame(rafId);
-      rafId = null;
-    }
-
-    canvas.addEventListener("webglcontextlost", (e) => {
-      e.preventDefault();
-      stop();
-    }, false);
-
-    return { start, stop };
+    return {
+      type: "webgl",
+      start() {
+        if (prefersReducedMotion) return;
+        if (running) return;
+        running = true;
+        lastFrame = 0;
+        rafId = requestAnimationFrame(draw);
+      },
+      stop() {
+        running = false;
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = null;
+      },
+    };
   }
 
-  const shaderBg = initShaderBackground();
-  if (shaderBg && !prefersReducedMotion) shaderBg.start();
+  // Primary: WebGL shader. Fallback: 2D star/network.
+  let bg = initShaderBackground();
+  if (!bg) bg = init2DBackground();
 
+  const startBgIfVisible = () => {
+    if (!bg) return;
+    if (prefersReducedMotion) return;
+    if (document.hidden) return;
+    bg.start();
+  };
+
+  const stopBg = () => bg && bg.stop();
+
+  // Start ONLY if visible (fixes “opened in background tab” issue)
+  startBgIfVisible();
+
+  // visibility handling
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
-      if (shaderBg) shaderBg.stop();
-      stopAuto();
+      stopBg();
+      // stop projects auto too
+      // (safe even if projects not present)
+      const ev = new Event("bg-hidden");
+      window.dispatchEvent(ev);
     } else {
-      if (shaderBg) shaderBg.start();
-      startAuto();
+      startBgIfVisible();
+      const ev = new Event("bg-visible");
+      window.dispatchEvent(ev);
     }
+  });
+
+  // Hook auto-scroll stop/start into these events without global refs
+  window.addEventListener("bg-hidden", () => {
+    // auto scroll pause when hidden
+    if (typeof stopAuto === "function") stopAuto();
+  });
+  window.addEventListener("bg-visible", () => {
+    // auto scroll resume when visible
+    if (typeof startAuto === "function") startAuto();
   });
 })();
