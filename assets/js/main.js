@@ -1,812 +1,788 @@
-:root {
-  /* base */
-  --bg0: #070b18;
-  --bg1: #0b1328;
+(() => {
+  // =========================
+  // Utilities
+  // =========================
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-  --card: rgba(255, 255, 255, 0.060);
-  --card2: rgba(255, 255, 255, 0.095);
+  // Footer year
+  const yearEl = document.getElementById("year");
+  if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  --border: rgba(255, 255, 255, 0.12);
-  --border2: rgba(255, 255, 255, 0.20);
+  // Header height -> CSS var (keeps intro centered)
+  const headerEl = document.querySelector("header");
+  const setHeaderHeight = () => {
+    const hh = headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0;
+    document.documentElement.style.setProperty("--header-h", `${hh}px`);
+  };
+  setHeaderHeight();
+  window.addEventListener("resize", setHeaderHeight, { passive: true });
 
-  --cyan: rgba(34, 211, 238, 0.75);
-  --violet: rgba(168, 85, 247, 0.72);
-  --white: rgba(255,255,255,0.92);
+  // Reduce motion preference
+  const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const smoothBehavior = reduceMotionPref ? "auto" : "smooth";
 
-  --header-h: 72px; /* JS overwrites */
-}
+  // Keep background animated (your preference)
+  const FORCE_ANIMATION = true;
+  const prefersReducedMotion = !FORCE_ANIMATION && reduceMotionPref;
 
-html { scroll-behavior: smooth; }
+  // Scroll lock manager (cmdk)
+  let scrollLocks = 0;
+  const lockScroll = () => {
+    scrollLocks += 1;
+    if (scrollLocks === 1) document.body.style.overflow = "hidden";
+  };
+  const unlockScroll = () => {
+    scrollLocks = Math.max(0, scrollLocks - 1);
+    if (scrollLocks === 0) document.body.style.overflow = "";
+  };
 
-body {
-  margin: 0;
-  font-family: Poppins, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  background:
-    radial-gradient(1100px 720px at 18% 0%, rgba(34, 211, 238, 0.08), transparent 62%),
-    radial-gradient(980px 700px at 90% 10%, rgba(168, 85, 247, 0.08), transparent 60%),
-    linear-gradient(180deg, var(--bg0), var(--bg1));
-  overflow-x: hidden;
-}
+  // Toast
+  const toastEl = document.getElementById("toast");
+  let toastTimer = null;
+  const toast = (msg) => {
+    if (!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.classList.remove("hidden");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.add("hidden"), 1600);
+  };
 
-.mono {
-  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-    "Liberation Mono", "Courier New", monospace;
-}
+  // =========================
+  // Mobile menu
+  // =========================
+  const btn = document.getElementById("menu-btn");
+  const menu = document.getElementById("mobile-menu");
+  if (btn && menu) {
+    const closeMenu = () => {
+      menu.classList.add("hidden");
+      btn.setAttribute("aria-expanded", "false");
+    };
 
-/* ===== A11Y focus ===== */
-a:focus-visible,
-button:focus-visible,
-input:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 2px rgba(34,211,238,0.35),
-    0 0 0 1px rgba(255,255,255,0.14) inset;
-  border-radius: 12px;
-}
+    btn.addEventListener("click", () => {
+      const isHidden = menu.classList.contains("hidden");
+      if (isHidden) {
+        menu.classList.remove("hidden");
+        btn.setAttribute("aria-expanded", "true");
+      } else {
+        closeMenu();
+      }
+    });
 
-/* ✅ focus style for selectable project cards */
-.project-card:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 2px rgba(34,211,238,0.28),
-    0 0 0 1px rgba(255,255,255,0.10) inset,
-    0 24px 70px rgba(0,0,0,0.40);
-}
-
-/* ===== Background canvas ===== */
-#ai-bg {
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  width: 100vw;
-  height: 100vh;
-  display: block;
-}
-
-/* soft vignette to keep text readable */
-.bg-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    radial-gradient(circle at 50% 22%,
-      rgba(0,0,0,0) 0%,
-      rgba(0,0,0,0.24) 58%,
-      rgba(0,0,0,0.70) 100%);
-  opacity: 0.14;
-}
-
-/* ===== Model Card OS primitives (professional) ===== */
-.os-header {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.os-kicker {
-  font-size: 0.78rem;
-  letter-spacing: 0.06em;
-  text-transform: none;
-  color: rgba(255,255,255,0.58);
-}
-
-.os-subtitle {
-  color: rgba(255,255,255,0.72);
-  font-size: 0.95rem;
-}
-
-.os-rule {
-  height: 1px;
-  width: 100%;
-  margin-top: 10px;
-  background: linear-gradient(
-    90deg,
-    rgba(34,211,238,0.55),
-    rgba(168,85,247,0.55),
-    rgba(255,255,255,0.00)
-  );
-  opacity: 0.85;
-}
-
-/* Window / OS panel */
-.window {
-  border-radius: 18px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.055);
-  backdrop-filter: blur(14px);
-  box-shadow:
-    0 0 0 1px rgba(0,0,0,0.18) inset,
-    0 22px 70px rgba(0,0,0,0.40);
-  overflow: hidden;
-}
-
-.window-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.10);
-  background: rgba(0,0,0,0.14);
-}
-
-.window-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.window-dots { display: inline-flex; gap: 6px; }
-.window-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.18);
-}
-.window-dot.cyan {
-  background: rgba(34,211,238,0.55);
-  box-shadow: 0 0 16px rgba(34,211,238,0.18);
-}
-.window-dot.violet {
-  background: rgba(168,85,247,0.50);
-  box-shadow: 0 0 16px rgba(168,85,247,0.16);
-}
-
-.kbd {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 2px 7px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.06);
-  color: rgba(255,255,255,0.78);
-  font-size: 0.72rem;
-  line-height: 1.2;
-}
-
-/* ===== Hero ===== */
-.hero-screen {
-  min-height: calc(100vh - var(--header-h));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 44px 0 28px;
-  text-align: center;
-  position: relative;
-}
-
-/* subtle “safe zone” behind title without a visible panel/backdrop */
-.hero-screen::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(520px 260px at 50% 38%,
-      rgba(0,0,0,0.30),
-      rgba(0,0,0,0.0) 70%);
-  opacity: 0.65;
-}
-
-.hero-screen > * { position: relative; z-index: 1; }
-
-.name-display {
-  font-family: "Orbitron", system-ui, sans-serif;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.02;
-  font-size: clamp(2.6rem, 7.2vw, 6.2rem);
-}
-
-/* mostly white “chrome” + subtle 3D + soft glow */
-.name-neo3d {
-  display: inline-block;
-
-  background: linear-gradient(
-    180deg,
-    #ffffff 0%,
-    #ffffff 18%,
-    #f7fbff 45%,
-    #ffffff 72%,
-    #fffaff 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-
-  text-shadow:
-    0 0 1px rgba(255,255,255,0.95),
-    1px 0 0 rgba(255,255,255,0.18),
-    -1px 0 0 rgba(255,255,255,0.18),
-    0 1px 0 rgba(255,255,255,0.14),
-    0 -1px 0 rgba(255,255,255,0.10),
-    2px 2px 0 rgba(255,255,255,0.055),
-    3px 3px 0 rgba(255,255,255,0.030),
-    0 0 22px rgba(255,255,255,0.14),
-    0 0 38px rgba(34,211,238,0.10),
-    0 0 54px rgba(168,85,247,0.08);
-}
-
-.headline {
-  margin-top: 14px;
-  max-width: 64rem;
-  margin-left: auto;
-  margin-right: auto;
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  color: rgba(255,255,255,0.78);
-  font-size: clamp(0.98rem, 1.6vw, 1.18rem);
-  line-height: 1.55;
-  text-shadow: 0 1px 0 rgba(0,0,0,0.28);
-}
-
-.scroll-indicator {
-  margin-top: 24px;
-  display: inline-flex;
-  gap: 10px;
-  align-items: center;
-  padding: 10px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.05);
-  color: rgba(255,255,255,0.72);
-  animation: floaty 1.9s ease-in-out infinite;
-}
-.scroll-indicator:hover {
-  color: rgba(255,255,255,0.92);
-  border-color: rgba(255,255,255,0.24);
-  background: rgba(255,255,255,0.08);
-}
-@keyframes floaty {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(7px); }
-}
-
-/* ===== Base components ===== */
-.gradient-text {
-  background: linear-gradient(90deg, var(--cyan), var(--violet));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.glass {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  backdrop-filter: blur(10px);
-}
-
-.card-hover {
-  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
-}
-.card-hover:hover {
-  transform: translateY(-2px);
-  background: var(--card2);
-  border-color: var(--border2);
-}
-
-.section-title {
-  font-family: "Space Grotesk", Poppins, system-ui, sans-serif;
-  font-size: 1.72rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-/* Buttons */
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-weight: 800;
-  color: rgba(5, 7, 18, 0.95);
-  background: linear-gradient(90deg, rgba(34,211,238,0.85), rgba(168,85,247,0.8));
-  box-shadow: 0 0 22px rgba(34, 211, 238, 0.12);
-  transition: transform 160ms ease, filter 160ms ease;
-}
-.btn-primary:hover { transform: translateY(-1px); filter: brightness(1.05); }
-
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-weight: 700;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--border);
-  color: rgba(255, 255, 255, 0.90);
-}
-.btn-secondary:hover { background: rgba(255, 255, 255, 0.095); border-color: rgba(255, 255, 255, 0.22); }
-
-.icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 38px;
-  width: 42px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,0.05);
-}
-.icon-btn:hover { background: rgba(255,255,255,0.095); border-color: rgba(255,255,255,0.22); }
-
-/* Pills */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 0.85rem;
-}
-.pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 7px 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.84);
-  font-size: 0.85rem;
-}
-
-/* ===== Metrics grid ===== */
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 12px;
-}
-.stat { grid-column: span 12; padding: 14px; }
-@media (min-width: 640px) { .stat { grid-column: span 6; } }
-@media (min-width: 1024px) { .stat { grid-column: span 3; } }
-
-.stat .label {
-  font-size: 0.72rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.58);
-}
-.stat .value {
-  margin-top: 6px;
-  font-family: "Space Grotesk", Poppins, system-ui, sans-serif;
-  font-size: 1.55rem;
-  font-weight: 900;
-  color: rgba(255,255,255,0.92);
-}
-.stat .note {
-  margin-top: 4px;
-  color: rgba(255,255,255,0.70);
-  font-size: 0.9rem;
-}
-
-/* ===== Skills color system ===== */
-.skill-card {
-  position: relative;
-  overflow: hidden;
-
-  --accent: rgba(255,255,255,0.8);
-  --accent-border: rgba(255,255,255,0.14);
-  --accent-glow: rgba(255,255,255,0.06);
-  --pill-bg: rgba(255,255,255,0.06);
-  --pill-border: rgba(255,255,255,0.14);
-}
-.skill-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 16px;
-  pointer-events: none;
-  box-shadow:
-    0 0 0 1px var(--accent-border) inset,
-    0 0 26px var(--accent-glow);
-}
-.skill-kicker { display: inline-flex; align-items: center; gap: 10px; color: rgba(255,255,255,0.68); }
-.skill-dot {
-  width: 8px; height: 8px; border-radius: 999px;
-  background: var(--accent);
-  box-shadow: 0 0 18px var(--accent);
-}
-.skill-card .pill { background: var(--pill-bg); border-color: var(--pill-border); }
-
-.skill-cyan {
-  --accent: rgba(34,211,238,0.95);
-  --accent-border: rgba(34,211,238,0.26);
-  --accent-glow: rgba(34,211,238,0.10);
-  --pill-bg: rgba(34,211,238,0.10);
-  --pill-border: rgba(34,211,238,0.22);
-}
-.skill-violet {
-  --accent: rgba(168,85,247,0.92);
-  --accent-border: rgba(168,85,247,0.24);
-  --accent-glow: rgba(168,85,247,0.10);
-  --pill-bg: rgba(168,85,247,0.10);
-  --pill-border: rgba(168,85,247,0.22);
-}
-.skill-emerald {
-  --accent: rgba(16,185,129,0.92);
-  --accent-border: rgba(16,185,129,0.22);
-  --accent-glow: rgba(16,185,129,0.09);
-  --pill-bg: rgba(16,185,129,0.10);
-  --pill-border: rgba(16,185,129,0.22);
-}
-.skill-amber {
-  --accent: rgba(245,158,11,0.92);
-  --accent-border: rgba(245,158,11,0.22);
-  --accent-glow: rgba(245,158,11,0.08);
-  --pill-bg: rgba(245,158,11,0.10);
-  --pill-border: rgba(245,158,11,0.22);
-}
-.skill-cert::after {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; top: 0;
-  height: 3px;
-  opacity: 0.95;
-  background: linear-gradient(90deg, rgba(34,211,238,0.95), rgba(168,85,247,0.95));
-}
-
-/* ===== Experience timeline ===== */
-.timeline {
-  position: relative;
-  margin-top: 14px;
-}
-.timeline::before {
-  content: "";
-  position: absolute;
-  left: 16px;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: rgba(255,255,255,0.10);
-}
-.timeline-item {
-  position: relative;
-  padding-left: 56px;
-  margin-top: 14px;
-}
-.timeline-item:first-child { margin-top: 0; }
-.timeline-item::before {
-  content: "";
-  position: absolute;
-  left: 10px;
-  top: 22px;
-  width: 14px;
-  height: 14px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.20);
-  border: 1px solid rgba(255,255,255,0.16);
-  box-shadow:
-    0 0 0 5px rgba(34,211,238,0.06),
-    0 0 18px rgba(34,211,238,0.10);
-}
-.timeline-item:nth-child(2)::before {
-  box-shadow:
-    0 0 0 5px rgba(168,85,247,0.06),
-    0 0 18px rgba(168,85,247,0.10);
-}
-.timeline-item:nth-child(3)::before {
-  box-shadow:
-    0 0 0 5px rgba(255,255,255,0.05),
-    0 0 18px rgba(255,255,255,0.08);
-}
-
-/* ===== Projects drawer ===== */
-.hscroll {
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
-}
-.hscroll::-webkit-scrollbar { display: none; }
-.hscroll { scrollbar-width: none; }
-
-.projects-drawer { position: relative; }
-
-/* edge fades */
-.projects-drawer::before,
-.projects-drawer::after {
-  content: "";
-  position: absolute;
-  top: 0; bottom: 0;
-  width: 86px;
-  z-index: 1;
-  pointer-events: none;
-}
-.projects-drawer::before {
-  left: 0;
-  background: linear-gradient(90deg, rgba(7,11,24,0.92), rgba(7,11,24,0));
-}
-.projects-drawer::after {
-  right: 0;
-  background: linear-gradient(270deg, rgba(7,11,24,0.92), rgba(7,11,24,0));
-}
-
-.drawer-track {
-  padding-left: 76px;
-  padding-right: 76px;
-  scroll-padding-left: 76px;
-  scroll-padding-right: 76px;
-}
-
-@media (max-width: 640px) {
-  .projects-drawer::before,
-  .projects-drawer::after { width: 64px; }
-  .drawer-track {
-    padding-left: 58px;
-    padding-right: 58px;
-    scroll-padding-left: 58px;
-    scroll-padding-right: 58px;
+    menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeMenu));
   }
-}
 
-.drawer-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 2;
-  width: 56px;
-  height: 56px;
-  border-radius: 999px;
+  // =========================
+  // Command Palette (Ctrl+K)
+  // =========================
+  const cmdkBtn = document.getElementById("cmdk-btn");
+  const cmdkOverlay = document.getElementById("cmdk-overlay");
+  const cmdkInput = document.getElementById("cmdk-input");
+  const cmdkList = document.getElementById("cmdk-list");
 
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  let cmdkOpen = false;
+  let cmdkIndex = 0;
 
-  background:
-    radial-gradient(circle at 30% 30%, rgba(34,211,238,0.16), rgba(255,255,255,0.05)),
-    radial-gradient(circle at 70% 70%, rgba(168,85,247,0.12), rgba(0,0,0,0.0));
-  border: 1px solid rgba(255,255,255,0.18);
-  backdrop-filter: blur(10px);
+  const getCmdkItems = () => Array.from(cmdkList?.querySelectorAll(".cmdk-item") || []);
+  const setCmdkActive = (idx) => {
+    const items = getCmdkItems().filter((b) => !b.classList.contains("hidden"));
+    if (items.length === 0) return;
+    cmdkIndex = ((idx % items.length) + items.length) % items.length;
+    items.forEach((it, i) => it.classList.toggle("active", i === cmdkIndex));
+    items[cmdkIndex].scrollIntoView({ block: "nearest" });
+  };
 
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.06) inset,
-    0 16px 40px rgba(0,0,0,0.35);
+  const filterCmdk = (q) => {
+    const query = (q || "").trim().toLowerCase();
+    const all = getCmdkItems();
+    all.forEach((btn) => {
+      const text = (btn.getAttribute("data-search") || btn.textContent || "").toLowerCase();
+      btn.classList.toggle("hidden", query && !text.includes(query));
+    });
+    setCmdkActive(0);
+  };
 
-  opacity: 0.84;
-  transition: transform 160ms ease, opacity 160ms ease, border-color 160ms ease, filter 160ms ease;
-}
-.drawer-btn:hover {
-  opacity: 1;
-  filter: brightness(1.06);
-  transform: translateY(-50%) scale(1.05);
-  border-color: rgba(255,255,255,0.28);
-}
-.drawer-btn:active { transform: translateY(-50%) scale(0.98); }
+  const runCmdkAction = (btnEl) => {
+    if (!btnEl) return;
+    const action = btnEl.getAttribute("data-action");
+    const target = btnEl.getAttribute("data-target") || "";
+    const value = btnEl.getAttribute("data-value") || "";
 
-.drawer-left { left: 10px; }
-.drawer-right { right: 10px; }
+    closeCmdk();
 
-.drawer-btn span {
-  font-size: 22px;
-  line-height: 1;
-  color: rgba(255,255,255,0.88);
-  text-shadow: 0 1px 0 rgba(0,0,0,0.35);
-}
+    if (action === "goto" && target) {
+      document.querySelector(target)?.scrollIntoView({ behavior: smoothBehavior, block: "start" });
+    } else if (action === "open" && target) {
+      window.open(target, "_blank", "noopener");
+    } else if (action === "copy") {
+      const text = value || target;
+      if (!text) return;
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(text).then(() => toast("Copied")).catch(() => toast("Copy failed"));
+      } else {
+        window.prompt("Copy:", text);
+      }
+    }
+  };
 
-/* Projects indicator */
-.projects-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 10px;
-}
+  const openCmdk = () => {
+    if (!cmdkOverlay || !cmdkInput || !cmdkList) return;
+    if (cmdkOpen) return;
+    cmdkOpen = true;
+    cmdkOverlay.classList.remove("hidden");
+    lockScroll();
+    cmdkInput.value = "";
+    filterCmdk("");
+    setTimeout(() => cmdkInput.focus(), 0);
+  };
 
-.projects-dots {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-.dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(255,255,255,0.08);
-  opacity: 0.75;
-  transition: transform 160ms ease, opacity 160ms ease, background 160ms ease, border-color 160ms ease;
-}
-.dot:hover { opacity: 1; transform: scale(1.08); }
-.dot.active {
-  opacity: 1;
-  background: rgba(34,211,238,0.38);
-  border-color: rgba(34,211,238,0.42);
-  box-shadow: 0 0 16px rgba(34,211,238,0.16);
-}
+  const closeCmdk = () => {
+    if (!cmdkOverlay) return;
+    if (!cmdkOpen) return;
+    cmdkOpen = false;
+    cmdkOverlay.classList.add("hidden");
+    unlockScroll();
+  };
 
-/* Cards */
-.project-card {
-  position: relative;
-  flex: 0 0 auto;
-  width: min(86vw, 560px);
-  padding: 20px;
-  scroll-snap-align: start;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+  cmdkBtn?.addEventListener("click", openCmdk);
+  cmdkOverlay?.addEventListener("click", (e) => {
+    if (e.target === cmdkOverlay) closeCmdk();
+  });
 
-  cursor: pointer;
+  cmdkInput?.addEventListener("input", (e) => filterCmdk(e.target.value));
 
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.06) inset,
-    0 18px 56px rgba(0,0,0,0.34);
+  cmdkList?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".cmdk-item");
+    if (!btn || btn.classList.contains("hidden")) return;
+    runCmdkAction(btn);
+  });
 
-  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, opacity 180ms ease, filter 180ms ease;
-}
-@media (min-width: 1024px) { .project-card { width: 560px; } }
+  document.addEventListener("keydown", (e) => {
+    const isK = e.key.toLowerCase() === "k";
+    const meta = e.metaKey || e.ctrlKey;
 
-.project-card.is-dim {
-  opacity: 0.66;
-  filter: saturate(0.92) brightness(0.98);
-}
+    if (meta && isK) {
+      e.preventDefault();
+      if (cmdkOpen) closeCmdk();
+      else openCmdk();
+      return;
+    }
 
-.project-card.is-active {
-  opacity: 1;
-  border-color: rgba(34,211,238,0.28);
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.08) inset,
-    0 24px 70px rgba(0,0,0,0.44),
-    0 0 34px rgba(34,211,238,0.12);
-}
+    if (!cmdkOpen) return;
 
-.project-open-hint {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 2;
-  padding: 6px 8px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(0,0,0,0.16);
-  color: rgba(255,255,255,0.70);
-  font-size: 0.78rem;
-  opacity: 0;
-  transform: translateY(-4px);
-  transition: opacity 160ms ease, transform 160ms ease, border-color 160ms ease, background 160ms ease;
-  pointer-events: none;
-}
-.project-card:hover .project-open-hint {
-  opacity: 1;
-  transform: translateY(0);
-  background: rgba(0,0,0,0.22);
-  border-color: rgba(255,255,255,0.22);
-}
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeCmdk();
+      return;
+    }
 
-.project-thumb {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.12);
-  overflow: hidden;
-  position: relative;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setCmdkActive(cmdkIndex + 1);
+      return;
+    }
 
-  background-image:
-    radial-gradient(700px 320px at 18% 0%, rgba(34,211,238,0.14), transparent 60%),
-    radial-gradient(680px 300px at 92% 10%, rgba(168,85,247,0.12), transparent 60%),
-    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
-    var(--thumb, none);
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setCmdkActive(cmdkIndex - 1);
+      return;
+    }
 
-  background-size: auto, auto, auto, cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-.project-thumb::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.62));
-}
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const items = getCmdkItems().filter((b) => !b.classList.contains("hidden"));
+      runCmdkAction(items[cmdkIndex]);
+    }
+  });
 
-.project-meta {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-}
-.project-title { font-size: 1.18rem; font-weight: 900; }
-.project-desc { color: rgba(255,255,255,0.80); }
+  // =========================
+  // Projects drawer
+  // - single click: lock selection + stop auto
+  // - double click: open repo
+  // - click elsewhere: unlock selection
+  // =========================
+  const projectsSection = document.getElementById("projects");
+  const track = document.getElementById("projects-track");
+  const prev = document.getElementById("projects-prev");
+  const next = document.getElementById("projects-next");
+  const dotsEl = document.getElementById("projects-dots");
+  const currentEl = document.getElementById("projects-current");
+  const totalEl = document.getElementById("projects-total");
 
-.project-bullets {
-  margin: 0;
-  padding-left: 18px;
-  color: rgba(255,255,255,0.78);
-}
-.project-bullets li { margin-top: 6px; }
+  const AUTO_SCROLL_MS = 10_000;
+  const RESUME_AFTER_MS = 2200;
 
-.grab { cursor: grab; }
-.grabbing { cursor: grabbing; }
+  let autoTimer = null;
+  let resumeTimer = null;
+  let projectsInView = false;
 
-/* ===== Overlay / cmdk ===== */
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 22px;
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(10px);
-}
+  // Selection lock state (single click)
+  let manualLock = false;
+  let selectedIndex = 0;
 
-.hidden { display: none !important; }
+  // Drag tracking to avoid accidental “click select” after a drag
+  let lastDragTime = 0;
 
-.cmdk-panel { width: min(760px, 96vw); }
-.cmdk-body { padding: 12px; }
+  const stopAuto = () => {
+    if (!autoTimer) return;
+    clearInterval(autoTimer);
+    autoTimer = null;
+  };
 
-.cmdk-input {
-  width: 100%;
-  padding: 12px 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(0,0,0,0.22);
-  color: rgba(255,255,255,0.88);
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-}
-.cmdk-input::placeholder { color: rgba(255,255,255,0.46); }
+  const startAuto = () => {
+    if (!track) return;
+    if (!projectsInView) return;
+    if (document.hidden) return;
+    if (cmdkOpen) return;
+    if (manualLock) return;
+    if (autoTimer) return;
 
-.cmdk-list {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 320px;
-  overflow: auto;
-  padding-right: 6px;
-}
-.cmdk-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+    autoTimer = setInterval(() => {
+      if (manualLock) return;
+      const nextIdx = getScrollActiveIndex() + 1;
+      scrollToCard(nextIdx, true);
+      updateProjectsUI();
+    }, AUTO_SCROLL_MS);
+  };
 
-  text-align: left;
-  width: 100%;
+  const pauseAuto = () => {
+    stopAuto();
+    clearTimeout(resumeTimer);
+  };
 
-  padding: 10px 10px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.05);
-  color: rgba(255,255,255,0.84);
-  font-family: Poppins, system-ui, sans-serif;
-}
-.cmdk-item:hover {
-  background: rgba(255,255,255,0.085);
-  border-color: rgba(255,255,255,0.20);
-}
-.cmdk-item.active {
-  border-color: rgba(34,211,238,0.30);
-  box-shadow: 0 0 0 1px rgba(34,211,238,0.12) inset, 0 0 24px rgba(34,211,238,0.10);
-}
+  const scheduleResume = () => {
+    if (manualLock) return;
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(() => startAuto(), RESUME_AFTER_MS);
+  };
 
-/* Toast */
-.toast {
-  position: fixed;
-  left: 50%;
-  bottom: 22px;
-  transform: translateX(-50%);
-  z-index: 80;
+  const getCards = () => Array.from(track?.querySelectorAll(".project-card") || []);
+  const normIndex = (idx) => {
+    const cards = getCards();
+    if (cards.length === 0) return 0;
+    return ((idx % cards.length) + cards.length) % cards.length;
+  };
 
-  padding: 10px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.16);
-  background: rgba(0,0,0,0.28);
-  backdrop-filter: blur(10px);
+  const getTrackPadLeft = () => {
+    if (!track) return 0;
+    const s = getComputedStyle(track);
+    return parseFloat(s.paddingLeft || "0") || 0;
+  };
 
-  color: rgba(255,255,255,0.86);
-  font-size: 0.92rem;
-  box-shadow: 0 16px 50px rgba(0,0,0,0.40);
-}
+  const scrollToCard = (idx, smooth) => {
+    if (!track) return;
+    const cards = getCards();
+    if (cards.length === 0) return;
 
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .card-hover, .btn-primary, .drawer-btn { transition: none; }
-  .scroll-indicator { animation: none; }
-}
+    const i = normIndex(idx);
+    const padLeft = getTrackPadLeft();
+    const left = Math.max(0, cards[i].offsetLeft - padLeft);
+
+    track.scrollTo({ left, behavior: smooth ? smoothBehavior : "auto" });
+  };
+
+  const getScrollActiveIndex = () => {
+    const cards = getCards();
+    if (!track || cards.length === 0) return 0;
+
+    const center = track.scrollLeft + track.clientWidth * 0.5;
+    let best = 0;
+    let bestD = Infinity;
+
+    for (let i = 0; i < cards.length; i++) {
+      const c = cards[i];
+      const cx = c.offsetLeft + c.offsetWidth * 0.5;
+      const d = Math.abs(cx - center);
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    }
+    return best;
+  };
+
+  const getActiveIndex = () => (manualLock ? normIndex(selectedIndex) : getScrollActiveIndex());
+
+  const updateProjectsUI = () => {
+    const cards = getCards();
+    if (!track || cards.length === 0) return;
+
+    const idx = getActiveIndex();
+
+    cards.forEach((c, i) => {
+      c.classList.toggle("is-active", i === idx);
+      c.classList.toggle("is-dim", i !== idx);
+    });
+
+    const dots = Array.from(dotsEl?.querySelectorAll(".dot") || []);
+    dots.forEach((d, i) => d.classList.toggle("active", i === idx));
+
+    if (currentEl) currentEl.textContent = String(idx + 1).padStart(2, "0");
+    if (totalEl) totalEl.textContent = String(cards.length).padStart(2, "0");
+  };
+
+  const lockToIndex = (idx, smooth = true) => {
+    if (!track) return;
+    manualLock = true;
+    selectedIndex = normIndex(idx);
+    pauseAuto();
+    scrollToCard(selectedIndex, smooth);
+    updateProjectsUI();
+  };
+
+  const unlockSelection = () => {
+    if (!manualLock) return;
+    manualLock = false;
+    updateProjectsUI();
+    startAuto();
+  };
+
+  const openRepoForCard = (cardEl) => {
+    const url = cardEl?.dataset?.repo;
+    if (!url) return;
+    window.open(url, "_blank", "noopener");
+  };
+
+  if (track && projectsSection) {
+    const cards = getCards();
+    if (totalEl) totalEl.textContent = String(cards.length).padStart(2, "0");
+
+    // dots
+    if (dotsEl) {
+      dotsEl.innerHTML = "";
+      cards.forEach((_, i) => {
+        const b = document.createElement("button");
+        b.className = "dot";
+        b.type = "button";
+        b.setAttribute("aria-label", `Go to project ${i + 1}`);
+        b.addEventListener("click", () => lockToIndex(i, true));
+        dotsEl.appendChild(b);
+      });
+    }
+
+    // arrow buttons = manual lock navigation
+    prev?.addEventListener("click", () => lockToIndex(getActiveIndex() - 1, true));
+    next?.addEventListener("click", () => lockToIndex(getActiveIndex() + 1, true));
+
+    // click + dblclick behavior on each card
+    cards.forEach((card, i) => {
+      card.addEventListener("click", () => {
+        if (performance.now() - lastDragTime < 240) return;
+        lockToIndex(i, true);
+      });
+
+      card.addEventListener("dblclick", () => {
+        if (performance.now() - lastDragTime < 240) return;
+        openRepoForCard(card);
+      });
+
+      // optional keyboard: Enter opens repo
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          openRepoForCard(card);
+        }
+      });
+    });
+
+    // drag-to-scroll (only captures pointer after threshold -> keeps click behavior clean)
+    let pointerActive = false;
+    let dragging = false;
+    let startX = 0;
+    let startLeft = 0;
+    let pid = null;
+    const DRAG_THRESHOLD = 7;
+
+    track.classList.add("grab");
+
+    const endPointer = () => {
+      if (!pointerActive) return;
+      pointerActive = false;
+
+      if (dragging) {
+        dragging = false;
+        track.classList.remove("grabbing");
+        lastDragTime = performance.now();
+        updateProjectsUI();
+        scheduleResume();
+      }
+
+      pid = null;
+    };
+
+    track.addEventListener("pointerdown", (e) => {
+      // only primary mouse
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+
+      pointerActive = true;
+      dragging = false;
+      startX = e.clientX;
+      startLeft = track.scrollLeft;
+      pid = e.pointerId;
+    });
+
+    track.addEventListener("pointermove", (e) => {
+      if (!pointerActive) return;
+
+      const dx = e.clientX - startX;
+
+      if (!dragging) {
+        if (Math.abs(dx) < DRAG_THRESHOLD) return;
+        dragging = true;
+        pauseAuto();
+        try { track.setPointerCapture(pid); } catch (_) {}
+        track.classList.add("grabbing");
+      }
+
+      track.scrollLeft = startLeft - dx;
+    });
+
+    track.addEventListener("pointerup", endPointer);
+    track.addEventListener("pointercancel", endPointer);
+    track.addEventListener("lostpointercapture", endPointer);
+
+    // scroll updates (when not locked, this updates active index)
+    let scrollRAF = 0;
+    track.addEventListener(
+      "scroll",
+      () => {
+        if (scrollRAF) cancelAnimationFrame(scrollRAF);
+        scrollRAF = requestAnimationFrame(() => updateProjectsUI());
+      },
+      { passive: true }
+    );
+
+    window.addEventListener("resize", () => updateProjectsUI(), { passive: true });
+
+    // in-view detection for auto scroll
+    const io = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        projectsInView = !!entry?.isIntersecting && entry.intersectionRatio >= 0.25;
+        if (projectsInView) startAuto();
+        else stopAuto();
+      },
+      { threshold: [0, 0.25, 0.6, 1] }
+    );
+    io.observe(projectsSection);
+
+    // click anywhere else (outside card/controls) unlocks selection
+    document.addEventListener("pointerdown", (e) => {
+      if (!manualLock) return;
+
+      const insideCard = e.target.closest(".project-card");
+      if (insideCard) return;
+
+      const insideControl =
+        e.target.closest(".drawer-btn") ||
+        e.target.closest(".dot");
+
+      if (insideControl) return;
+
+      const insideProjects = e.target.closest("#projects");
+      if (!insideProjects) {
+        unlockSelection();
+        return;
+      }
+
+      // inside projects area but not on a card/control = unlock
+      unlockSelection();
+    });
+
+    updateProjectsUI();
+  }
+
+  // =========================
+  // Cosmic Compute Shader (Theme 3)
+  // =========================
+  const canvas = document.getElementById("ai-bg");
+  if (!canvas) return;
+
+  function initShaderBackground() {
+    const gl =
+      canvas.getContext("webgl", {
+        alpha: true,
+        antialias: false,
+        premultipliedAlpha: false,
+        depth: false,
+        stencil: false,
+        powerPreference: "high-performance",
+        preserveDrawingBuffer: false,
+      }) || null;
+
+    if (!gl) return null;
+
+    const VERT = `
+      attribute vec2 a_pos;
+      void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
+    `;
+
+    const FRAG = `
+      precision highp float;
+
+      uniform vec2 u_res;
+      uniform float u_time;
+      uniform vec2 u_mouse;
+
+      float hash(vec2 p){
+        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+      }
+
+      float noise(vec2 p){
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        vec2 u = f*f*(3.0-2.0*f);
+        float a = hash(i + vec2(0.0,0.0));
+        float b = hash(i + vec2(1.0,0.0));
+        float c = hash(i + vec2(0.0,1.0));
+        float d = hash(i + vec2(1.0,1.0));
+        return mix(mix(a,b,u.x), mix(c,d,u.x), u.y);
+      }
+
+      float fbm(vec2 p){
+        float v = 0.0;
+        float a = 0.55;
+        for(int i=0;i<3;i++){
+          v += a * noise(p);
+          p = p*2.02 + 10.0;
+          a *= 0.5;
+        }
+        return v;
+      }
+
+      float starLayer(vec2 uv, float scale, float density, float sizeBase, float tw){
+        vec2 gv = fract(uv*scale) - 0.5;
+        vec2 id = floor(uv*scale);
+
+        float r = hash(id);
+        float on = step(1.0 - density, r);
+
+        float size = sizeBase + 0.08 * r;
+        float d = length(gv);
+        float star = on * smoothstep(size, 0.0, d);
+
+        float t = 0.6 + 0.4 * sin(tw + r * 6.2831);
+        return star * t;
+      }
+
+      void main(){
+        vec2 uv = gl_FragCoord.xy / u_res;
+        float asp = u_res.x / u_res.y;
+        vec2 p = (uv - 0.5) * vec2(asp, 1.0);
+
+        float t = u_time;
+
+        vec2 m = (u_mouse / u_res - 0.5) * vec2(asp, 1.0);
+        vec2 par = 0.020 * (m - p);
+
+        vec3 base = vec3(0.028, 0.040, 0.095);
+        base += vec3(0.015, 0.018, 0.028) * (1.0 - uv.y) * 0.75;
+
+        float s1 = starLayer(uv + par*0.7, 120.0, 0.020, 0.24, t*1.4);
+        float s2 = starLayer(uv + par*1.0, 180.0, 0.012, 0.18, t*1.1 + 2.0);
+        float s3 = starLayer(uv + par*1.4, 260.0, 0.009, 0.14, t*0.9 + 4.0);
+
+        float stars = s1 + s2 + s3;
+
+        vec2 q = p + par*1.2;
+        q += 0.06 * vec2(
+          fbm(q*1.35 + t*0.05),
+          fbm(q*1.20 - t*0.045)
+        );
+
+        float n1 = fbm(q*1.35 + vec2(0.0, t*0.08));
+        float n2 = fbm(q*2.10 + vec2(t*0.06, -t*0.05));
+
+        vec3 cyan = vec3(0.10, 0.88, 0.95);
+        vec3 vio  = vec3(0.72, 0.40, 0.98);
+
+        vec3 nebCol = mix(cyan, vio, n2);
+        float band = exp(-abs(q.y*1.20 + (n2 - 0.5)*0.80) * 2.2);
+        float topMask = smoothstep(0.05, 0.70, uv.y);
+        float neb = smoothstep(0.40, 0.95, n1) * band * topMask;
+
+        float safe = smoothstep(0.95, 0.25, length(p - vec2(0.0, 0.06)));
+        neb *= mix(1.0, 0.70, safe);
+
+        vec2 c = vec2(0.0, 0.10);
+        float r = length(p - c);
+        float cycle = 7.5;
+        float ph = fract(t / cycle);
+        float burst = smoothstep(0.0, 0.06, ph) * smoothstep(1.0, 0.72, ph);
+        float rad = 0.10 + ph * 1.10;
+        float ring = exp(-abs(r - rad) * 34.0) * burst;
+
+        float ph2 = fract((t + 2.2) / (cycle * 1.35));
+        float burst2 = smoothstep(0.0, 0.06, ph2) * smoothstep(1.0, 0.70, ph2);
+        float rad2 = 0.16 + ph2 * 1.25;
+        float ring2 = exp(-abs(r - rad2) * 38.0) * burst2;
+
+        vec3 col = base;
+
+        col += nebCol * neb * 0.45;
+
+        col += vec3(1.0) * stars * 0.85;
+        col += nebCol * stars * 0.06;
+
+        col += nebCol * (ring * 0.14 + ring2 * 0.10);
+
+        float gr = hash(gl_FragCoord.xy + vec2(t*70.0, -t*55.0));
+        col += (gr - 0.5) * 0.010;
+
+        float vig = smoothstep(1.18, 0.28, length(p));
+        col *= vig;
+
+        col = clamp(col, 0.0, 1.0);
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `;
+
+    function compile(type, src) {
+      const sh = gl.createShader(type);
+      gl.shaderSource(sh, src);
+      gl.compileShader(sh);
+      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+        console.warn(gl.getShaderInfoLog(sh) || "Shader compile failed");
+        gl.deleteShader(sh);
+        return null;
+      }
+      return sh;
+    }
+
+    function makeProgram(vsSrc, fsSrc) {
+      const vs = compile(gl.VERTEX_SHADER, vsSrc);
+      const fs = compile(gl.FRAGMENT_SHADER, fsSrc);
+      if (!vs || !fs) return null;
+
+      const p = gl.createProgram();
+      gl.attachShader(p, vs);
+      gl.attachShader(p, fs);
+      gl.linkProgram(p);
+
+      gl.deleteShader(vs);
+      gl.deleteShader(fs);
+
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+        console.warn(gl.getProgramInfoLog(p) || "Program link failed");
+        gl.deleteProgram(p);
+        return null;
+      }
+      return p;
+    }
+
+    const program = makeProgram(VERT, FRAG);
+    if (!program) return null;
+
+    const verts = new Float32Array([-1, -1, 3, -1, -1, 3]);
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
+
+    const aPos = gl.getAttribLocation(program, "a_pos");
+    const uRes = gl.getUniformLocation(program, "u_res");
+    const uTime = gl.getUniformLocation(program, "u_time");
+    const uMouse = gl.getUniformLocation(program, "u_mouse");
+
+    const DPR_MAX = 1.6;
+    const FRAME_MS = 1000 / 60;
+
+    let dpr = 1;
+    let rafId = null;
+    let lastFrame = 0;
+    const t0 = performance.now();
+
+    let mxT = window.innerWidth * 0.5;
+    let myT = window.innerHeight * 0.55;
+    let mx = mxT, my = myT;
+
+    const setPointer = (clientX, clientY) => {
+      mxT = clientX;
+      myT = window.innerHeight - clientY;
+    };
+
+    window.addEventListener("pointermove", (e) => setPointer(e.clientX, e.clientY), { passive: true });
+    window.addEventListener("touchmove", (e) => {
+      const t = e.touches && e.touches[0];
+      if (t) setPointer(t.clientX, t.clientY);
+    }, { passive: true });
+
+    function resizeGL() {
+      dpr = Math.min(window.devicePixelRatio || 1, DPR_MAX);
+      const w = Math.floor(window.innerWidth * dpr);
+      const h = Math.floor(window.innerHeight * dpr);
+
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+        canvas.style.width = "100vw";
+        canvas.style.height = "100vh";
+        gl.viewport(0, 0, w, h);
+      }
+    }
+
+    window.addEventListener("resize", resizeGL, { passive: true });
+    resizeGL();
+
+    function draw(now) {
+      if (document.hidden) return;
+
+      if (now - lastFrame < FRAME_MS) {
+        rafId = requestAnimationFrame(draw);
+        return;
+      }
+      lastFrame = now;
+
+      resizeGL();
+
+      const lerp = 0.08;
+      mx = mx + (mxT - mx) * lerp;
+      my = my + (myT - my) * lerp;
+
+      gl.useProgram(program);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.enableVertexAttribArray(aPos);
+      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+      gl.uniform2f(uRes, canvas.width, canvas.height);
+      gl.uniform1f(uTime, (now - t0) / 1000);
+      gl.uniform2f(uMouse, mx * dpr, my * dpr);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+      rafId = requestAnimationFrame(draw);
+    }
+
+    function start() {
+      if (prefersReducedMotion) return;
+      if (rafId) return;
+      lastFrame = 0;
+      rafId = requestAnimationFrame(draw);
+    }
+
+    function stop() {
+      if (!rafId) return;
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+
+    canvas.addEventListener("webglcontextlost", (e) => {
+      e.preventDefault();
+      stop();
+    }, false);
+
+    return { start, stop };
+  }
+
+  const shaderBg = initShaderBackground();
+  if (shaderBg && !prefersReducedMotion) shaderBg.start();
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      if (shaderBg) shaderBg.stop();
+      stopAuto();
+    } else {
+      if (shaderBg) shaderBg.start();
+      startAuto();
+    }
+  });
+})();
