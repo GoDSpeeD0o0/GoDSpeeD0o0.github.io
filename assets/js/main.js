@@ -532,7 +532,7 @@
     };
   }
 
-  // Shader init (same shader as before; kept as-is)
+  // Shader init
   function initShaderBackground() {
     const gl =
       canvas.getContext("webgl", {
@@ -773,7 +773,6 @@
       size = { w: r.width || 110, h: r.height || 74 };
     };
 
-    // Desktop roam area: viewport (avoid center-ish safe zone so it doesn't sit on text)
     const boundsDesktop = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
@@ -789,7 +788,6 @@
       };
     };
 
-    // Mobile roam area: around name inside hero section (local coords)
     const boundsMobile = () => {
       const hr = hero?.getBoundingClientRect();
       const nr = name?.getBoundingClientRect();
@@ -799,13 +797,11 @@
       const heroW = hr.width;
       const heroH = hr.height;
 
-      // compute name rect in hero-local space
       const nx = nr.left - hr.left;
       const ny = nr.top - hr.top;
       const nw = nr.width;
       const nh = nr.height;
 
-      // roam box: slightly bigger than the name block, with extra room below
       const padX = Math.max(26, Math.min(44, heroW * 0.08));
       const padTop = 18;
       const padBottom = 70;
@@ -860,7 +856,6 @@
 
       if (now > nextTargetAt) pickTarget(false);
 
-      // Desktop occasional boost; mobile stays chill
       if (!isMobile() && now > nextBoostAt) {
         boostUntil = now + rand(1600, 3200);
         nextBoostAt = now + rand(16000, 30000);
@@ -903,17 +898,11 @@
       const op = clamp((isMobile() ? 0.58 : 0.50) + trail * 0.14, 0.48, 0.68);
       el.style.opacity = String(op);
 
-      // Desktop uses fixed coords; Mobile is absolute within hero (local coords)
-      if (isMobile()) {
-        el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y + bob)}px, 0) scaleX(${dir})`;
-      } else {
-        el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y + bob)}px, 0) scaleX(${dir})`;
-      }
+      el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y + bob)}px, 0) scaleX(${dir})`;
 
       rafId = requestAnimationFrame(tick);
     };
 
-    // On mobile, only animate rover when hero is visible (so it stays “around the name”)
     let heroVisible = true;
     let heroIO = null;
 

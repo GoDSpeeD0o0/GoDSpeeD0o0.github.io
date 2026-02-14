@@ -124,7 +124,6 @@ button:focus-visible {
 }
 
 /* ===== Rover ===== */
-/* Desktop: fixed roaming (JS controls translate) */
 #flyby {
   position: fixed;
   left: 0;
@@ -186,7 +185,6 @@ button:focus-visible {
     drop-shadow(0 0 18px rgba(168,85,247,0.12));
 }
 
-/* Mobile: rover is inside hero, roams near the name */
 @media (max-width: 640px) {
   #flyby {
     position: absolute; /* relative to #intro */
@@ -341,7 +339,7 @@ button:focus-visible {
   justify-content: center;
   padding: 38px 0 24px;
   text-align: center;
-  position: relative; /* needed for mobile rover absolute */
+  position: relative;
   overflow: hidden;
 }
 .hero-screen::after {
@@ -539,48 +537,85 @@ button:focus-visible {
   .project-card { width: 100%; }
 }
 
-/* ===== Contact card tiles ===== */
-.contact-card { overflow: visible; }
-.contact-grid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 12px;
+/* ===== Contact (compact capsule) ===== */
+.contact-wrap {
+  display: flex;
+  justify-content: center;
 }
-.contact-tile {
-  grid-column: span 12;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 10px 14px;
+
+.contact-bar {
+  display: flex;
   align-items: center;
+  justify-content: center;
+  gap: 12px;
 
-  padding: 14px 14px;
-  border-radius: 16px;
-  text-decoration: none;
+  padding: 12px;
+  border-radius: 999px;
 
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)) padding-box,
-    linear-gradient(90deg, rgba(34,211,238,0.18), rgba(168,85,247,0.14)) border-box;
-  border: 1px solid transparent;
+  width: fit-content;
+  max-width: min(520px, 92vw);
+  flex-wrap: wrap;
+
+  /* cleaner than a big card */
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(10px);
 
   box-shadow:
-    0 0 0 1px rgba(255,255,255,0.04) inset,
-    0 16px 40px rgba(0,0,0,0.24);
-
-  transition: filter 160ms ease, transform 160ms ease, border-color 160ms ease;
-}
-.contact-tile:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.05);
+    0 0 0 1px rgba(255,255,255,0.05) inset,
+    0 18px 44px rgba(0,0,0,0.28);
 }
 
-@media (min-width: 640px) {
-  .contact-tile { grid-column: span 4; grid-template-columns: 1fr; gap: 10px; text-align: center; }
+/* icon-only by default; expands on hover/focus */
+.contact-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+
+  height: 52px;
+  width: 52px;      /* icon-only */
+  padding: 0;
+
+  border-radius: 999px;
+  text-decoration: none;
+  overflow: hidden;
+
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.14);
+
+  transform: translateZ(0);
+  will-change: width, transform;
+
+  transition:
+    width 220ms cubic-bezier(.2,.9,.2,1),
+    transform 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
-.contact-ico {
-  width: 54px;
-  height: 54px;
-  border-radius: 16px;
+.contact-chip:hover,
+.contact-chip:focus-visible {
+  width: 176px; /* reveal label */
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 0 14px 0 12px;
+
+  transform: translateY(-1px) scale(1.03);
+  background: rgba(255,255,255,0.085);
+  border-color: rgba(255,255,255,0.24);
+
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.06) inset,
+    0 18px 46px rgba(0,0,0,0.30);
+}
+
+/* icon */
+.contact-chip-ico {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
 
   display: inline-flex;
   align-items: center;
@@ -588,33 +623,84 @@ button:focus-visible {
 
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.12);
+
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
 }
 
-.contact-ico svg {
-  width: 26px;
-  height: 26px;
-  stroke: rgba(255,255,255,0.88);
+.contact-chip:hover .contact-chip-ico,
+.contact-chip:focus-visible .contact-chip-ico {
+  transform: scale(1.12);
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.24);
+}
+
+.contact-chip-ico svg {
+  width: 20px;
+  height: 20px;
+  stroke: rgba(255,255,255,0.92);
   stroke-width: 2.1;
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.contact-label {
-  font-size: 0.78rem;
+/* label (hidden until expanded) */
+.contact-chip-text {
+  white-space: nowrap;
+  overflow: hidden;
+
+  max-width: 0;
+  opacity: 0;
+  transform: translateX(-8px);
+
+  transition:
+    max-width 220ms cubic-bezier(.2,.9,.2,1),
+    opacity 180ms ease,
+    transform 180ms ease;
+
+  font-family: "Orbitron", system-ui, sans-serif;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.72);
+  font-size: 0.72rem;
+
+  /* same “identity” style as your name */
+  background: linear-gradient(180deg,#ffffff 0%,#f7fbff 45%,#ffffff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+
+  text-shadow:
+    0 0 18px rgba(255,255,255,0.08),
+    0 0 26px rgba(34,211,238,0.06),
+    0 0 26px rgba(168,85,247,0.05);
 }
 
-.contact-value {
-  color: rgba(255,255,255,0.88);
-  font-size: 0.95rem;
+.contact-chip:hover .contact-chip-text,
+.contact-chip:focus-visible .contact-chip-text {
+  max-width: 120px;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Touch devices: keep icon-only */
+@media (hover: none) {
+  .contact-chip:hover {
+    width: 52px;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
+    transform: none;
+  }
+  .contact-chip:hover .contact-chip-text {
+    max-width: 0;
+    opacity: 0;
+    transform: translateX(-8px);
+  }
 }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .card-hover, .drawer-btn, .nav-pill, .cert-row, .contact-tile { transition: none; }
+  .card-hover, .drawer-btn, .nav-pill, .cert-row, .contact-chip { transition: none; }
   .scroll-indicator { animation: none; }
   #flyby .thruster { animation: none; }
   .reveal { opacity: 1; transform: none; filter: none; transition: none; }
