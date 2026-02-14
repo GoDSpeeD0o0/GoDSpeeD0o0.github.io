@@ -87,74 +87,49 @@
   }
 
   // =========================
-  // Contact dock: ONLY show at bottom (footer visible)
-  // + only add bottom padding when visible
+  // Contact dock: stable + bottom-only (NO flicker)
   // =========================
   const contactDock = document.getElementById("contact-dock");
-  const footerEl = document.querySelector("footer");
-  const DOCK_SAFE_MIN = 28;
-
-  const setDockSafe = (px) => {
-    document.documentElement.style.setProperty("--dock-safe", `${px}px`);
-  };
-
-  const computeDockSafe = () => {
-    if (!contactDock) return DOCK_SAFE_MIN;
-    const r = contactDock.getBoundingClientRect();
-    // dock height + breathing room above it
-    return Math.max(DOCK_SAFE_MIN, Math.ceil(r.height + 18));
-  };
 
   if (contactDock) {
-    const showDock = () => {
-      contactDock.classList.add("is-visible");
-      setDockSafe(computeDockSafe());
+    // Always reserve bottom space once (stable) so we never shift layout while toggling
+    const applyDockSafe = () => {
+      const r = contactDock.getBoundingClientRect();
+      const safe = Math.max(84, Math.ceil(r.height + 18));
+      document.documentElement.style.setProperty("--dock-safe", `${safe}px`);
+    };
+    applyDockSafe();
+    window.addEventListener("resize", applyDockSafe, { passive: true });
+
+    // show only when you hit the bottom; hysteresis prevents "in-out"
+    const SHOW_PX = 32;   // must be basically at bottom
+    const HIDE_PX = 360;  // only hides if you scroll back up a decent amount
+
+    let visible = false;
+    let raf = 0;
+
+    const updateDock = () => {
+      raf = 0;
+      const doc = document.documentElement;
+      const remaining = doc.scrollHeight - (window.scrollY + window.innerHeight);
+
+      if (!visible && remaining <= SHOW_PX) {
+        visible = true;
+        contactDock.classList.add("is-visible");
+      } else if (visible && remaining > HIDE_PX) {
+        visible = false;
+        contactDock.classList.remove("is-visible");
+      }
     };
 
-    const hideDock = () => {
-      contactDock.classList.remove("is-visible");
-      setDockSafe(DOCK_SAFE_MIN);
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(updateDock);
     };
 
-    // start hidden
-    hideDock();
-
-    // resize safety
-    window.addEventListener(
-      "resize",
-      () => {
-        if (contactDock.classList.contains("is-visible")) {
-          setDockSafe(computeDockSafe());
-        }
-      },
-      { passive: true }
-    );
-
-    if (footerEl && "IntersectionObserver" in window) {
-      const io = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) showDock();
-          else hideDock();
-        },
-        { threshold: 0.12 }
-      );
-      io.observe(footerEl);
-    } else {
-      // fallback: show only when extremely close to bottom
-      let raf = 0;
-      const onScroll = () => {
-        if (raf) return;
-        raf = requestAnimationFrame(() => {
-          raf = 0;
-          const doc = document.documentElement;
-          const remaining = doc.scrollHeight - (window.scrollY + window.innerHeight);
-          if (remaining <= 90) showDock();
-          else hideDock();
-        });
-      };
-      window.addEventListener("scroll", onScroll, { passive: true });
-      onScroll();
-    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    updateDock();
   }
 
   // =========================
@@ -608,6 +583,7 @@
     };
   }
 
+  // Shader init (unchanged from your previous build)
   function initShaderBackground() {
     const gl =
       canvas.getContext("webgl", {
@@ -1068,11 +1044,11 @@
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       stopBg();
-      stopAuto();
+      stopAuto?.();
       rover?.stop();
     } else {
       startBgIfVisible();
-      startAuto();
+      startAuto?.();
       rover?.start();
       rover?.resize();
     }
