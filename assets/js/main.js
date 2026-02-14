@@ -5,6 +5,15 @@
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const rand = (a, b) => a + Math.random() * (b - a);
 
+  const parseDelayMs = (s) => {
+    if (!s) return 0;
+    const v = parseFloat(s);
+    if (Number.isNaN(v)) return 0;
+    if (s.includes("ms")) return v;
+    if (s.includes("s")) return v * 1000;
+    return v;
+  };
+
   // Footer year
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
@@ -35,7 +44,7 @@
     const closeMenu = () => {
       menu.classList.add("hidden");
       btn.setAttribute("aria-expanded", "false");
-      setHeaderHeight(); // keep scroll bar aligned
+      setHeaderHeight();
     };
 
     btn.addEventListener("click", () => {
@@ -46,7 +55,7 @@
       } else {
         closeMenu();
       }
-      setHeaderHeight(); // keep scroll bar aligned
+      setHeaderHeight();
     });
 
     menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeMenu));
@@ -78,9 +87,10 @@
   }
 
   // =========================
-  // Scroll reveal (subtle OS-style entrance)
+  // Scroll reveal + glint + chip cascade
   // =========================
   const revealTargets = Array.from(document.querySelectorAll("main .os-header, main .glass"));
+
   if (revealTargets.length) {
     if (reduceMotionPref) {
       revealTargets.forEach((el) => {
@@ -89,15 +99,35 @@
     } else {
       revealTargets.forEach((el, i) => {
         el.classList.add("reveal");
-        el.style.transitionDelay = `${Math.min(180, (i % 8) * 24)}ms`;
+        el.style.transitionDelay = `${Math.min(180, (i % 8) * 22)}ms`;
       });
 
       const io = new IntersectionObserver(
         (entries) => {
           for (const e of entries) {
             if (!e.isIntersecting) continue;
-            e.target.classList.add("is-visible");
-            io.unobserve(e.target);
+
+            const el = e.target;
+            const baseDelay = parseDelayMs(el.style.transitionDelay);
+
+            // Chip cascade (skills only): set delays BEFORE visibility toggle
+            if (el.classList.contains("skill-card")) {
+              const pills = Array.from(el.querySelectorAll(".pill"));
+              pills.forEach((pill, idx) => {
+                pill.style.transitionDelay = `${baseDelay + 120 + idx * 45}ms`;
+              });
+            }
+
+            el.classList.add("is-visible");
+
+            // Card glint sweep (once)
+            if (el.classList.contains("glass")) {
+              window.setTimeout(() => {
+                el.classList.add("glint");
+              }, baseDelay + 160);
+            }
+
+            io.unobserve(el);
           }
         },
         { threshold: 0.14, rootMargin: "0px 0px -12% 0px" }
@@ -782,7 +812,7 @@
   const stopBg = () => bg && bg.stop();
 
   // =========================
-  // Pixel rover (ALWAYS on-screen + always visible)
+  // Rover movement (roams around edges, avoids center)
   // =========================
   function initRover() {
     const el = document.getElementById("flyby");
@@ -816,16 +846,17 @@
 
       const minX = M;
       const maxX = Math.max(M, w - size.w - M);
-      const minY = M;
+      const minY = M + 6;
       const maxY = Math.max(M, h - size.h - M);
 
       return { minX, maxX, minY, maxY, w, h, M };
     };
 
+    // Avoid central "content readability" zone
     const safeZone = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      return { x0: w * 0.23, x1: w * 0.77, y0: h * 0.22, y1: h * 0.70 };
+      return { x0: w * 0.22, x1: w * 0.78, y0: h * 0.20, y1: h * 0.74 };
     };
 
     const pickTarget = (force = false) => {
@@ -833,7 +864,7 @@
       const z = safeZone();
 
       let tx = 0, ty = 0;
-      for (let k = 0; k < 14; k++) {
+      for (let k = 0; k < 16; k++) {
         tx = rand(minX, maxX);
         ty = rand(minY, maxY);
 
@@ -846,7 +877,7 @@
       targetX = tx;
       targetY = ty;
 
-      if (force || Math.random() < 0.45) cruise = rand(32, 66);
+      if (force || Math.random() < 0.45) cruise = rand(30, 62);
       nextTargetAt = performance.now() + rand(2400, 5200);
     };
 
@@ -917,12 +948,12 @@
       clampToBounds();
 
       const dir = vx >= 0 ? 1 : -1;
-      const bob = Math.sin(now * 0.003 + 1.7) * (boosting ? 3.0 : 4.5);
+      const bob = Math.sin(now * 0.003 + 1.7) * (boosting ? 2.6 : 3.8);
 
       const trail = clamp((sp - 18) / 120, 0, 1);
       el.style.setProperty("--trail", trail.toFixed(3));
 
-      const op = clamp(0.55 + trail * 0.20, 0.55, 0.75);
+      const op = clamp(0.48 + trail * 0.18, 0.48, 0.66);
       el.style.opacity = String(op);
 
       el.style.transform =
@@ -945,7 +976,7 @@
         vx = rand(-12, 12);
         vy = rand(-10, 10);
 
-        el.style.opacity = "0.62";
+        el.style.opacity = "0.52";
         el.style.setProperty("--trail", "0.25");
 
         pickTarget(true);

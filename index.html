@@ -21,7 +21,7 @@
     />
 
     <link rel="icon" href="favicon.ico" />
-    <link rel="stylesheet" href="assets/css/main.css?v=33" />
+    <link rel="stylesheet" href="assets/css/main.css?v=34" />
   </head>
 
   <body class="min-h-screen text-white">
@@ -96,6 +96,7 @@
         <div class="hidden md:flex items-center gap-2">
           <a class="nav-pill" href="#signals">Highlights</a>
           <a class="nav-pill" href="#skills">Skills</a>
+          <a class="nav-pill" href="#education">Education</a>
           <a class="nav-pill" href="#experience">Experience</a>
           <a class="nav-pill" href="#projects">Projects</a>
           <a class="nav-pill" href="#contact">Contact</a>
@@ -111,6 +112,7 @@
         <div class="mx-auto max-w-6xl px-4 py-3 flex flex-col gap-3 text-white/85">
           <a class="nav-pill w-fit" href="#signals">Highlights</a>
           <a class="nav-pill w-fit" href="#skills">Skills</a>
+          <a class="nav-pill w-fit" href="#education">Education</a>
           <a class="nav-pill w-fit" href="#experience">Experience</a>
           <a class="nav-pill w-fit" href="#projects">Projects</a>
           <a class="nav-pill w-fit" href="#contact">Contact</a>
@@ -125,20 +127,17 @@
     <div id="scroll-progress" aria-hidden="true"></div>
 
     <main class="mx-auto max-w-6xl px-4">
-      <!-- INTRO (cleaner) -->
+      <!-- INTRO -->
       <section id="intro" class="hero-screen">
         <div class="w-full">
           <div class="mono os-kicker">Generative AI · Data Science · Software Engineering</div>
 
           <h1 class="name-display name-neo3d">Prateek Parashar</h1>
 
-          <!-- CHANGED: cleaner headline -->
           <p class="headline">
-  Shipping <span class="gradient-text">GenAI systems</span>: performance, reliability, clean automation.
-</p>
+            Shipping <span class="gradient-text">GenAI systems</span>: performance, reliability, clean automation.
+          </p>
 
-
-          <!-- CHANGED: witty scroll CTA -->
           <a class="mono scroll-indicator" href="#signals"><span>enter</span><span>↓</span></a>
         </div>
       </section>
@@ -177,28 +176,29 @@
         </div>
       </section>
 
-      <!-- SKILLS -->
+      <!-- SKILLS (cleaner: ONLY skills + certs) -->
       <section id="skills" class="mt-12">
         <div class="os-header">
           <h2 class="section-title">Skills & Certifications</h2>
           <div class="os-rule"></div>
         </div>
 
-        <!-- CHANGED: more space -->
-        <div class="mt-4 grid lg:grid-cols-12 gap-5">
-          <!-- CHANGED: more space -->
-          <div class="lg:col-span-8 grid sm:grid-cols-2 gap-5">
+        <div class="mt-4 grid lg:grid-cols-12 gap-7">
+          <!-- Skill cards -->
+          <div class="lg:col-span-8 grid sm:grid-cols-2 gap-7">
             <div class="glass card-hover p-5 skill-card skill-cyan">
               <div class="mono text-xs skill-kicker"><span class="skill-dot"></span>LANGUAGES & APIS</div>
               <div class="mt-3 flex flex-wrap gap-2">
                 <span class="pill">Python</span>
                 <span class="pill">SQL</span>
-                <span class="pill">JavaScript (ES6+)</span>
                 <span class="pill">FastAPI</span>
+                <span class="pill">JavaScript (ES6+)</span>
                 <span class="pill">HTML5</span>
                 <span class="pill">CSS3</span>
               </div>
-              <p class="mt-3 text-xs text-white/60">NumPy · SciPy · scikit-learn · Seaborn</p>
+              <p class="mt-3 text-xs text-white/60 mono">
+                Also: NumPy · SciPy · scikit-learn · Seaborn
+              </p>
             </div>
 
             <div class="glass card-hover p-5 skill-card skill-violet">
@@ -207,18 +207,20 @@
                 <span class="pill">Diffusion</span>
                 <span class="pill">Transformers</span>
                 <span class="pill">NLP</span>
-                <span class="pill">LLM training</span>
                 <span class="pill">Inference optimization</span>
-                <span class="pill">System design</span>
+                <span class="pill">LLM training</span>
               </div>
+              <p class="mt-3 text-xs text-white/60 mono">
+                Also: evaluation · system design
+              </p>
             </div>
 
             <div class="glass card-hover p-5 skill-card skill-emerald">
               <div class="mono text-xs skill-kicker"><span class="skill-dot"></span>DATA / ANALYTICS</div>
               <div class="mt-3 flex flex-wrap gap-2">
+                <span class="pill">Power BI</span>
                 <span class="pill">Data modeling</span>
                 <span class="pill">Data mining</span>
-                <span class="pill">Power BI</span>
                 <span class="pill">Dashboards</span>
                 <span class="pill">Reporting automation</span>
               </div>
@@ -229,57 +231,70 @@
               <div class="mt-3 flex flex-wrap gap-2">
                 <span class="pill">Docker</span>
                 <span class="pill">Kubernetes</span>
-                <span class="pill">Git</span>
                 <span class="pill">AWS (Cloud)</span>
+                <span class="pill">Git</span>
                 <span class="pill">Slack API</span>
-              </div>
-            </div>
-
-            <div class="glass card-hover p-5 skill-card skill-violet skill-cert sm:col-span-2">
-              <div class="mono text-xs skill-kicker"><span class="skill-dot"></span>CERTIFICATIONS</div>
-              <div class="mt-3 flex flex-wrap gap-2">
-                <a class="pill pill-link" href="https://www.coursera.org/account/accomplishments/certificate/44QVAZ7MNHXM" target="_blank" rel="noopener">
-                  Machine Learning (Stanford, Coursera)
-                </a>
-                <a class="pill pill-link" href="https://courses.edx.org/certificates/c969dba9ef0d46008f3fd4ab2c95e0b2" target="_blank" rel="noopener">
-                  AWS Cloud Practitioner Essentials (edX)
-                </a>
-                <a class="pill pill-link" href="https://www.datacamp.com/certificate/DSA0010484817422" target="_blank" rel="noopener">
-                  Data Scientist Associate (DataCamp)
-                </a>
-                <a class="pill pill-link" href="https://courses.edx.org/certificates/3a8fb4789d4f4ab48f3c7ccb2211e9ed" target="_blank" rel="noopener">
-                  Python for Data Science (IBM, edX)
-                </a>
               </div>
             </div>
           </div>
 
-          <!-- CHANGED: a bit more space -->
-          <aside class="lg:col-span-4 space-y-5">
-            <div class="glass card-hover p-5">
-              <div class="mono text-xs text-white/60">EDUCATION</div>
-              <div class="mt-3 space-y-3">
-                <div>
-                  <div class="font-semibold">M.S. Data Science, Analytics & Engineering</div>
-                  <div class="text-white/70 text-sm">Arizona State University · 4.00 GPA · Dec 2026</div>
-                  <div class="mono text-xs text-white/60 mt-1">Generative AI · Data Mining</div>
-                </div>
-                <div class="border-t border-white/10 pt-3">
-                  <div class="font-semibold">B.Tech Computer Science</div>
-                  <div class="text-white/70 text-sm">DIT University · 3.56 GPA · Jun 2022</div>
-                </div>
-              </div>
-            </div>
+          <!-- Certifications (clean list) -->
+          <aside class="lg:col-span-4">
+            <div class="glass card-hover p-5 skill-card skill-violet skill-cert cert-card">
+              <div class="mono text-xs skill-kicker"><span class="skill-dot"></span>CERTIFICATIONS</div>
 
-            <div class="glass card-hover p-5">
-              <div class="mono text-xs text-white/60">LINKS</div>
-              <div class="mt-3 flex flex-wrap gap-2">
-                <a class="btn-secondary" href="#projects">Projects</a>
-                <a class="btn-secondary" href="#experience">Experience</a>
-                <a class="btn-secondary" href="mailto:pparash7@asu.edu">Email</a>
+              <div class="cert-list">
+                <a class="cert-row" href="https://www.coursera.org/account/accomplishments/certificate/44QVAZ7MNHXM" target="_blank" rel="noopener">
+                  <span class="cert-title">Machine Learning</span>
+                  <span class="cert-meta mono">Stanford / Coursera ↗</span>
+                </a>
+
+                <a class="cert-row" href="https://courses.edx.org/certificates/c969dba9ef0d46008f3fd4ab2c95e0b2" target="_blank" rel="noopener">
+                  <span class="cert-title">AWS Cloud Practitioner Essentials</span>
+                  <span class="cert-meta mono">edX ↗</span>
+                </a>
+
+                <a class="cert-row" href="https://www.datacamp.com/certificate/DSA0010484817422" target="_blank" rel="noopener">
+                  <span class="cert-title">Data Scientist Associate</span>
+                  <span class="cert-meta mono">DataCamp ↗</span>
+                </a>
+
+                <a class="cert-row" href="https://courses.edx.org/certificates/3a8fb4789d4f4ab48f3c7ccb2211e9ed" target="_blank" rel="noopener">
+                  <span class="cert-title">Python for Data Science</span>
+                  <span class="cert-meta mono">IBM / edX ↗</span>
+                </a>
               </div>
+
+              <p class="mt-3 text-xs text-white/55">
+                Clean links for recruiters (opens in a new tab).
+              </p>
             </div>
           </aside>
+        </div>
+      </section>
+
+      <!-- EDUCATION (moved out = less congestion) -->
+      <section id="education" class="mt-12">
+        <div class="os-header">
+          <h2 class="section-title">Education</h2>
+          <div class="os-rule"></div>
+        </div>
+
+        <div class="mt-4 grid md:grid-cols-2 gap-7">
+          <div class="glass card-hover p-5">
+            <div class="mono text-xs text-white/60">M.S.</div>
+            <div class="mt-2 font-semibold">Data Science, Analytics & Engineering</div>
+            <div class="text-white/70 text-sm mt-1">Arizona State University · Tempe, AZ</div>
+            <div class="text-white/70 text-sm">Dec 2026</div>
+            <div class="mono text-xs text-white/60 mt-2">Coursework: Generative AI · Data Mining</div>
+          </div>
+
+          <div class="glass card-hover p-5">
+            <div class="mono text-xs text-white/60">B.Tech</div>
+            <div class="mt-2 font-semibold">Computer Science</div>
+            <div class="text-white/70 text-sm mt-1">DIT University · Dehradun, India</div>
+            <div class="text-white/70 text-sm">Jun 2022</div>
+          </div>
         </div>
       </section>
 
@@ -491,9 +506,6 @@
             Email:
             <a class="underline hover:text-white" href="mailto:pparash7@asu.edu">pparash7@asu.edu</a>
           </p>
-          <p class="text-white/80 mt-2">
-            Phone: <span class="mono">480-475-3206</span>
-          </p>
 
           <p class="text-white/70 text-sm mt-2">
             LinkedIn:
@@ -513,6 +525,6 @@
       </footer>
     </main>
 
-    <script src="assets/js/main.js?v=33"></script>
+    <script src="assets/js/main.js?v=34"></script>
   </body>
 </html>
