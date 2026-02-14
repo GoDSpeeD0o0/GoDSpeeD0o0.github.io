@@ -26,23 +26,9 @@
   };
   setHeaderHeight();
   window.addEventListener("resize", setHeaderHeight, { passive: true });
-const dock = document.querySelector(".contact-dock");
 
-function setDockSafe() {
-  if (!dock) return;
-
-  const rect = dock.getBoundingClientRect();
-  // dock height + a little breathing room + the bottom offset
-  const safe = Math.ceil(rect.height + 14 + 18);
-
-  document.documentElement.style.setProperty("--dock-safe", `${safe}px`);
-}
-
-setDockSafe();
-window.addEventListener("resize", setDockSafe, { passive: true });
   // Reduce motion preference
   const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const smoothBehavior = reduceMotionPref ? "auto" : "smooth";
 
   // Keep background animated
   const FORCE_ANIMATION = true;
@@ -73,41 +59,9 @@ window.addEventListener("resize", setDockSafe, { passive: true });
 
     menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeMenu));
   }
-// ===== Contact dock: show after scrolling down (hide on hero) =====
-const contactDock = document.getElementById("contact-dock");
-const hero = document.getElementById("intro");
-
-if (contactDock) {
-  const show = () => contactDock.classList.add("is-visible");
-  const hide = () => contactDock.classList.remove("is-visible");
-
-  // Start hidden
-  hide();
-
-  if (hero && "IntersectionObserver" in window) {
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        // Hide while hero is mostly visible; show once you scroll past it
-        if (entry.isIntersecting && entry.intersectionRatio > 0.35) hide();
-        else show();
-      },
-      { threshold: [0, 0.2, 0.35, 0.6, 1] }
-    );
-
-    io.observe(hero);
-  } else {
-    // Fallback: show after small scroll
-    const onScroll = () => {
-      if (window.scrollY > 120) show();
-      else hide();
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-  }
-}
 
   // =========================
-  // Scroll progress (old-style bar)
+  // Scroll progress
   // =========================
   const progressBar = document.getElementById("scroll-progress-bar");
   if (progressBar) {
@@ -115,13 +69,10 @@ if (contactDock) {
 
     const update = () => {
       raf = 0;
-
       const doc = document.documentElement;
       const scrollTop = window.scrollY || doc.scrollTop || 0;
       const max = Math.max(1, doc.scrollHeight - window.innerHeight);
       const p = clamp(scrollTop / max, 0, 1);
-
-      // scaleX is smoother than width changes
       progressBar.style.transform = `scaleX(${p})`;
     };
 
@@ -133,6 +84,77 @@ if (contactDock) {
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", () => update(), { passive: true });
     update();
+  }
+
+  // =========================
+  // Contact dock: ONLY show at bottom (footer visible)
+  // + only add bottom padding when visible
+  // =========================
+  const contactDock = document.getElementById("contact-dock");
+  const footerEl = document.querySelector("footer");
+  const DOCK_SAFE_MIN = 28;
+
+  const setDockSafe = (px) => {
+    document.documentElement.style.setProperty("--dock-safe", `${px}px`);
+  };
+
+  const computeDockSafe = () => {
+    if (!contactDock) return DOCK_SAFE_MIN;
+    const r = contactDock.getBoundingClientRect();
+    // dock height + breathing room above it
+    return Math.max(DOCK_SAFE_MIN, Math.ceil(r.height + 18));
+  };
+
+  if (contactDock) {
+    const showDock = () => {
+      contactDock.classList.add("is-visible");
+      setDockSafe(computeDockSafe());
+    };
+
+    const hideDock = () => {
+      contactDock.classList.remove("is-visible");
+      setDockSafe(DOCK_SAFE_MIN);
+    };
+
+    // start hidden
+    hideDock();
+
+    // resize safety
+    window.addEventListener(
+      "resize",
+      () => {
+        if (contactDock.classList.contains("is-visible")) {
+          setDockSafe(computeDockSafe());
+        }
+      },
+      { passive: true }
+    );
+
+    if (footerEl && "IntersectionObserver" in window) {
+      const io = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) showDock();
+          else hideDock();
+        },
+        { threshold: 0.12 }
+      );
+      io.observe(footerEl);
+    } else {
+      // fallback: show only when extremely close to bottom
+      let raf = 0;
+      const onScroll = () => {
+        if (raf) return;
+        raf = requestAnimationFrame(() => {
+          raf = 0;
+          const doc = document.documentElement;
+          const remaining = doc.scrollHeight - (window.scrollY + window.innerHeight);
+          if (remaining <= 90) showDock();
+          else hideDock();
+        });
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      onScroll();
+    }
   }
 
   // =========================
@@ -159,7 +181,6 @@ if (contactDock) {
             const el = e.target;
             const baseDelay = parseDelayMs(el.style.transitionDelay);
 
-            // Chip cascade (skills only): set delays BEFORE visibility toggle
             if (el.classList.contains("skill-card")) {
               const pills = Array.from(el.querySelectorAll(".pill"));
               pills.forEach((pill, idx) => {
@@ -169,7 +190,6 @@ if (contactDock) {
 
             el.classList.add("is-visible");
 
-            // Card glint sweep (once)
             if (el.classList.contains("glass")) {
               window.setTimeout(() => {
                 el.classList.add("glint");
@@ -187,7 +207,7 @@ if (contactDock) {
   }
 
   // =========================
-  // Projects drawer
+  // Projects drawer (pin = click, open repo = double click)
   // =========================
   const projectsSection = document.getElementById("projects");
   const track = document.getElementById("projects-track");
@@ -233,7 +253,7 @@ if (contactDock) {
       const i = normIndex(idx);
       const padLeft = getTrackPadLeft();
       const left = Math.max(0, cards[i].offsetLeft - padLeft);
-      track.scrollTo({ left, behavior: smooth ? smoothBehavior : "auto" });
+      track.scrollTo({ left, behavior: smooth ? "smooth" : "auto" });
     };
 
     const getScrollActiveIndex = () => {
@@ -325,7 +345,6 @@ if (contactDock) {
       window.open(url, "_blank", "noopener");
     };
 
-    // Dots
     const cards = getCards();
     if (totalEl) totalEl.textContent = String(cards.length).padStart(2, "0");
 
@@ -341,11 +360,9 @@ if (contactDock) {
       });
     }
 
-    // Arrow buttons lock navigation
     prev?.addEventListener("click", () => lockToIndex(getActiveIndex() - 1, true));
     next?.addEventListener("click", () => lockToIndex(getActiveIndex() + 1, true));
 
-    // Click / double click per card
     cards.forEach((card, i) => {
       card.addEventListener("click", () => {
         if (performance.now() - lastDragTime < 240) return;
@@ -365,7 +382,6 @@ if (contactDock) {
       });
     });
 
-    // Drag-to-scroll
     let pointerActive = false;
     let dragging = false;
     let startX = 0;
@@ -417,7 +433,6 @@ if (contactDock) {
     track.addEventListener("pointercancel", endPointer);
     track.addEventListener("lostpointercapture", endPointer);
 
-    // Scroll updates
     let scrollRAF = 0;
     track.addEventListener(
       "scroll",
@@ -430,7 +445,6 @@ if (contactDock) {
 
     window.addEventListener("resize", () => updateProjectsUI(), { passive: true });
 
-    // In-view detection
     const io = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
@@ -442,7 +456,6 @@ if (contactDock) {
     );
     io.observe(projectsSection);
 
-    // Click outside unlocks
     document.addEventListener("pointerdown", (e) => {
       if (!manualLock) return;
 
