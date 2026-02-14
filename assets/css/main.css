@@ -28,7 +28,7 @@ body {
     linear-gradient(180deg, var(--bg0), var(--bg1));
   overflow-x: hidden;
 
-  padding-bottom: var(--dock-safe);
+  padding-bottom: calc(var(--dock-safe) + env(safe-area-inset-bottom, 0px));
 }
 
 main { position: relative; z-index: 1; }
@@ -177,7 +177,7 @@ button:focus-visible {
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 14px;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   z-index: 40;
 
   display: inline-flex;

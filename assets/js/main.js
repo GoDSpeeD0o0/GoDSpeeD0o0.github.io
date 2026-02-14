@@ -26,7 +26,20 @@
   };
   setHeaderHeight();
   window.addEventListener("resize", setHeaderHeight, { passive: true });
+const dock = document.querySelector(".contact-dock");
 
+function setDockSafe() {
+  if (!dock) return;
+
+  const rect = dock.getBoundingClientRect();
+  // dock height + a little breathing room + the bottom offset
+  const safe = Math.ceil(rect.height + 14 + 18);
+
+  document.documentElement.style.setProperty("--dock-safe", `${safe}px`);
+}
+
+setDockSafe();
+window.addEventListener("resize", setDockSafe, { passive: true });
   // Reduce motion preference
   const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const smoothBehavior = reduceMotionPref ? "auto" : "smooth";
