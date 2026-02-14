@@ -11,7 +11,7 @@
   --cyan: rgba(34, 211, 238, 0.75);
   --violet: rgba(168, 85, 247, 0.72);
 
-  --header-h: 72px; /* JS overwrites */
+  --header-h: 72px;
 }
 
 html { scroll-behavior: smooth; }
@@ -26,15 +26,15 @@ body {
   overflow-x: hidden;
 }
 
+main { position: relative; z-index: 1; }
+
 .mono {
   font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
 }
 
-/* a11y focus */
 a:focus-visible,
-button:focus-visible,
-input:focus-visible {
+button:focus-visible {
   outline: none;
   box-shadow:
     0 0 0 2px rgba(34,211,238,0.30),
@@ -42,7 +42,6 @@ input:focus-visible {
   border-radius: 12px;
 }
 
-/* Background overlay (keeps readability) */
 .bg-overlay {
   background-image:
     radial-gradient(circle at 50% 22%,
@@ -52,36 +51,36 @@ input:focus-visible {
   opacity: 0.14;
 }
 
-/* ===== Pixel animatronic rover ===== */
+/* ===== Pixel animatronic rover (ALWAYS visible + on-screen) ===== */
 #flyby {
   position: fixed;
   left: 0;
   top: 0;
-  width: 144px;  /* 3x of 48x32 keeps pixel vibe */
-  height: 96px;
-  pointer-events: none;
-  z-index: -2;  /* between canvas (-3) and overlay (-1) */
 
-  /* JS controls position + flips via transform */
-  transform: translate3d(-220px, -220px, 0);
+  width: 144px;
+  height: 96px;
+
+  pointer-events: none;
+
+  /* Above background layers, behind main content */
+  z-index: 0;
+
+  /* Visible even if JS fails */
+  opacity: 0.62;
+  transform: translate3d(24px, 120px, 0);
+
   will-change: transform, opacity;
 
-  /* JS controls opacity dynamically */
-  opacity: 0;
+  mix-blend-mode: normal;
 
-  /* subtle glow but not obnoxious */
   filter:
     drop-shadow(0 10px 18px rgba(0,0,0,0.35))
     drop-shadow(0 0 16px rgba(34,211,238,0.10))
     drop-shadow(0 0 14px rgba(168,85,247,0.08));
 
-  mix-blend-mode: screen;
-
-  /* trail strength controlled by JS with --trail in [0..1] */
-  --trail: 0;
+  --trail: 0.25;
 }
 
-/* “jet trail” behind the bot — flips automatically because we flip the whole element with scaleX */
 #flyby::after {
   content: "";
   position: absolute;
@@ -89,7 +88,7 @@ input:focus-visible {
   top: 52%;
   transform: translateY(-50%);
   height: 8px;
-  width: calc(22px + (var(--trail, 0) * 64px));
+  width: calc(26px + (var(--trail, 0) * 64px));
   border-radius: 999px;
   background: linear-gradient(
     90deg,
@@ -98,7 +97,7 @@ input:focus-visible {
     rgba(168,85,247,0.14)
   );
   filter: blur(0.8px);
-  opacity: calc(0.07 + (var(--trail, 0) * 0.36));
+  opacity: calc(0.12 + (var(--trail, 0) * 0.40));
 }
 
 #flyby svg {
@@ -107,13 +106,9 @@ input:focus-visible {
   shape-rendering: crispEdges;
 }
 
-/* thruster flicker */
-#flyby .thruster {
-  animation: thrusterFlicker 220ms steps(2) infinite;
-}
-#flyby.boost .thruster {
-  animation-duration: 120ms;
-}
+#flyby .thruster { animation: thrusterFlicker 220ms steps(2) infinite; }
+#flyby.boost .thruster { animation-duration: 120ms; }
+
 @keyframes thrusterFlicker {
   0% { opacity: 0.85; }
   50% { opacity: 0.25; }
@@ -180,7 +175,6 @@ input:focus-visible {
   border-color: rgba(255,255,255,0.20);
 }
 
-/* Base components */
 .gradient-text {
   background: linear-gradient(90deg, var(--cyan), var(--violet));
   -webkit-background-clip: text;
@@ -255,17 +249,16 @@ input:focus-visible {
   color: rgba(255, 255, 255, 0.84);
   font-size: 0.85rem;
 }
-
 .pill-link { text-decoration: none; cursor: pointer; user-select: none; }
 .pill-link:hover { filter: brightness(1.06); }
 
-/* Hero */
+/* Hero (cleaner) */
 .hero-screen {
   min-height: calc(100vh - var(--header-h));
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 44px 0 28px;
+  padding: 38px 0 24px;
   text-align: center;
   position: relative;
 }
@@ -277,9 +270,9 @@ input:focus-visible {
   pointer-events: none;
   background:
     radial-gradient(520px 260px at 50% 38%,
-      rgba(0,0,0,0.28),
-      rgba(0,0,0,0.0) 70%);
-  opacity: 0.65;
+      rgba(0,0,0,0.22),
+      rgba(0,0,0,0.0) 72%);
+  opacity: 0.55;
 }
 .hero-screen > * { position: relative; z-index: 1; }
 
@@ -296,9 +289,9 @@ input:focus-visible {
   background: linear-gradient(
     180deg,
     #ffffff 0%,
-    #ffffff 18%,
-    #f7fbff 45%,
-    #ffffff 72%,
+    #ffffff 20%,
+    #f7fbff 48%,
+    #ffffff 78%,
     #fffaff 100%
   );
   -webkit-background-clip: text;
@@ -320,18 +313,18 @@ input:focus-visible {
 
 .headline {
   margin-top: 14px;
-  max-width: 64rem;
+  max-width: 54rem;
   margin-left: auto;
   margin-right: auto;
   font-family: "JetBrains Mono", ui-monospace, monospace;
   color: rgba(255,255,255,0.78);
-  font-size: clamp(0.98rem, 1.6vw, 1.18rem);
+  font-size: clamp(0.98rem, 1.6vw, 1.14rem);
   line-height: 1.55;
   text-shadow: 0 1px 0 rgba(0,0,0,0.28);
 }
 
 .scroll-indicator {
-  margin-top: 24px;
+  margin-top: 22px;
   display: inline-flex;
   gap: 10px;
   align-items: center;
@@ -353,12 +346,8 @@ input:focus-visible {
   50% { transform: translateY(7px); }
 }
 
-/* Highlights grid */
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 12px;
-}
+/* Highlights */
+.stat-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
 .stat { grid-column: span 12; padding: 14px; }
 @media (min-width: 640px) { .stat { grid-column: span 6; } }
 @media (min-width: 1024px) { .stat { grid-column: span 3; } }
@@ -376,11 +365,7 @@ input:focus-visible {
   font-weight: 900;
   color: rgba(255,255,255,0.92);
 }
-.stat .note {
-  margin-top: 4px;
-  color: rgba(255,255,255,0.70);
-  font-size: 0.9rem;
-}
+.stat .note { margin-top: 4px; color: rgba(255,255,255,0.70); font-size: 0.9rem; }
 
 /* Skills color system */
 .skill-card {
@@ -476,7 +461,7 @@ input:focus-visible {
     0 0 18px rgba(34,211,238,0.10);
 }
 
-/* Projects */
+/* Projects drawer */
 .hscroll {
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
@@ -608,7 +593,6 @@ input:focus-visible {
 
   transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, opacity 180ms ease, filter 180ms ease;
 }
-
 @media (min-width: 1024px) { .project-card { width: 480px; } }
 
 .project-card.is-dim { opacity: 0.66; filter: saturate(0.92) brightness(0.98); }
@@ -657,7 +641,6 @@ input:focus-visible {
     radial-gradient(680px 300px at 92% 10%, rgba(168,85,247,0.10), transparent 60%),
     linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
 }
-
 .project-thumb img {
   width: 100%;
   height: 100%;
@@ -666,7 +649,6 @@ input:focus-visible {
   transform: scale(1.02);
   opacity: 0.92;
 }
-
 .project-thumb::after {
   content: "";
   position: absolute;
@@ -696,9 +678,9 @@ input:focus-visible {
     0 24px 70px rgba(0,0,0,0.40);
 }
 
-/* Reduced motion */
+/* Reduced motion: keep flyby visible, just stop flicker/float */
 @media (prefers-reduced-motion: reduce) {
   .card-hover, .btn-primary, .drawer-btn, .nav-pill { transition: none; }
   .scroll-indicator { animation: none; }
-  #flyby { display: none; }
+  #flyby .thruster { animation: none; }
 }

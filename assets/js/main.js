@@ -22,7 +22,7 @@
   const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const smoothBehavior = reduceMotionPref ? "auto" : "smooth";
 
-  // Keep background animated (your preference)
+  // Keep background animated
   const FORCE_ANIMATION = true;
   const prefersReducedMotion = !FORCE_ANIMATION && reduceMotionPref;
 
@@ -52,10 +52,6 @@
 
   // =========================
   // Projects drawer
-  // - auto scroll when not locked
-  // - click card = lock selection (no auto)
-  // - double click = open repo
-  // - click outside = unlock (auto resumes)
   // =========================
   const projectsSection = document.getElementById("projects");
   const track = document.getElementById("projects-track");
@@ -77,7 +73,6 @@
 
   let lastDragTime = 0;
 
-  // Provide no-op functions so visibility handler can safely call them
   let startAuto = () => {};
   let stopAuto = () => {};
 
@@ -235,7 +230,7 @@
       });
     });
 
-    // Drag-to-scroll (only capture after threshold)
+    // Drag-to-scroll
     let pointerActive = false;
     let dragging = false;
     let startX = 0;
@@ -450,7 +445,6 @@
     }
 
     return {
-      type: "2d",
       start() {
         if (prefersReducedMotion) return;
         if (running) return;
@@ -656,10 +650,6 @@
     };
 
     window.addEventListener("pointermove", (e) => setPointer(e.clientX, e.clientY), { passive: true });
-    window.addEventListener("touchmove", (e) => {
-      const t = e.touches && e.touches[0];
-      if (t) setPointer(t.clientX, t.clientY);
-    }, { passive: true });
 
     function resizeGL() {
       dpr = Math.min(window.devicePixelRatio || 1, DPR_MAX);
@@ -708,7 +698,6 @@
     }
 
     return {
-      type: "webgl",
       start() {
         if (prefersReducedMotion) return;
         if (running) return;
@@ -736,218 +725,119 @@
   const stopBg = () => bg && bg.stop();
 
   // =========================
-  // Pixel animatronic rover (moves around constantly)
+  // Pixel animatronic rover (ALWAYS on-screen + always visible)
   // =========================
-function initRover() {
-  const el = document.getElementById("flyby");
-  if (!el) return null;
+  function initRover() {
+    const el = document.getElementById("flyby");
+    if (!el) return null;
 
-  let rafId = null;
-  let running = false;
+    let rafId = null;
+    let running = false;
 
-  let x = 0, y = 0;
-  let vx = 0, vy = 0;
-  let targetX = 0, targetY = 0;
+    let x = 0, y = 0;
+    let vx = 0, vy = 0;
+    let targetX = 0, targetY = 0;
 
-  let last = performance.now();
-  let cruise = rand(32, 66);
+    let last = performance.now();
+    let cruise = rand(32, 66);
 
-  let nextTargetAt = 0;
-  let nextBoostAt = performance.now() + rand(14000, 26000);
-  let boostUntil = 0;
+    let nextTargetAt = 0;
+    let nextBoostAt = performance.now() + rand(14000, 26000);
+    let boostUntil = 0;
 
-  let size = { w: 144, h: 96 };
+    let size = { w: 144, h: 96 };
 
-  const measure = () => {
-    const r = el.getBoundingClientRect();
-    size = { w: r.width || 144, h: r.height || 96 };
-  };
-
-  // ✅ HARD RULE: always stay fully on screen (with margin)
-  const bounds = () => {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    const M = Math.max(10, Math.min(24, Math.round(Math.min(w, h) * 0.02)));
-
-    const minX = M;
-    const maxX = Math.max(M, w - size.w - M);
-
-    const minY = M;
-    const maxY = Math.max(M, h - size.h - M);
-
-    return { minX, maxX, minY, maxY, w, h, M };
-  };
-
-  // Optional: avoid the “reading zone” in the center to keep recruiters focused
-  const safeZone = () => {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    return {
-      x0: w * 0.23,
-      x1: w * 0.77,
-      y0: h * 0.22,
-      y1: h * 0.70,
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      size = { w: r.width || 144, h: r.height || 96 };
     };
-  };
 
-  const pickTarget = (force = false) => {
-    const { minX, maxX, minY, maxY } = bounds();
-    const z = safeZone();
+    // Fully on-screen bounds with margin
+    const bounds = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const M = Math.max(10, Math.min(24, Math.round(Math.min(w, h) * 0.02)));
 
-    let tx = 0, ty = 0;
+      const minX = M;
+      const maxX = Math.max(M, w - size.w - M);
+      const minY = M;
+      const maxY = Math.max(M, h - size.h - M);
 
-    // Try to choose a point OUTSIDE the safe zone (so it roams but doesn't distract)
-    for (let k = 0; k < 14; k++) {
-      tx = rand(minX, maxX);
-      ty = rand(minY, maxY);
+      return { minX, maxX, minY, maxY, w, h, M };
+    };
 
-      const cx = tx + size.w * 0.5;
-      const cy = ty + size.h * 0.5;
-      const insideSafe = cx > z.x0 && cx < z.x1 && cy > z.y0 && cy < z.y1;
+    // avoid center reading zone
+    const safeZone = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      return { x0: w * 0.23, x1: w * 0.77, y0: h * 0.22, y1: h * 0.70 };
+    };
 
-      if (!insideSafe) break;
-    }
+    const pickTarget = (force = false) => {
+      const { minX, maxX, minY, maxY } = bounds();
+      const z = safeZone();
 
-    targetX = tx;
-    targetY = ty;
+      let tx = 0, ty = 0;
+      for (let k = 0; k < 14; k++) {
+        tx = rand(minX, maxX);
+        ty = rand(minY, maxY);
 
-    if (force || Math.random() < 0.45) cruise = rand(32, 66);
-    nextTargetAt = performance.now() + rand(2400, 5200);
-  };
+        const cx = tx + size.w * 0.5;
+        const cy = ty + size.h * 0.5;
+        const insideSafe = cx > z.x0 && cx < z.x1 && cy > z.y0 && cy < z.y1;
+        if (!insideSafe) break;
+      }
 
-  const pickFarTarget = () => {
-    const { minX, maxX, minY, maxY, w, h } = bounds();
+      targetX = tx;
+      targetY = ty;
 
-    let tx = 0, ty = 0;
-    for (let k = 0; k < 16; k++) {
-      tx = rand(minX, maxX);
-      ty = rand(minY, maxY);
+      if (force || Math.random() < 0.45) cruise = rand(32, 66);
+      nextTargetAt = performance.now() + rand(2400, 5200);
+    };
 
-      const d = Math.hypot(tx - x, ty - y);
-      if (d > Math.min(w, h) * 0.55) break; // ensure it's actually a "sprint"
-    }
+    const pickFarTarget = () => {
+      const { minX, maxX, minY, maxY, w, h } = bounds();
 
-    targetX = tx;
-    targetY = ty;
-    nextTargetAt = performance.now() + rand(1600, 2800);
-  };
+      let tx = 0, ty = 0;
+      for (let k = 0; k < 16; k++) {
+        tx = rand(minX, maxX);
+        ty = rand(minY, maxY);
+        const d = Math.hypot(tx - x, ty - y);
+        if (d > Math.min(w, h) * 0.55) break;
+      }
 
-  const clampToBounds = () => {
-    const { minX, maxX, minY, maxY } = bounds();
+      targetX = tx;
+      targetY = ty;
+      nextTargetAt = performance.now() + rand(1600, 2800);
+    };
 
-    if (x < minX) { x = minX; vx = Math.abs(vx) * 0.7; }
-    if (x > maxX) { x = maxX; vx = -Math.abs(vx) * 0.7; }
-    if (y < minY) { y = minY; vy = Math.abs(vy) * 0.7; }
-    if (y > maxY) { y = maxY; vy = -Math.abs(vy) * 0.7; }
-  };
-
-  const tick = (now) => {
-    if (!running) return;
-
-    const dt = clamp((now - last) / 1000, 0.01, 0.05);
-    last = now;
-
-    if (now > nextTargetAt) pickTarget(false);
-
-    // occasional “boost sprint”
-    if (now > nextBoostAt) {
-      boostUntil = now + rand(1800, 3600);
-      nextBoostAt = now + rand(16000, 30000);
-      cruise = rand(92, 150);
-      pickFarTarget();
-    }
-
-    const boosting = now < boostUntil;
-    el.classList.toggle("boost", boosting);
-
-    // steering toward target
-    const dx = targetX - x;
-    const dy = targetY - y;
-    const dist = Math.hypot(dx, dy) || 0.0001;
-
-    const desiredVX = (dx / dist) * cruise;
-    const desiredVY = (dy / dist) * cruise;
-
-    const steer = boosting ? 0.10 : 0.08;
-    vx += (desiredVX - vx) * steer;
-    vy += (desiredVY - vy) * steer;
-
-    // clamp speed
-    const maxSpeed = boosting ? 175 : 85;
-    const sp = Math.hypot(vx, vy) || 0.0001;
-    if (sp > maxSpeed) {
-      vx = (vx / sp) * maxSpeed;
-      vy = (vy / sp) * maxSpeed;
-    }
-
-    // integrate
-    x += vx * dt;
-    y += vy * dt;
-
-    // ✅ never leave screen
-    clampToBounds();
-
-    // visuals
-    const dir = vx >= 0 ? 1 : -1;
-    const bob = Math.sin(now * 0.003 + 1.7) * (boosting ? 3.0 : 4.5);
-
-    const trail = clamp((sp - 18) / 120, 0, 1);
-    el.style.setProperty("--trail", trail.toFixed(3));
-
-    // ✅ always visible (no fading to near-zero)
-    const op = clamp(0.42 + trail * 0.18, 0.42, 0.62);
-    el.style.opacity = String(op);
-
-    el.style.transform =
-      `translate3d(${Math.round(x)}px, ${Math.round(y + bob)}px, 0) scaleX(${dir})`;
-
-    rafId = requestAnimationFrame(tick);
-  };
-
-  return {
-    start() {
-      if (prefersReducedMotion) return;
-      if (running) return;
-      running = true;
-
-      measure();
+    const clampToBounds = () => {
       const { minX, maxX, minY, maxY } = bounds();
 
-      // Start fully inside the viewport
-      x = rand(minX, Math.min(maxX, minX + (maxX - minX) * 0.20));
-      y = rand(minY, Math.min(maxY, minY + (maxY - minY) * 0.22));
-      vx = rand(-12, 12);
-      vy = rand(-10, 10);
+      if (x < minX) { x = minX; vx = Math.abs(vx) * 0.7; }
+      if (x > maxX) { x = maxX; vx = -Math.abs(vx) * 0.7; }
+      if (y < minY) { y = minY; vy = Math.abs(vy) * 0.7; }
+      if (y > maxY) { y = maxY; vy = -Math.abs(vy) * 0.7; }
+    };
 
-      // ✅ show immediately (no “invisible until first frame”)
-      el.style.opacity = "0.52";
-      el.style.setProperty("--trail", "0.15");
-      el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0) scaleX(${vx >= 0 ? 1 : -1})`;
+    const tick = (now) => {
+      if (!running) return;
 
-      pickTarget(true);
-      last = performance.now();
-      rafId = requestAnimationFrame(tick);
-    },
+      const dt = clamp((now - last) / 1000, 0.01, 0.05);
+      last = now;
 
-    stop() {
-      running = false;
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = null;
-      el.style.opacity = "0";
-    },
+      if (now > nextTargetAt) pickTarget(false);
 
-    resize() {
-      measure();
-      clampToBounds();
-      pickTarget(true);
-    },
-  };
-}
+      if (now > nextBoostAt) {
+        boostUntil = now + rand(1800, 3600);
+        nextBoostAt = now + rand(16000, 30000);
+        cruise = rand(92, 150);
+        pickFarTarget();
+      }
 
       const boosting = now < boostUntil;
       el.classList.toggle("boost", boosting);
 
-      // steering toward target
       const dx = targetX - x;
       const dy = targetY - y;
       const dist = Math.hypot(dx, dy) || 0.0001;
@@ -959,7 +849,6 @@ function initRover() {
       vx += (desiredVX - vx) * steer;
       vy += (desiredVY - vy) * steer;
 
-      // clamp speed
       const maxSpeed = boosting ? 175 : 85;
       const sp = Math.hypot(vx, vy) || 0.0001;
       if (sp > maxSpeed) {
@@ -967,25 +856,21 @@ function initRover() {
         vy = (vy / sp) * maxSpeed;
       }
 
-      // integrate
       x += vx * dt;
       y += vy * dt;
 
-      // bounce edges
       clampToBounds();
 
-      // visuals
       const dir = vx >= 0 ? 1 : -1;
       const bob = Math.sin(now * 0.003 + 1.7) * (boosting ? 3.0 : 4.5);
-      const trail = clamp((sp - 20) / 120, 0, 1);
 
+      const trail = clamp((sp - 18) / 120, 0, 1);
       el.style.setProperty("--trail", trail.toFixed(3));
 
-      // subtle at rest, stronger when moving
-      const op = clamp(0.14 + trail * 0.38, 0.12, 0.54);
+      // Always visible
+      const op = clamp(0.55 + trail * 0.20, 0.55, 0.75);
       el.style.opacity = String(op);
 
-      // pixel vibe: no rotation, just flip + step-like positioning
       el.style.transform =
         `translate3d(${Math.round(x)}px, ${Math.round(y + bob)}px, 0) scaleX(${dir})`;
 
@@ -999,12 +884,15 @@ function initRover() {
         running = true;
 
         measure();
+        const { minX, maxX, minY, maxY } = bounds();
 
-        // init near a corner-ish area (feels like “entering the scene”)
-        x = rand(window.innerWidth * 0.06, window.innerWidth * 0.22);
-        y = rand(window.innerHeight * 0.10, window.innerHeight * 0.26);
+        x = rand(minX, Math.min(maxX, minX + (maxX - minX) * 0.20));
+        y = rand(minY, Math.min(maxY, minY + (maxY - minY) * 0.22));
         vx = rand(-12, 12);
         vy = rand(-10, 10);
+
+        el.style.opacity = "0.62";
+        el.style.setProperty("--trail", "0.25");
 
         pickTarget(true);
         last = performance.now();
@@ -1020,8 +908,7 @@ function initRover() {
 
       resize() {
         measure();
-        x = clamp(x, -size.w * 0.10, window.innerWidth - size.w + size.w * 0.10);
-        y = clamp(y, -size.h * 0.10, window.innerHeight - size.h + size.h * 0.10);
+        clampToBounds();
         pickTarget(true);
       },
     };
@@ -1031,12 +918,8 @@ function initRover() {
   if (rover && !document.hidden) rover.start();
   window.addEventListener("resize", () => rover?.resize(), { passive: true });
 
-  // Start background on initial visible load
   startBgIfVisible();
 
-  // =========================
-  // Visibility handling
-  // =========================
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       stopBg();

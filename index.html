@@ -21,7 +21,7 @@
     />
 
     <link rel="icon" href="favicon.ico" />
-    <link rel="stylesheet" href="assets/css/main.css?v=30" />
+    <link rel="stylesheet" href="assets/css/main.css?v=32" />
   </head>
 
   <body class="min-h-screen text-white">
@@ -32,48 +32,38 @@
       style="position:fixed; inset:0; z-index:-3; width:100vw; height:100vh; pointer-events:none;"
     ></canvas>
 
-    <!-- Pixel animatronic (wanders around the background) -->
+    <!-- Pixel animatronic (roams around the background) -->
     <div id="flyby" aria-hidden="true">
-      <!-- Pixel-art animatronic drone (SVG “pixels”) -->
       <svg viewBox="0 0 48 32" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
-        <!-- OUTLINE LAYERS -->
         <rect x="18" y="5" width="12" height="10" fill="#0B1020" opacity="0.55"/>
         <rect x="14" y="9" width="20" height="18" fill="#0B1020" opacity="0.55"/>
         <rect x="8"  y="13" width="6"  height="10" fill="#0B1020" opacity="0.50"/>
         <rect x="34" y="13" width="6"  height="10" fill="#0B1020" opacity="0.50"/>
 
-        <!-- HEAD -->
         <rect x="19" y="6" width="10" height="8" fill="#F7FBFF" opacity="0.92"/>
         <rect x="20" y="7" width="8"  height="6" fill="#EAF6FF" opacity="0.92"/>
 
-        <!-- BODY -->
         <rect x="15" y="10" width="18" height="16" fill="#F7FBFF" opacity="0.88"/>
         <rect x="16" y="11" width="16" height="14" fill="#EAF6FF" opacity="0.90"/>
 
-        <!-- WINGS -->
         <rect x="9"  y="14" width="5" height="8" fill="#CFEAFF" opacity="0.60"/>
         <rect x="34" y="14" width="5" height="8" fill="#CFEAFF" opacity="0.60"/>
 
-        <!-- VISOR -->
         <rect x="20" y="8" width="8" height="4" fill="#0B1020" opacity="0.25"/>
 
-        <!-- EYES (neon pixels) -->
         <rect x="21" y="9" width="2" height="2" fill="#22D3EE" opacity="0.85"/>
         <rect x="25" y="9" width="2" height="2" fill="#A855F7" opacity="0.75"/>
         <rect x="22" y="10" width="1" height="1" fill="#FFFFFF" opacity="0.65"/>
         <rect x="26" y="10" width="1" height="1" fill="#FFFFFF" opacity="0.55"/>
 
-        <!-- ANTENNA -->
         <rect x="23" y="3" width="2" height="2" fill="#0B1020" opacity="0.45"/>
         <rect x="23" y="2" width="2" height="1" fill="#22D3EE" opacity="0.70"/>
 
-        <!-- THRUSTERS (flicker via CSS) -->
         <rect class="thruster" x="17" y="26" width="3" height="3" fill="#22D3EE" opacity="0.70"/>
         <rect class="thruster" x="28" y="26" width="3" height="3" fill="#A855F7" opacity="0.60"/>
         <rect class="thruster" x="18" y="29" width="1" height="1" fill="#FFFFFF" opacity="0.55"/>
         <rect class="thruster" x="29" y="29" width="1" height="1" fill="#FFFFFF" opacity="0.45"/>
 
-        <!-- small panel details -->
         <rect x="19" y="18" width="10" height="2" fill="#0B1020" opacity="0.14"/>
         <rect x="19" y="21" width="6"  height="1" fill="#0B1020" opacity="0.12"/>
       </svg>
@@ -132,7 +122,7 @@
     </header>
 
     <main class="mx-auto max-w-6xl px-4">
-      <!-- INTRO -->
+      <!-- INTRO (cleaner) -->
       <section id="intro" class="hero-screen">
         <div class="w-full">
           <div class="mono os-kicker">Generative AI · Data Science · Software Engineering</div>
@@ -140,21 +130,12 @@
           <h1 class="name-display name-neo3d">Prateek Parashar</h1>
 
           <p class="headline">
-            Diffusion inference optimization <span class="gradient-text">(-41%)</span> · Python/SQL automation · production-minded AI engineering
+            Production-ready GenAI. Diffusion faster <span class="gradient-text">(-41%)</span>. Automation that ships.
           </p>
 
           <div class="mt-6 flex flex-wrap gap-3 justify-center">
-            <a class="btn-primary" href="resume/resume.pdf" target="_blank" rel="noopener">Download Resume</a>
+            <a class="btn-primary" href="resume/resume.pdf" target="_blank" rel="noopener">Resume PDF</a>
             <a class="btn-secondary" href="#projects">View Projects</a>
-            <a class="btn-secondary" href="#contact">Contact</a>
-          </div>
-
-          <div class="mt-8 max-w-3xl mx-auto glass p-4">
-            <div class="mono text-xs text-white/60">SUMMARY</div>
-            <div class="mt-2 text-white/80">
-              M.S. candidate with a strong CS/software foundation. Proficient in Python, SQL, and deep learning
-              (Transformers/Diffusion), with hands-on work in diffusion inference speedups and automated technical support bots.
-            </div>
           </div>
 
           <a class="mono scroll-indicator" href="#signals"><span>scroll</span><span>↓</span></a>
@@ -255,36 +236,16 @@
             <div class="glass card-hover p-5 skill-card skill-violet skill-cert sm:col-span-2">
               <div class="mono text-xs skill-kicker"><span class="skill-dot"></span>CERTIFICATIONS</div>
               <div class="mt-3 flex flex-wrap gap-2">
-                <a
-                  class="pill pill-link"
-                  href="https://www.coursera.org/account/accomplishments/certificate/44QVAZ7MNHXM"
-                  target="_blank"
-                  rel="noopener"
-                >
+                <a class="pill pill-link" href="https://www.coursera.org/account/accomplishments/certificate/44QVAZ7MNHXM" target="_blank" rel="noopener">
                   Machine Learning (Stanford, Coursera)
                 </a>
-                <a
-                  class="pill pill-link"
-                  href="https://courses.edx.org/certificates/c969dba9ef0d46008f3fd4ab2c95e0b2"
-                  target="_blank"
-                  rel="noopener"
-                >
+                <a class="pill pill-link" href="https://courses.edx.org/certificates/c969dba9ef0d46008f3fd4ab2c95e0b2" target="_blank" rel="noopener">
                   AWS Cloud Practitioner Essentials (edX)
                 </a>
-                <a
-                  class="pill pill-link"
-                  href="https://www.datacamp.com/certificate/DSA0010484817422"
-                  target="_blank"
-                  rel="noopener"
-                >
+                <a class="pill pill-link" href="https://www.datacamp.com/certificate/DSA0010484817422" target="_blank" rel="noopener">
                   Data Scientist Associate (DataCamp)
                 </a>
-                <a
-                  class="pill pill-link"
-                  href="https://courses.edx.org/certificates/3a8fb4789d4f4ab48f3c7ccb2211e9ed"
-                  target="_blank"
-                  rel="noopener"
-                >
+                <a class="pill pill-link" href="https://courses.edx.org/certificates/3a8fb4789d4f4ab48f3c7ccb2211e9ed" target="_blank" rel="noopener">
                   Python for Data Science (IBM, edX)
                 </a>
               </div>
@@ -393,7 +354,7 @@
         <div class="projects-toolbar">
           <div class="mono text-xs text-white/60">
             Project <span id="projects-current">01</span> of <span id="projects-total">00</span>
-            <span class="mono text-xs text-white/50 ml-3">• click to pin • double-click to open repo</span>
+            <span class="mono text-xs text-white/50 ml-3">• choose your build</span>
           </div>
           <div id="projects-dots" class="projects-dots"></div>
         </div>
@@ -416,7 +377,7 @@
                 <div class="mono text-xs text-white/60">Nov 2025</div>
               </div>
 
-              <p class="project-desc">Automated instant Python technical support inside Slack.</p>
+              <p class="project-desc">Instant Python help inside Slack — fast answers, fewer context switches.</p>
 
               <ul class="project-bullets">
                 <li>Streamlined QnA flow using Python + Slack API.</li>
@@ -442,7 +403,7 @@
                 <div class="mono text-xs text-white/60">Spring 2025</div>
               </div>
 
-              <p class="project-desc">Optimized diffusion inference for speed while maintaining output quality.</p>
+              <p class="project-desc">Faster diffusion inference without sacrificing visual quality.</p>
 
               <ul class="project-bullets">
                 <li><span class="text-white font-semibold">-41%</span> inference time reduction (team of three).</li>
@@ -468,10 +429,10 @@
                 <div class="mono text-xs text-white/60">May 2022</div>
               </div>
 
-              <p class="project-desc">ML analysis of pollutant datasets to model PM2.5 and air-quality trends.</p>
+              <p class="project-desc">ML analysis to model PM2.5 trends and forecast air-quality signals.</p>
 
               <ul class="project-bullets">
-                <li>Applied ML algorithms to analyze pollutant data.</li>
+                <li>Applied ML algorithms to analyze pollutant datasets.</li>
                 <li>Built a framework for predicting air-quality trends.</li>
               </ul>
 
@@ -494,11 +455,11 @@
                 <div class="mono text-xs text-white/60">Apr 2024</div>
               </div>
 
-              <p class="project-desc">Transformer-based sentiment classification to track public sentiment at scale.</p>
+              <p class="project-desc">Transformer-based sentiment classification for large-scale tweet streams.</p>
 
               <ul class="project-bullets">
                 <li>Used ALBERT + Python for high-accuracy processing.</li>
-                <li>Categorized large-scale tweets into sentiment classes.</li>
+                <li>Categorized tweets into sentiment classes.</li>
               </ul>
 
               <div class="flex flex-wrap gap-2">
@@ -549,6 +510,6 @@
       </footer>
     </main>
 
-    <script src="assets/js/main.js?v=30"></script>
+    <script src="assets/js/main.js?v=32"></script>
   </body>
 </html>
