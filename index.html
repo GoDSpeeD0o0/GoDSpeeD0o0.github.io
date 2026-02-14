@@ -21,7 +21,7 @@
     />
 
     <link rel="icon" href="favicon.ico" />
-    <link rel="stylesheet" href="assets/css/main.css?v=32" />
+    <link rel="stylesheet" href="assets/css/main.css?v=33" />
   </head>
 
   <body class="min-h-screen text-white">
@@ -32,7 +32,7 @@
       style="position:fixed; inset:0; z-index:-3; width:100vw; height:100vh; pointer-events:none;"
     ></canvas>
 
-    <!-- Pixel animatronic (roams around the background) -->
+    <!-- Pixel animatronic rover -->
     <div id="flyby" aria-hidden="true">
       <svg viewBox="0 0 48 32" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
         <rect x="18" y="5" width="12" height="10" fill="#0B1020" opacity="0.55"/>
@@ -121,6 +121,9 @@
       </div>
     </header>
 
+    <!-- Scroll progress bar -->
+    <div id="scroll-progress" aria-hidden="true"></div>
+
     <main class="mx-auto max-w-6xl px-4">
       <!-- INTRO (cleaner) -->
       <section id="intro" class="hero-screen">
@@ -129,16 +132,13 @@
 
           <h1 class="name-display name-neo3d">Prateek Parashar</h1>
 
+          <!-- CHANGED: cleaner headline -->
           <p class="headline">
-            Production-ready GenAI. Diffusion faster <span class="gradient-text">(-41%)</span>. Automation that ships.
+            GenAI engineer — diffusion faster <span class="gradient-text">(-41%)</span>, automation that scales.
           </p>
 
-          <div class="mt-6 flex flex-wrap gap-3 justify-center">
-            <a class="btn-primary" href="resume/resume.pdf" target="_blank" rel="noopener">Resume PDF</a>
-            <a class="btn-secondary" href="#projects">View Projects</a>
-          </div>
-
-          <a class="mono scroll-indicator" href="#signals"><span>scroll</span><span>↓</span></a>
+          <!-- CHANGED: witty scroll CTA -->
+          <a class="mono scroll-indicator" href="#signals"><span>enter</span><span>↓</span></a>
         </div>
       </section>
 
@@ -183,8 +183,10 @@
           <div class="os-rule"></div>
         </div>
 
-        <div class="mt-4 grid lg:grid-cols-12 gap-4">
-          <div class="lg:col-span-8 grid sm:grid-cols-2 gap-4">
+        <!-- CHANGED: more space -->
+        <div class="mt-4 grid lg:grid-cols-12 gap-5">
+          <!-- CHANGED: more space -->
+          <div class="lg:col-span-8 grid sm:grid-cols-2 gap-5">
             <div class="glass card-hover p-5 skill-card skill-cyan">
               <div class="mono text-xs skill-kicker"><span class="skill-dot"></span>LANGUAGES & APIS</div>
               <div class="mt-3 flex flex-wrap gap-2">
@@ -232,7 +234,6 @@
               </div>
             </div>
 
-            <!-- CERTIFICATIONS -->
             <div class="glass card-hover p-5 skill-card skill-violet skill-cert sm:col-span-2">
               <div class="mono text-xs skill-kicker"><span class="skill-dot"></span>CERTIFICATIONS</div>
               <div class="mt-3 flex flex-wrap gap-2">
@@ -252,7 +253,8 @@
             </div>
           </div>
 
-          <aside class="lg:col-span-4 space-y-4">
+          <!-- CHANGED: a bit more space -->
+          <aside class="lg:col-span-4 space-y-5">
             <div class="glass card-hover p-5">
               <div class="mono text-xs text-white/60">EDUCATION</div>
               <div class="mt-3 space-y-3">
@@ -510,6 +512,6 @@
       </footer>
     </main>
 
-    <script src="assets/js/main.js?v=32"></script>
+    <script src="assets/js/main.js?v=33"></script>
   </body>
 </html>

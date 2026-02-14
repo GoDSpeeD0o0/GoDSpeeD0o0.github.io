@@ -35,6 +35,7 @@
     const closeMenu = () => {
       menu.classList.add("hidden");
       btn.setAttribute("aria-expanded", "false");
+      setHeaderHeight(); // keep scroll bar aligned
     };
 
     btn.addEventListener("click", () => {
@@ -45,9 +46,65 @@
       } else {
         closeMenu();
       }
+      setHeaderHeight(); // keep scroll bar aligned
     });
 
     menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeMenu));
+  }
+
+  // =========================
+  // Scroll progress bar
+  // =========================
+  const progressEl = document.getElementById("scroll-progress");
+  if (progressEl) {
+    let raf = 0;
+
+    const update = () => {
+      raf = 0;
+      const doc = document.documentElement;
+      const scrollTop = window.scrollY || doc.scrollTop || 0;
+      const max = Math.max(1, doc.scrollHeight - window.innerHeight);
+      const p = clamp(scrollTop / max, 0, 1);
+      doc.style.setProperty("--scroll-p", p.toFixed(4));
+    };
+
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(update);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    update();
+  }
+
+  // =========================
+  // Scroll reveal (subtle OS-style entrance)
+  // =========================
+  const revealTargets = Array.from(document.querySelectorAll("main .os-header, main .glass"));
+  if (revealTargets.length) {
+    if (reduceMotionPref) {
+      revealTargets.forEach((el) => {
+        el.classList.add("reveal", "is-visible");
+      });
+    } else {
+      revealTargets.forEach((el, i) => {
+        el.classList.add("reveal");
+        el.style.transitionDelay = `${Math.min(180, (i % 8) * 24)}ms`;
+      });
+
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (!e.isIntersecting) continue;
+            e.target.classList.add("is-visible");
+            io.unobserve(e.target);
+          }
+        },
+        { threshold: 0.14, rootMargin: "0px 0px -12% 0px" }
+      );
+
+      revealTargets.forEach((el) => io.observe(el));
+    }
   }
 
   // =========================
@@ -725,7 +782,7 @@
   const stopBg = () => bg && bg.stop();
 
   // =========================
-  // Pixel animatronic rover (ALWAYS on-screen + always visible)
+  // Pixel rover (ALWAYS on-screen + always visible)
   // =========================
   function initRover() {
     const el = document.getElementById("flyby");
@@ -752,7 +809,6 @@
       size = { w: r.width || 144, h: r.height || 96 };
     };
 
-    // Fully on-screen bounds with margin
     const bounds = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
@@ -766,7 +822,6 @@
       return { minX, maxX, minY, maxY, w, h, M };
     };
 
-    // avoid center reading zone
     const safeZone = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
@@ -867,7 +922,6 @@
       const trail = clamp((sp - 18) / 120, 0, 1);
       el.style.setProperty("--trail", trail.toFixed(3));
 
-      // Always visible
       const op = clamp(0.55 + trail * 0.20, 0.55, 0.75);
       el.style.opacity = String(op);
 

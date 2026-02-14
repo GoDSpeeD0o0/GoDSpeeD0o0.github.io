@@ -12,6 +12,9 @@
   --violet: rgba(168, 85, 247, 0.72);
 
   --header-h: 72px;
+
+  /* Scroll progress 0..1 set by JS */
+  --scroll-p: 0;
 }
 
 html { scroll-behavior: smooth; }
@@ -40,6 +43,41 @@ button:focus-visible {
     0 0 0 2px rgba(34,211,238,0.30),
     0 0 0 1px rgba(255,255,255,0.12) inset;
   border-radius: 12px;
+}
+
+/* Scroll progress (subtle OS load bar) */
+#scroll-progress {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--header-h);
+  height: 3px;
+  z-index: 25;
+  pointer-events: none;
+  background: rgba(255,255,255,0.07);
+}
+#scroll-progress::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(34,211,238,0.85), rgba(168,85,247,0.80));
+  transform-origin: left;
+  transform: scaleX(var(--scroll-p, 0));
+  box-shadow: 0 0 18px rgba(34,211,238,0.16);
+}
+
+/* Subtle reveal effect on scroll */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px) scale(0.992);
+  filter: blur(0.35px);
+  transition: opacity 520ms ease, transform 520ms ease, filter 520ms ease;
+  will-change: opacity, transform, filter;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: none;
 }
 
 .bg-overlay {
@@ -199,20 +237,6 @@ button:focus-visible {
 }
 
 /* Buttons */
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-weight: 800;
-  color: rgba(5, 7, 18, 0.95);
-  background: linear-gradient(90deg, rgba(34,211,238,0.85), rgba(168,85,247,0.8));
-  box-shadow: 0 0 22px rgba(34, 211, 238, 0.12);
-  transition: transform 160ms ease, filter 160ms ease;
-}
-.btn-primary:hover { transform: translateY(-1px); filter: brightness(1.05); }
-
 .btn-secondary {
   display: inline-flex;
   align-items: center;
@@ -252,7 +276,7 @@ button:focus-visible {
 .pill-link { text-decoration: none; cursor: pointer; user-select: none; }
 .pill-link:hover { filter: brightness(1.06); }
 
-/* Hero (cleaner) */
+/* Hero (clean) */
 .hero-screen {
   min-height: calc(100vh - var(--header-h));
   display: flex;
@@ -332,9 +356,10 @@ button:focus-visible {
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.14);
   background: rgba(255,255,255,0.05);
-  color: rgba(255,255,255,0.72);
+  color: rgba(255,255,255,0.76);
   animation: floaty 1.9s ease-in-out infinite;
   text-decoration: none;
+  letter-spacing: 0.04em;
 }
 .scroll-indicator:hover {
   color: rgba(255,255,255,0.92);
@@ -678,9 +703,10 @@ button:focus-visible {
     0 24px 70px rgba(0,0,0,0.40);
 }
 
-/* Reduced motion: keep flyby visible, just stop flicker/float */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .card-hover, .btn-primary, .drawer-btn, .nav-pill { transition: none; }
+  .card-hover, .drawer-btn, .nav-pill { transition: none; }
   .scroll-indicator { animation: none; }
   #flyby .thruster { animation: none; }
+  .reveal { opacity: 1; transform: none; filter: none; transition: none; }
 }
