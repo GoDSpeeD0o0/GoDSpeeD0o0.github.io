@@ -27,7 +27,7 @@
   setHeaderHeight();
   window.addEventListener("resize", setHeaderHeight, { passive: true });
 
-  // Reduce motion preference
+  // Reduced motion preference
   const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // Keep background animated
@@ -87,61 +87,13 @@
   }
 
   // =========================
-  // Contact dock: stable + bottom-only (NO flicker)
-  // =========================
-  const contactDock = document.getElementById("contact-dock");
-
-  if (contactDock) {
-    // Always reserve bottom space once (stable) so we never shift layout while toggling
-    const applyDockSafe = () => {
-      const r = contactDock.getBoundingClientRect();
-      const safe = Math.max(84, Math.ceil(r.height + 18));
-      document.documentElement.style.setProperty("--dock-safe", `${safe}px`);
-    };
-    applyDockSafe();
-    window.addEventListener("resize", applyDockSafe, { passive: true });
-
-    // show only when you hit the bottom; hysteresis prevents "in-out"
-    const SHOW_PX = 32;   // must be basically at bottom
-    const HIDE_PX = 360;  // only hides if you scroll back up a decent amount
-
-    let visible = false;
-    let raf = 0;
-
-    const updateDock = () => {
-      raf = 0;
-      const doc = document.documentElement;
-      const remaining = doc.scrollHeight - (window.scrollY + window.innerHeight);
-
-      if (!visible && remaining <= SHOW_PX) {
-        visible = true;
-        contactDock.classList.add("is-visible");
-      } else if (visible && remaining > HIDE_PX) {
-        visible = false;
-        contactDock.classList.remove("is-visible");
-      }
-    };
-
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(updateDock);
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
-    updateDock();
-  }
-
-  // =========================
   // Scroll reveal + glint + chip cascade
   // =========================
   const revealTargets = Array.from(document.querySelectorAll("main .os-header, main .glass"));
 
   if (revealTargets.length) {
     if (reduceMotionPref) {
-      revealTargets.forEach((el) => {
-        el.classList.add("reveal", "is-visible");
-      });
+      revealTargets.forEach((el) => el.classList.add("reveal", "is-visible"));
     } else {
       revealTargets.forEach((el, i) => {
         el.classList.add("reveal");
@@ -166,9 +118,7 @@
             el.classList.add("is-visible");
 
             if (el.classList.contains("glass")) {
-              window.setTimeout(() => {
-                el.classList.add("glint");
-              }, baseDelay + 160);
+              window.setTimeout(() => el.classList.add("glint"), baseDelay + 160);
             }
 
             io.unobserve(el);
@@ -201,7 +151,6 @@
 
   let manualLock = false;
   let selectedIndex = 0;
-
   let lastDragTime = 0;
 
   let startAuto = () => {};
@@ -583,7 +532,7 @@
     };
   }
 
-  // Shader init (unchanged from your previous build)
+  // Shader init (same shader as before; kept as-is)
   function initShaderBackground() {
     const gl =
       canvas.getContext("webgl", {
@@ -593,167 +542,111 @@
         depth: false,
         stencil: false,
         powerPreference: "high-performance",
-        preserveDrawingBuffer: false,
       }) || null;
-
     if (!gl) return null;
 
-    const VERT = `
-      attribute vec2 a_pos;
-      void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
-    `;
-
+    const VERT = `attribute vec2 a_pos; void main(){ gl_Position = vec4(a_pos,0.0,1.0);} `;
     const FRAG = `
       precision highp float;
-
       uniform vec2 u_res;
       uniform float u_time;
       uniform vec2 u_mouse;
 
-      float hash(vec2 p){
-        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-      }
-
+      float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453123); }
       float noise(vec2 p){
-        vec2 i = floor(p);
-        vec2 f = fract(p);
-        vec2 u = f*f*(3.0-2.0*f);
-        float a = hash(i + vec2(0.0,0.0));
-        float b = hash(i + vec2(1.0,0.0));
-        float c = hash(i + vec2(0.0,1.0));
-        float d = hash(i + vec2(1.0,1.0));
+        vec2 i=floor(p), f=fract(p);
+        vec2 u=f*f*(3.0-2.0*f);
+        float a=hash(i), b=hash(i+vec2(1,0)), c=hash(i+vec2(0,1)), d=hash(i+vec2(1,1));
         return mix(mix(a,b,u.x), mix(c,d,u.x), u.y);
       }
-
       float fbm(vec2 p){
-        float v = 0.0;
-        float a = 0.55;
-        for(int i=0;i<3;i++){
-          v += a * noise(p);
-          p = p*2.02 + 10.0;
-          a *= 0.5;
-        }
+        float v=0.0, a=0.55;
+        for(int i=0;i<3;i++){ v += a*noise(p); p=p*2.02+10.0; a*=0.5; }
         return v;
       }
-
-      float starLayer(vec2 uv, float scale, float density, float sizeBase, float tw){
-        vec2 gv = fract(uv*scale) - 0.5;
-        vec2 id = floor(uv*scale);
-
-        float r = hash(id);
-        float on = step(1.0 - density, r);
-
-        float size = sizeBase + 0.08 * r;
-        float d = length(gv);
-        float star = on * smoothstep(size, 0.0, d);
-
-        float t = 0.6 + 0.4 * sin(tw + r * 6.2831);
-        return star * t;
+      float starLayer(vec2 uv,float scale,float density,float sizeBase,float tw){
+        vec2 gv=fract(uv*scale)-0.5; vec2 id=floor(uv*scale);
+        float r=hash(id); float on=step(1.0-density,r);
+        float size=sizeBase+0.08*r;
+        float d=length(gv);
+        float star=on*smoothstep(size,0.0,d);
+        float t=0.6+0.4*sin(tw+r*6.2831);
+        return star*t;
       }
 
       void main(){
-        vec2 uv = gl_FragCoord.xy / u_res;
-        float asp = u_res.x / u_res.y;
-        vec2 p = (uv - 0.5) * vec2(asp, 1.0);
+        vec2 uv=gl_FragCoord.xy/u_res;
+        float asp=u_res.x/u_res.y;
+        vec2 p=(uv-0.5)*vec2(asp,1.0);
 
-        float t = u_time;
-        vec2 m = (u_mouse / u_res - 0.5) * vec2(asp, 1.0);
-        vec2 par = 0.018 * (m - p);
+        float t=u_time;
+        vec2 m=(u_mouse/u_res-0.5)*vec2(asp,1.0);
+        vec2 par=0.018*(m-p);
 
-        vec3 base = vec3(0.045, 0.060, 0.125);
-        base += vec3(0.020, 0.026, 0.038) * (1.0 - uv.y) * 0.75;
+        vec3 base=vec3(0.045,0.060,0.125);
+        base += vec3(0.020,0.026,0.038)*(1.0-uv.y)*0.75;
 
-        float s1 = starLayer(uv + par*0.7, 120.0, 0.018, 0.24, t*1.2);
-        float s2 = starLayer(uv + par*1.0, 180.0, 0.011, 0.18, t*1.0 + 2.0);
-        float s3 = starLayer(uv + par*1.4, 260.0, 0.008, 0.14, t*0.85 + 4.0);
-        float stars = s1 + s2 + s3;
+        float s1=starLayer(uv+par*0.7,120.0,0.018,0.24,t*1.2);
+        float s2=starLayer(uv+par*1.0,180.0,0.011,0.18,t*1.0+2.0);
+        float s3=starLayer(uv+par*1.4,260.0,0.008,0.14,t*0.85+4.0);
+        float stars=s1+s2+s3;
 
-        vec2 q = p + par*1.2;
-        q += 0.055 * vec2(
-          fbm(q*1.35 + t*0.045),
-          fbm(q*1.20 - t*0.040)
-        );
+        vec2 q=p+par*1.2;
+        q += 0.055*vec2(fbm(q*1.35+t*0.045), fbm(q*1.20-t*0.040));
 
-        float n1 = fbm(q*1.25 + vec2(0.0, t*0.070));
-        float n2 = fbm(q*2.00 + vec2(t*0.050, -t*0.040));
+        float n1=fbm(q*1.25+vec2(0.0,t*0.070));
+        float n2=fbm(q*2.00+vec2(t*0.050,-t*0.040));
 
-        vec3 cyan = vec3(0.12, 0.88, 0.95);
-        vec3 vio  = vec3(0.70, 0.42, 0.98);
+        vec3 cyan=vec3(0.12,0.88,0.95);
+        vec3 vio =vec3(0.70,0.42,0.98);
+        vec3 nebCol=mix(cyan,vio,n2);
 
-        vec3 nebCol = mix(cyan, vio, n2);
+        float band=exp(-abs(q.y*1.15+(n2-0.5)*0.75)*2.1);
+        float topMask=smoothstep(0.06,0.72,uv.y);
+        float neb=smoothstep(0.42,0.95,n1)*band*topMask;
 
-        float band = exp(-abs(q.y*1.15 + (n2 - 0.5)*0.75) * 2.1);
-        float topMask = smoothstep(0.06, 0.72, uv.y);
-        float neb = smoothstep(0.42, 0.95, n1) * band * topMask;
+        vec3 col=base;
+        col += nebCol*neb*0.38;
+        col += vec3(1.0)*stars*0.78;
+        col += nebCol*stars*0.05;
 
-        vec2 c = vec2(0.0, 0.10);
-        float r = length(p - c);
-        float cycle = 8.4;
-        float ph = fract(t / cycle);
-        float burst = smoothstep(0.0, 0.06, ph) * smoothstep(1.0, 0.74, ph);
-        float rad = 0.10 + ph * 1.10;
-        float ring = exp(-abs(r - rad) * 32.0) * burst;
+        float gr=hash(gl_FragCoord.xy+vec2(t*60.0,-t*50.0));
+        col += (gr-0.5)*0.008;
 
-        vec3 col = base;
-        col += nebCol * neb * 0.38;
-        col += vec3(1.0) * stars * 0.78;
-        col += nebCol * stars * 0.05;
-        col += nebCol * ring * 0.11;
-
-        float gr = hash(gl_FragCoord.xy + vec2(t*60.0, -t*50.0));
-        col += (gr - 0.5) * 0.008;
-
-        float vig = smoothstep(1.20, 0.28, length(p));
+        float vig=smoothstep(1.20,0.28,length(p));
         col *= vig;
 
-        col = clamp(col, 0.0, 1.0);
-        gl_FragColor = vec4(col, 1.0);
+        gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
       }
     `;
 
-    function compile(type, src) {
+    const compile = (type, src) => {
       const sh = gl.createShader(type);
       gl.shaderSource(sh, src);
       gl.compileShader(sh);
-      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
-        gl.deleteShader(sh);
-        return null;
-      }
+      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) return null;
       return sh;
-    }
+    };
 
-    function makeProgram(vsSrc, fsSrc) {
-      const vs = compile(gl.VERTEX_SHADER, vsSrc);
-      const fs = compile(gl.FRAGMENT_SHADER, fsSrc);
-      if (!vs || !fs) return null;
+    const vs = compile(gl.VERTEX_SHADER, VERT);
+    const fs = compile(gl.FRAGMENT_SHADER, FRAG);
+    if (!vs || !fs) return null;
 
-      const p = gl.createProgram();
-      gl.attachShader(p, vs);
-      gl.attachShader(p, fs);
-      gl.linkProgram(p);
-
-      gl.deleteShader(vs);
-      gl.deleteShader(fs);
-
-      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
-        gl.deleteProgram(p);
-        return null;
-      }
-      return p;
-    }
-
-    const program = makeProgram(VERT, FRAG);
-    if (!program) return null;
+    const prog = gl.createProgram();
+    gl.attachShader(prog, vs);
+    gl.attachShader(prog, fs);
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
 
     const verts = new Float32Array([-1, -1, 3, -1, -1, 3]);
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
 
-    const aPos = gl.getAttribLocation(program, "a_pos");
-    const uRes = gl.getUniformLocation(program, "u_res");
-    const uTime = gl.getUniformLocation(program, "u_time");
-    const uMouse = gl.getUniformLocation(program, "u_mouse");
+    const aPos = gl.getAttribLocation(prog, "a_pos");
+    const uRes = gl.getUniformLocation(prog, "u_res");
+    const uTime = gl.getUniformLocation(prog, "u_time");
+    const uMouse = gl.getUniformLocation(prog, "u_mouse");
 
     const DPR_MAX = 1.6;
     const FRAME_MS = 1000 / 60;
@@ -772,7 +665,6 @@
       mxT = clientX;
       myT = window.innerHeight - clientY;
     };
-
     window.addEventListener("pointermove", (e) => setPointer(e.clientX, e.clientY), { passive: true });
 
     function resizeGL() {
@@ -788,7 +680,6 @@
         gl.viewport(0, 0, w, h);
       }
     }
-
     window.addEventListener("resize", resizeGL, { passive: true });
     resizeGL();
 
@@ -807,8 +698,7 @@
       mx = mx + (mxT - mx) * lerp;
       my = my + (myT - my) * lerp;
 
-      gl.useProgram(program);
-
+      gl.useProgram(prog);
       gl.bindBuffer(gl.ARRAY_BUFFER, buf);
       gl.enableVertexAttribArray(aPos);
       gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
@@ -849,11 +739,16 @@
   const stopBg = () => bg && bg.stop();
 
   // =========================
-  // Rover movement (roams)
+  // Rover movement:
+  // - Desktop: roam around viewport
+  // - Mobile: roam around the name inside hero
   // =========================
   function initRover() {
     const el = document.getElementById("flyby");
     if (!el) return null;
+
+    const hero = document.getElementById("intro");
+    const name = document.getElementById("name-title");
 
     let rafId = null;
     let running = false;
@@ -863,83 +758,98 @@
     let targetX = 0, targetY = 0;
 
     let last = performance.now();
-    let cruise = rand(32, 66);
+    let cruise = rand(28, 58);
 
     let nextTargetAt = 0;
     let nextBoostAt = performance.now() + rand(14000, 26000);
     let boostUntil = 0;
 
-    let size = { w: 144, h: 96 };
+    let size = { w: 110, h: 74 };
+
+    const isMobile = () => window.matchMedia("(max-width: 640px)").matches;
 
     const measure = () => {
       const r = el.getBoundingClientRect();
-      size = { w: r.width || 144, h: r.height || 96 };
+      size = { w: r.width || 110, h: r.height || 74 };
     };
 
-    const bounds = () => {
+    // Desktop roam area: viewport (avoid center-ish safe zone so it doesn't sit on text)
+    const boundsDesktop = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
       const M = Math.max(10, Math.min(24, Math.round(Math.min(w, h) * 0.02)));
 
-      const minX = M;
-      const maxX = Math.max(M, w - size.w - M);
-      const minY = M + 6;
-      const maxY = Math.max(M, h - size.h - M);
-
-      return { minX, maxX, minY, maxY, w, h, M };
+      return {
+        minX: M,
+        maxX: Math.max(M, w - size.w - M),
+        minY: M + 6,
+        maxY: Math.max(M, h - size.h - M),
+        originX: 0,
+        originY: 0,
+      };
     };
 
-    const safeZone = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      return { x0: w * 0.22, x1: w * 0.78, y0: h * 0.20, y1: h * 0.74 };
+    // Mobile roam area: around name inside hero section (local coords)
+    const boundsMobile = () => {
+      const hr = hero?.getBoundingClientRect();
+      const nr = name?.getBoundingClientRect();
+
+      if (!hr || !nr) return boundsDesktop();
+
+      const heroW = hr.width;
+      const heroH = hr.height;
+
+      // compute name rect in hero-local space
+      const nx = nr.left - hr.left;
+      const ny = nr.top - hr.top;
+      const nw = nr.width;
+      const nh = nr.height;
+
+      // roam box: slightly bigger than the name block, with extra room below
+      const padX = Math.max(26, Math.min(44, heroW * 0.08));
+      const padTop = 18;
+      const padBottom = 70;
+
+      const minX = clamp(nx - padX, 8, heroW - size.w - 8);
+      const maxX = clamp(nx + nw + padX - size.w, 8, heroW - size.w - 8);
+      const minY = clamp(ny - padTop, 8, heroH - size.h - 8);
+      const maxY = clamp(ny + nh + padBottom - size.h, 8, heroH - size.h - 8);
+
+      return {
+        minX,
+        maxX: Math.max(minX, maxX),
+        minY,
+        maxY: Math.max(minY, maxY),
+        originX: hr.left,
+        originY: hr.top,
+      };
     };
+
+    const getBounds = () => (isMobile() ? boundsMobile() : boundsDesktop());
 
     const pickTarget = (force = false) => {
-      const { minX, maxX, minY, maxY } = bounds();
-      const z = safeZone();
+      const b = getBounds();
 
-      let tx = 0, ty = 0;
-      for (let k = 0; k < 16; k++) {
-        tx = rand(minX, maxX);
-        ty = rand(minY, maxY);
+      targetX = rand(b.minX, b.maxX);
+      targetY = rand(b.minY, b.maxY);
 
-        const cx = tx + size.w * 0.5;
-        const cy = ty + size.h * 0.5;
-        const insideSafe = cx > z.x0 && cx < z.x1 && cy > z.y0 && cy < z.y1;
-        if (!insideSafe) break;
-      }
-
-      targetX = tx;
-      targetY = ty;
-
-      if (force || Math.random() < 0.45) cruise = rand(30, 62);
-      nextTargetAt = performance.now() + rand(2400, 5200);
+      if (force || Math.random() < 0.45) cruise = rand(isMobile() ? 22 : 28, isMobile() ? 46 : 58);
+      nextTargetAt = performance.now() + rand(2200, 4800);
     };
 
     const pickFarTarget = () => {
-      const { minX, maxX, minY, maxY, w, h } = bounds();
-
-      let tx = 0, ty = 0;
-      for (let k = 0; k < 16; k++) {
-        tx = rand(minX, maxX);
-        ty = rand(minY, maxY);
-        const d = Math.hypot(tx - x, ty - y);
-        if (d > Math.min(w, h) * 0.55) break;
-      }
-
-      targetX = tx;
-      targetY = ty;
-      nextTargetAt = performance.now() + rand(1600, 2800);
+      const b = getBounds();
+      targetX = rand(b.minX, b.maxX);
+      targetY = rand(b.minY, b.maxY);
+      nextTargetAt = performance.now() + rand(1400, 2400);
     };
 
     const clampToBounds = () => {
-      const { minX, maxX, minY, maxY } = bounds();
-
-      if (x < minX) { x = minX; vx = Math.abs(vx) * 0.7; }
-      if (x > maxX) { x = maxX; vx = -Math.abs(vx) * 0.7; }
-      if (y < minY) { y = minY; vy = Math.abs(vy) * 0.7; }
-      if (y > maxY) { y = maxY; vy = -Math.abs(vy) * 0.7; }
+      const b = getBounds();
+      if (x < b.minX) { x = b.minX; vx = Math.abs(vx) * 0.7; }
+      if (x > b.maxX) { x = b.maxX; vx = -Math.abs(vx) * 0.7; }
+      if (y < b.minY) { y = b.minY; vy = Math.abs(vy) * 0.7; }
+      if (y > b.maxY) { y = b.maxY; vy = -Math.abs(vy) * 0.7; }
     };
 
     const tick = (now) => {
@@ -950,14 +860,15 @@
 
       if (now > nextTargetAt) pickTarget(false);
 
-      if (now > nextBoostAt) {
-        boostUntil = now + rand(1800, 3600);
+      // Desktop occasional boost; mobile stays chill
+      if (!isMobile() && now > nextBoostAt) {
+        boostUntil = now + rand(1600, 3200);
         nextBoostAt = now + rand(16000, 30000);
-        cruise = rand(92, 150);
+        cruise = rand(86, 140);
         pickFarTarget();
       }
 
-      const boosting = now < boostUntil;
+      const boosting = !isMobile() && now < boostUntil;
       el.classList.toggle("boost", boosting);
 
       const dx = targetX - x;
@@ -971,7 +882,7 @@
       vx += (desiredVX - vx) * steer;
       vy += (desiredVY - vy) * steer;
 
-      const maxSpeed = boosting ? 175 : 85;
+      const maxSpeed = boosting ? 165 : (isMobile() ? 58 : 82);
       const sp = Math.hypot(vx, vy) || 0.0001;
       if (sp > maxSpeed) {
         vx = (vx / sp) * maxSpeed;
@@ -984,55 +895,82 @@
       clampToBounds();
 
       const dir = vx >= 0 ? 1 : -1;
-      const bob = Math.sin(now * 0.003 + 1.7) * (boosting ? 2.6 : 3.8);
+      const bob = Math.sin(now * 0.003 + 1.7) * (boosting ? 2.2 : 3.0);
 
-      const trail = clamp((sp - 18) / 120, 0, 1);
+      const trail = clamp((sp - 14) / 110, 0, 1);
       el.style.setProperty("--trail", trail.toFixed(3));
 
-      const op = clamp(0.48 + trail * 0.18, 0.48, 0.66);
+      const op = clamp((isMobile() ? 0.58 : 0.50) + trail * 0.14, 0.48, 0.68);
       el.style.opacity = String(op);
 
-      el.style.transform =
-        `translate3d(${Math.round(x)}px, ${Math.round(y + bob)}px, 0) scaleX(${dir})`;
+      // Desktop uses fixed coords; Mobile is absolute within hero (local coords)
+      if (isMobile()) {
+        el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y + bob)}px, 0) scaleX(${dir})`;
+      } else {
+        el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y + bob)}px, 0) scaleX(${dir})`;
+      }
 
       rafId = requestAnimationFrame(tick);
     };
 
-    return {
-      start() {
-        if (prefersReducedMotion) return;
-        if (running) return;
-        running = true;
+    // On mobile, only animate rover when hero is visible (so it stays “around the name”)
+    let heroVisible = true;
+    let heroIO = null;
 
-        measure();
-        const { minX, maxX, minY, maxY } = bounds();
+    const setupHeroObserver = () => {
+      if (!hero || !("IntersectionObserver" in window)) return;
 
-        x = rand(minX, Math.min(maxX, minX + (maxX - minX) * 0.20));
-        y = rand(minY, Math.min(maxY, minY + (maxY - minY) * 0.22));
-        vx = rand(-12, 12);
-        vy = rand(-10, 10);
+      if (heroIO) heroIO.disconnect();
 
-        el.style.opacity = "0.52";
-        el.style.setProperty("--trail", "0.25");
+      heroIO = new IntersectionObserver(
+        ([entry]) => {
+          heroVisible = !!entry?.isIntersecting;
+          if (isMobile()) {
+            if (heroVisible) start();
+            else stop();
+          }
+        },
+        { threshold: 0.08 }
+      );
 
-        pickTarget(true);
-        last = performance.now();
-        rafId = requestAnimationFrame(tick);
-      },
-
-      stop() {
-        running = false;
-        if (rafId) cancelAnimationFrame(rafId);
-        rafId = null;
-        el.style.opacity = "0";
-      },
-
-      resize() {
-        measure();
-        clampToBounds();
-        pickTarget(true);
-      },
+      heroIO.observe(hero);
     };
+
+    const start = () => {
+      if (prefersReducedMotion) return;
+      if (running) return;
+      if (isMobile() && !heroVisible) return;
+
+      running = true;
+      measure();
+
+      const b = getBounds();
+      x = rand(b.minX, b.maxX);
+      y = rand(b.minY, b.maxY);
+      vx = rand(-10, 10);
+      vy = rand(-8, 8);
+
+      pickTarget(true);
+      last = performance.now();
+      rafId = requestAnimationFrame(tick);
+    };
+
+    const stop = () => {
+      running = false;
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+      el.style.opacity = "0";
+    };
+
+    const resize = () => {
+      measure();
+      clampToBounds();
+      pickTarget(true);
+    };
+
+    setupHeroObserver();
+
+    return { start, stop, resize };
   }
 
   const rover = initRover();
@@ -1044,11 +982,11 @@
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       stopBg();
-      stopAuto?.();
+      stopAuto();
       rover?.stop();
     } else {
       startBgIfVisible();
-      startAuto?.();
+      startAuto();
       rover?.start();
       rover?.resize();
     }
