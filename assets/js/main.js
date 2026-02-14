@@ -62,12 +62,10 @@
   }
 
   // =========================
-  // Wavy scroll progress
+  // Scroll progress (old-style bar)
   // =========================
-  const progressEl = document.getElementById("scroll-progress");
-  const waveClipRect = document.getElementById("wave-clip-rect");
-
-  if (progressEl && waveClipRect) {
+  const progressBar = document.getElementById("scroll-progress-bar");
+  if (progressBar) {
     let raf = 0;
 
     const update = () => {
@@ -78,9 +76,8 @@
       const max = Math.max(1, doc.scrollHeight - window.innerHeight);
       const p = clamp(scrollTop / max, 0, 1);
 
-      // SVG viewBox is 0..1000 in X
-      const width = 1000 * p;
-      waveClipRect.setAttribute("width", width.toFixed(2));
+      // scaleX is smoother than width changes
+      progressBar.style.transform = `scaleX(${p})`;
     };
 
     const onScroll = () => {
@@ -190,8 +187,6 @@
 
       const i = normIndex(idx);
       const padLeft = getTrackPadLeft();
-
-      // On mobile we use full-width cards; align start.
       const left = Math.max(0, cards[i].offsetLeft - padLeft);
       track.scrollTo({ left, behavior: smooth ? smoothBehavior : "auto" });
     };
@@ -820,7 +815,7 @@
   const stopBg = () => bg && bg.stop();
 
   // =========================
-  // Rover movement (roams around edges, avoids center)
+  // Rover movement (roams)
   // =========================
   function initRover() {
     const el = document.getElementById("flyby");
@@ -860,7 +855,6 @@
       return { minX, maxX, minY, maxY, w, h, M };
     };
 
-    // Avoid central "content readability" zone
     const safeZone = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
