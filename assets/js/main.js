@@ -73,6 +73,38 @@ window.addEventListener("resize", setDockSafe, { passive: true });
 
     menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeMenu));
   }
+// ===== Contact dock: show after scrolling down (hide on hero) =====
+const contactDock = document.getElementById("contact-dock");
+const hero = document.getElementById("intro");
+
+if (contactDock) {
+  const show = () => contactDock.classList.add("is-visible");
+  const hide = () => contactDock.classList.remove("is-visible");
+
+  // Start hidden
+  hide();
+
+  if (hero && "IntersectionObserver" in window) {
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        // Hide while hero is mostly visible; show once you scroll past it
+        if (entry.isIntersecting && entry.intersectionRatio > 0.35) hide();
+        else show();
+      },
+      { threshold: [0, 0.2, 0.35, 0.6, 1] }
+    );
+
+    io.observe(hero);
+  } else {
+    // Fallback: show after small scroll
+    const onScroll = () => {
+      if (window.scrollY > 120) show();
+      else hide();
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+  }
+}
 
   // =========================
   // Scroll progress (old-style bar)
