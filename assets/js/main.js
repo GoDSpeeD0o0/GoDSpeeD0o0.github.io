@@ -62,19 +62,25 @@
   }
 
   // =========================
-  // Scroll progress bar
+  // Wavy scroll progress
   // =========================
   const progressEl = document.getElementById("scroll-progress");
-  if (progressEl) {
+  const waveClipRect = document.getElementById("wave-clip-rect");
+
+  if (progressEl && waveClipRect) {
     let raf = 0;
 
     const update = () => {
       raf = 0;
+
       const doc = document.documentElement;
       const scrollTop = window.scrollY || doc.scrollTop || 0;
       const max = Math.max(1, doc.scrollHeight - window.innerHeight);
       const p = clamp(scrollTop / max, 0, 1);
-      doc.style.setProperty("--scroll-p", p.toFixed(4));
+
+      // SVG viewBox is 0..1000 in X
+      const width = 1000 * p;
+      waveClipRect.setAttribute("width", width.toFixed(2));
     };
 
     const onScroll = () => {
@@ -83,6 +89,7 @@
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", () => update(), { passive: true });
     update();
   }
 
@@ -183,8 +190,9 @@
 
       const i = normIndex(idx);
       const padLeft = getTrackPadLeft();
-      const left = Math.max(0, cards[i].offsetLeft - padLeft);
 
+      // On mobile we use full-width cards; align start.
+      const left = Math.max(0, cards[i].offsetLeft - padLeft);
       track.scrollTo({ left, behavior: smooth ? smoothBehavior : "auto" });
     };
 
