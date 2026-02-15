@@ -21,7 +21,7 @@
     />
 
     <link rel="icon" href="favicon.ico" />
-    <link rel="stylesheet" href="assets/css/main.css?v=41" />
+    <link rel="stylesheet" href="assets/css/main.css?v=42" />
   </head>
 
   <body class="min-h-screen text-white">
@@ -38,6 +38,9 @@
       aria-hidden="true"
       style="position:fixed; inset:0; z-index:-1; pointer-events:none;"
     ></div>
+
+    <!-- Transition overlay -->
+    <div id="transition-overlay" aria-hidden="true"></div>
 
     <!-- NAV -->
     <header class="sticky top-0 z-20 border-b border-white/10 backdrop-blur">
@@ -90,16 +93,17 @@
     <div id="scroll-progress" aria-hidden="true">
       <div id="scroll-progress-bar"></div>
     </div>
+
     <!-- Model OS HUD (desktop scrollytelling) -->
-<aside id="os-hud" class="os-hud glass" aria-hidden="true">
-  <div class="hud-top">
-    <span class="mono hud-badge">MODEL_OS</span>
-    <span id="hud-module" class="mono hud-module">BOOT</span>
-  </div>
-  <div id="hud-title" class="hud-title">Boot</div>
-  <div id="hud-sub" class="hud-sub">Scroll to load modules.</div>
-  <div class="hud-divider" aria-hidden="true"></div>
-</aside>
+    <aside id="os-hud" class="os-hud glass" aria-hidden="true">
+      <div class="hud-top">
+        <span class="mono hud-badge">MODEL_OS</span>
+        <span id="hud-module" class="mono hud-module">BOOT</span>
+      </div>
+      <div id="hud-title" class="hud-title">Boot</div>
+      <div id="hud-sub" class="hud-sub">Scroll to load modules.</div>
+      <div class="hud-divider" aria-hidden="true"></div>
+    </aside>
 
     <main class="mx-auto max-w-6xl px-4">
       <!-- INTRO -->
@@ -147,7 +151,7 @@
             Shipping <span class="gradient-text">GenAI systems</span>: performance, reliability, clean automation.
           </p>
 
-          <a class="mono scroll-indicator" href="#signals"><span>enter</span><span>↓</span></a>
+          <a id="enter-btn" class="mono scroll-indicator" href="#signals"><span>enter</span><span>↓</span></a>
         </div>
       </section>
 
@@ -366,7 +370,7 @@
           <div id="projects-track" class="hscroll drawer-track flex gap-4 overflow-x-auto pb-6">
             <article class="glass card-hover project-card" tabindex="0" role="button"
               aria-label="Slack Python QnA Bot" data-repo="https://github.com/AII-projects/slackbot">
-              <div class="project-thumb"><img src="assets/img/1.png" alt="Slackbot thumbnail" loading="lazy" /></div>
+              <div class="project-thumb"><img src="assets/img/1.png" alt="Slackbot thumbnail" loading="lazy" decoding="async" /></div>
               <div class="project-meta">
                 <div class="project-title">Slack Python QnA Bot</div>
                 <div class="mono text-xs text-white/60">Nov 2025</div>
@@ -383,7 +387,7 @@
 
             <article class="glass card-hover project-card" tabindex="0" role="button"
               aria-label="Faster Diffusion" data-repo="https://github.com/GoDSpeeD0o0/GenAIProject">
-              <div class="project-thumb"><img src="assets/img/2.png" alt="Faster Diffusion thumbnail" loading="lazy" /></div>
+              <div class="project-thumb"><img src="assets/img/2.png" alt="Faster Diffusion thumbnail" loading="lazy" decoding="async" /></div>
               <div class="project-meta">
                 <div class="project-title">Faster Diffusion</div>
                 <div class="mono text-xs text-white/60">Spring 2025</div>
@@ -401,7 +405,7 @@
             <article class="glass card-hover project-card" tabindex="0" role="button"
               aria-label="Particle Pollution Analysis research"
               data-repo="https://github.com/GoDSpeeD0o0/Research-Paper/tree/main/MachineLearningAnalysis_Particle_Pollution">
-              <div class="project-thumb"><img src="assets/img/3.png" alt="Particle Pollution Analysis thumbnail" loading="lazy" /></div>
+              <div class="project-thumb"><img src="assets/img/3.png" alt="Particle Pollution Analysis thumbnail" loading="lazy" decoding="async" /></div>
               <div class="project-meta">
                 <div class="project-title">Particle Pollution Analysis (Research)</div>
                 <div class="mono text-xs text-white/60">May 2022</div>
@@ -418,7 +422,7 @@
 
             <article class="glass card-hover project-card" tabindex="0" role="button"
               aria-label="Tweet Sentiment Analysis" data-repo="https://github.com/GoDSpeeD0o0/TextSentimentAnalysis">
-              <div class="project-thumb"><img src="assets/img/4.png" alt="Tweet Sentiment Analysis thumbnail" loading="lazy" /></div>
+              <div class="project-thumb"><img src="assets/img/4.png" alt="Tweet Sentiment Analysis thumbnail" loading="lazy" decoding="async" /></div>
               <div class="project-meta">
                 <div class="project-title">Tweet Sentiment Analysis</div>
                 <div class="mono text-xs text-white/60">Apr 2024</div>
@@ -440,7 +444,7 @@
         </div>
       </section>
 
-      <!-- CONTACT (content fix applied here) -->
+      <!-- CONTACT -->
       <section id="contact" class="mt-12">
         <div class="os-header">
           <h2 class="section-title">Contact</h2>
@@ -504,6 +508,6 @@
       </footer>
     </main>
 
-    <script src="assets/js/main.js?v=41"></script>
+    <script src="assets/js/main.js?v=42"></script>
   </body>
 </html>

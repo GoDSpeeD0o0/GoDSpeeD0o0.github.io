@@ -18,33 +18,47 @@
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-  // Header height -> CSS var
-const headerEl = document.querySelector("header");
-let headerH = 0;
-let rebuildSectionObserver = null;
-
-const setHeaderHeight = () => {
-  const newH = headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0;
-  if (newH === headerH) return;
-
-  headerH = newH;
-  document.documentElement.style.setProperty("--header-h", `${headerH}px`);
-
-  // If the header height changes (menu open/close), refresh active-section observer root margin.
-  if (typeof rebuildSectionObserver === "function") {
-    rebuildSectionObserver();
-  }
-};
-
-  setHeaderHeight();
-  window.addEventListener("resize", setHeaderHeight, { passive: true });
-
   // Reduced motion preference
   const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // Keep background animated
   const FORCE_ANIMATION = true;
   const prefersReducedMotion = !FORCE_ANIMATION && reduceMotionPref;
+
+  // =========================
+  // Header height -> CSS var (and refresh section observer)
+  // =========================
+  const headerEl = document.querySelector("header");
+  let headerH = 0;
+  let rebuildSectionObserver = null;
+
+  const setHeaderHeight = () => {
+    const newH = headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0;
+    if (newH === headerH) return;
+
+    headerH = newH;
+    document.documentElement.style.setProperty("--header-h", `${headerH}px`);
+
+    if (typeof rebuildSectionObserver === "function") rebuildSectionObserver();
+  };
+
+  setHeaderHeight();
+  window.addEventListener("resize", setHeaderHeight, { passive: true });
+
+  // =========================
+  // Transition overlay helper
+  // =========================
+  const playTransition = (cb) => {
+    if (reduceMotionPref) {
+      cb?.();
+      return;
+    }
+    const body = document.body;
+    body.classList.add("is-transitioning");
+
+    window.setTimeout(() => cb?.(), 220);
+    window.setTimeout(() => body.classList.remove("is-transitioning"), 580);
+  };
 
   // =========================
   // Mobile menu
@@ -140,133 +154,177 @@ const setHeaderHeight = () => {
       );
 
       revealTargets.forEach((el) => io.observe(el));
-      // =========================
-// Active section (nav) + Model OS HUD (scrollytelling)
-// =========================
-const hudEl = document.getElementById("os-hud");
-const hudModuleEl = document.getElementById("hud-module");
-const hudTitleEl = document.getElementById("hud-title");
-const hudSubEl = document.getElementById("hud-sub");
+    }
+  }
 
-const SECTION_META = [
-  { id: "intro", module: "BOOT", title: "Boot", sub: "Scroll to load modules." },
-  { id: "signals", module: "SIGNALS", title: "Highlights", sub: "A quick read on impact + focus." },
-  { id: "skills", module: "CAPABILITIES", title: "Skills", sub: "Languages · GenAI · Data · Infra." },
-  { id: "education", module: "PROFILE", title: "Education", sub: "ASU M.S. · DIT B.Tech." },
-  { id: "experience", module: "LOG", title: "Experience", sub: "What I built and what moved." },
-  { id: "projects", module: "LAB", title: "Projects", sub: "Swipe / drag to browse." },
-  { id: "contact", module: "LINK", title: "Contact", sub: "Fast ways to reach me." },
-];
+  // =========================
+  // Active section (nav) + Model OS HUD (scrollytelling)
+  // =========================
+  const hudEl = document.getElementById("os-hud");
+  const hudModuleEl = document.getElementById("hud-module");
+  const hudTitleEl = document.getElementById("hud-title");
+  const hudSubEl = document.getElementById("hud-sub");
 
-const metaById = new Map(SECTION_META.map((s) => [s.id, s]));
+  const SECTION_META = [
+    { id: "intro", module: "BOOT", title: "Boot", sub: "Scroll to load modules." },
+    { id: "signals", module: "SIGNALS", title: "Highlights", sub: "A quick read on impact + focus." },
+    { id: "skills", module: "CAPABILITIES", title: "Skills", sub: "Languages · GenAI · Data · Infra." },
+    { id: "education", module: "PROFILE", title: "Education", sub: "ASU M.S. · DIT B.Tech." },
+    { id: "experience", module: "LOG", title: "Experience", sub: "What I built and what moved." },
+    { id: "projects", module: "LAB", title: "Projects", sub: "Swipe / drag to browse." },
+    { id: "contact", module: "LINK", title: "Contact", sub: "Fast ways to reach me." },
+  ];
 
-const navPills = Array.from(document.querySelectorAll('a.nav-pill[href^="#"]')).filter((a) => {
-  const href = a.getAttribute("href") || "";
-  return href.length > 1;
-});
+  const metaById = new Map(SECTION_META.map((s) => [s.id, s]));
 
-let activeSectionId = "";
-
-const applyActiveSection = (id) => {
-  if (!id || id === activeSectionId) return;
-  activeSectionId = id;
-
-  // Nav pills (desktop + mobile)
-  navPills.forEach((a) => {
-    const href = a.getAttribute("href");
-    const isActive = href === `#${id}`;
-    a.classList.toggle("is-active", isActive);
-    if (isActive) a.setAttribute("aria-current", "page");
-    else a.removeAttribute("aria-current");
+  const navPills = Array.from(document.querySelectorAll('a.nav-pill[href^="#"]')).filter((a) => {
+    const href = a.getAttribute("href") || "";
+    return href.length > 1;
   });
 
-  // HUD content (desktop)
-  const m = metaById.get(id);
-  if (hudEl && m) {
-    if (hudModuleEl) hudModuleEl.textContent = m.module;
-    if (hudTitleEl) hudTitleEl.textContent = m.title;
-    if (hudSubEl) hudSubEl.textContent = m.sub;
+  let activeSectionId = "";
 
-    hudEl.classList.add("bump");
-    window.setTimeout(() => hudEl.classList.remove("bump"), 320);
+  const applyActiveSection = (id) => {
+    if (!id || id === activeSectionId) return;
+    activeSectionId = id;
+
+    navPills.forEach((a) => {
+      const href = a.getAttribute("href");
+      const isActive = href === `#${id}`;
+      a.classList.toggle("is-active", isActive);
+      if (isActive) a.setAttribute("aria-current", "page");
+      else a.removeAttribute("aria-current");
+    });
+
+    const m = metaById.get(id);
+    if (hudEl && m) {
+      if (hudModuleEl) hudModuleEl.textContent = m.module;
+      if (hudTitleEl) hudTitleEl.textContent = m.title;
+      if (hudSubEl) hudSubEl.textContent = m.sub;
+
+      hudEl.classList.add("bump");
+      window.setTimeout(() => hudEl.classList.remove("bump"), 320);
+    }
+  };
+
+  if (hudEl) {
+    let hudRaf = 0;
+
+    const updateHudVisible = () => {
+      hudRaf = 0;
+      const show = (window.scrollY || 0) > window.innerHeight * 0.18;
+      hudEl.classList.toggle("is-on", show);
+    };
+
+    const onHudScroll = () => {
+      if (hudRaf) return;
+      hudRaf = requestAnimationFrame(updateHudVisible);
+    };
+
+    window.addEventListener("scroll", onHudScroll, { passive: true });
+    window.addEventListener("resize", updateHudVisible, { passive: true });
+    updateHudVisible();
   }
-};
 
-// HUD visibility (desktop)
-if (hudEl) {
-  let hudRaf = 0;
+  const observedSections = SECTION_META.map((s) => document.getElementById(s.id)).filter(Boolean);
 
-  const updateHudVisible = () => {
-    hudRaf = 0;
-    const show = (window.scrollY || 0) > window.innerHeight * 0.18;
-    hudEl.classList.toggle("is-on", show);
-  };
+  if (observedSections.length && "IntersectionObserver" in window) {
+    let ratios = new Map();
+    let sectionIO = null;
 
-  const onHudScroll = () => {
-    if (hudRaf) return;
-    hudRaf = requestAnimationFrame(updateHudVisible);
-  };
+    const buildObserver = () => {
+      if (sectionIO) sectionIO.disconnect();
+      ratios = new Map();
 
-  window.addEventListener("scroll", onHudScroll, { passive: true });
-  window.addEventListener("resize", updateHudVisible, { passive: true });
-  updateHudVisible();
-}
+      const top = -(headerH + 24);
 
-const observedSections = SECTION_META.map((s) => document.getElementById(s.id)).filter(Boolean);
-
-if (observedSections.length && "IntersectionObserver" in window) {
-  let ratios = new Map();
-  let sectionIO = null;
-
-  const buildObserver = () => {
-    if (sectionIO) sectionIO.disconnect();
-    ratios = new Map();
-
-    const top = -(headerH + 24);
-
-    sectionIO = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          ratios.set(e.target.id, e.isIntersecting ? e.intersectionRatio : 0);
-        }
-
-        let bestId = activeSectionId || "intro";
-        let best = 0;
-
-        for (const [id, r] of ratios) {
-          if (r > best) {
-            best = r;
-            bestId = id;
+      sectionIO = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            ratios.set(e.target.id, e.isIntersecting ? e.intersectionRatio : 0);
           }
-        }
 
-        if (best > 0.18) applyActiveSection(bestId);
+          let bestId = activeSectionId || "intro";
+          let best = 0;
+
+          for (const [id, r] of ratios) {
+            if (r > best) {
+              best = r;
+              bestId = id;
+            }
+          }
+
+          if (best > 0.18) applyActiveSection(bestId);
+        },
+        {
+          threshold: [0.18, 0.28, 0.38, 0.5, 0.62, 0.75],
+          rootMargin: `${top}px 0px -55% 0px`,
+        }
+      );
+
+      observedSections.forEach((el) => sectionIO.observe(el));
+    };
+
+    buildObserver();
+    rebuildSectionObserver = buildObserver;
+  } else {
+    navPills.forEach((a) => {
+      a.addEventListener("click", () => {
+        const id = (a.getAttribute("href") || "").slice(1);
+        applyActiveSection(id);
+      });
+    });
+  }
+
+  applyActiveSection("intro");
+
+  // =========================
+  // Hero -> next section transition behavior
+  // - click "enter" triggers overlay + smooth scroll
+  // - first manual scroll out of hero triggers overlay once
+  // =========================
+  const enterBtn = document.getElementById("enter-btn");
+  const hero = document.getElementById("intro");
+  const signals = document.getElementById("signals");
+
+  let didHeroTransition = false;
+
+  const scrollToEl = (el) => {
+    if (!el) return;
+    el.scrollIntoView({ behavior: reduceMotionPref ? "auto" : "smooth", block: "start" });
+  };
+
+  if (enterBtn && signals) {
+    enterBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (!didHeroTransition) didHeroTransition = true;
+
+      playTransition(() => {
+        history.pushState(null, "", "#signals");
+        scrollToEl(signals);
+      });
+    });
+  }
+
+  if (hero && !reduceMotionPref && "IntersectionObserver" in window) {
+    const heroIO = new IntersectionObserver(
+      ([entry]) => {
+        // only once, only when leaving hero meaningfully
+        if (didHeroTransition) return;
+        if (!entry) return;
+
+        const scrolledEnough = (window.scrollY || 0) > window.innerHeight * 0.30;
+        const leftHero = entry.intersectionRatio < 0.22;
+
+        if (scrolledEnough && leftHero) {
+          didHeroTransition = true;
+          playTransition();
+        }
       },
-      {
-        threshold: [0.18, 0.28, 0.38, 0.5, 0.62, 0.75],
-        rootMargin: `${top}px 0px -55% 0px`,
-      }
+      { threshold: [0.22, 0.4, 0.6, 0.8] }
     );
 
-    observedSections.forEach((el) => sectionIO.observe(el));
-  };
-
-  buildObserver();
-  rebuildSectionObserver = buildObserver;
-} else {
-  // Fallback: set active on click
-  navPills.forEach((a) => {
-    a.addEventListener("click", () => {
-      const id = (a.getAttribute("href") || "").slice(1);
-      applyActiveSection(id);
-    });
-  });
-}
-
-// initial state
-applyActiveSection("intro");
-
-    }
+    heroIO.observe(hero);
   }
 
   // =========================
