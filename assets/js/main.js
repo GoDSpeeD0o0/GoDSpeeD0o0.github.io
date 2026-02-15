@@ -30,7 +30,7 @@
   // Reduced motion preference
   const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // Keep background animated (theme is subtle, so safe)
+  // Keep background animated
   const FORCE_ANIMATION = true;
   const prefersReducedMotion = !FORCE_ANIMATION && reduceMotionPref;
 
@@ -402,9 +402,7 @@
   }
 
   // =========================
-  // Background animation:
-  // WebGL shader (primary) + 2D fallback
-  // Generative Art Studio = soft blobs/metaballs
+  // Background animation (WebGL primary + 2D fallback)
   // =========================
   const canvas = document.getElementById("ai-bg");
   if (!canvas) return;
@@ -417,14 +415,8 @@
     let running = false;
 
     let w = 0, h = 0, dpr = 1;
-
-    const palette = [
-      { r: 255, g: 107, b: 107 }, // red
-      { r: 77, g: 150, b: 255 },  // blue
-      { r: 107, g: 203, b: 119 }, // green
-    ];
-
-    let blobs = [];
+    let stars = [];
+    let nodes = [];
 
     function resize() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -437,19 +429,23 @@
       canvas.style.height = "100vh";
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const count = clamp(Math.round((w * h) / 240000), 6, 10);
-      blobs = Array.from({ length: count }, (_, i) => {
-        const c = palette[i % palette.length];
-        return {
-          x: rand(0, w),
-          y: rand(0, h),
-          r: rand(Math.min(w, h) * 0.18, Math.min(w, h) * 0.34),
-          vx: rand(-0.10, 0.10),
-          vy: rand(-0.08, 0.08),
-          c,
-          a: rand(0.035, 0.060),
-        };
-      });
+      const starCount = clamp(Math.round((w * h) / 9000), 120, 220);
+      stars = Array.from({ length: starCount }, () => ({
+        x: rand(0, w),
+        y: rand(0, h),
+        r: rand(0.6, 1.6),
+        a: rand(0.05, 0.20),
+        vy: rand(0.02, 0.09),
+        vx: rand(-0.03, 0.03),
+      }));
+
+      const nodeCount = clamp(Math.round((w * h) / 70000), 14, 22);
+      nodes = Array.from({ length: nodeCount }, () => ({
+        x: rand(0, w),
+        y: rand(0, h * 0.65),
+        vx: rand(-0.08, 0.08),
+        vy: rand(-0.06, 0.06),
+      }));
     }
 
     window.addEventListener("resize", resize, { passive: true });
@@ -463,35 +459,59 @@
       const dt = clamp(now - last, 10, 40);
       last = now;
 
-      // clear
       ctx.clearRect(0, 0, w, h);
 
-      // gentle base
-      ctx.fillStyle = "rgba(10,10,10,1)";
-      ctx.fillRect(0, 0, w, h);
+      for (const s of stars) {
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
 
-      // blobs
-      ctx.globalCompositeOperation = "lighter";
-      for (const b of blobs) {
-        b.x += b.vx * dt;
-        b.y += b.vy * dt;
+        if (s.y > h + 10) s.y = -10;
+        if (s.x < -10) s.x = w + 10;
+        if (s.x > w + 10) s.x = -10;
 
-        if (b.x < -b.r) b.x = w + b.r;
-        if (b.x > w + b.r) b.x = -b.r;
-        if (b.y < -b.r) b.y = h + b.r;
-        if (b.y > h + b.r) b.y = -b.r;
-
-        const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
-        g.addColorStop(0.0, `rgba(${b.c.r},${b.c.g},${b.c.b},${b.a})`);
-        g.addColorStop(0.55, `rgba(${b.c.r},${b.c.g},${b.c.b},${b.a * 0.45})`);
-        g.addColorStop(1.0, `rgba(${b.c.r},${b.c.g},${b.c.b},0)`);
-
-        ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${s.a})`;
         ctx.fill();
       }
-      ctx.globalCompositeOperation = "source-over";
+
+      const maxD = Math.min(170, Math.max(120, w * 0.16));
+      const maxD2 = maxD * maxD;
+
+      for (const p of nodes) {
+        p.x += p.vx * dt * 0.05;
+        p.y += p.vy * dt * 0.05;
+
+        if (p.x < -20) p.x = w + 20;
+        if (p.x > w + 20) p.x = -20;
+        if (p.y < -20) p.y = h * 0.65 + 20;
+        if (p.y > h * 0.65 + 20) p.y = -20;
+      }
+
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = nodes[i], b = nodes[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 > maxD2) continue;
+
+          const p = 1 - d2 / maxD2;
+          ctx.strokeStyle = `rgba(34,211,238,${0.08 * p})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+
+      for (const p of nodes) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255,0.18)";
+        ctx.fill();
+      }
 
       rafId = requestAnimationFrame(frame);
     }
@@ -512,6 +532,7 @@
     };
   }
 
+  // Shader init
   function initShaderBackground() {
     const gl =
       canvas.getContext("webgl", {
@@ -525,8 +546,6 @@
     if (!gl) return null;
 
     const VERT = `attribute vec2 a_pos; void main(){ gl_Position = vec4(a_pos,0.0,1.0);} `;
-
-    // Soft metaball blobs shader (subtle, art-first)
     const FRAG = `
       precision highp float;
       uniform vec2 u_res;
@@ -534,59 +553,70 @@
       uniform vec2 u_mouse;
 
       float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453123); }
-
-      float metaball(vec2 p, vec2 c, float r){
-        vec2 d = p - c;
-        float dd = dot(d,d);
-        return (r*r) / (dd + 1e-4);
+      float noise(vec2 p){
+        vec2 i=floor(p), f=fract(p);
+        vec2 u=f*f*(3.0-2.0*f);
+        float a=hash(i), b=hash(i+vec2(1,0)), c=hash(i+vec2(0,1)), d=hash(i+vec2(1,1));
+        return mix(mix(a,b,u.x), mix(c,d,u.x), u.y);
+      }
+      float fbm(vec2 p){
+        float v=0.0, a=0.55;
+        for(int i=0;i<3;i++){ v += a*noise(p); p=p*2.02+10.0; a*=0.5; }
+        return v;
+      }
+      float starLayer(vec2 uv,float scale,float density,float sizeBase,float tw){
+        vec2 gv=fract(uv*scale)-0.5; vec2 id=floor(uv*scale);
+        float r=hash(id); float on=step(1.0-density,r);
+        float size=sizeBase+0.08*r;
+        float d=length(gv);
+        float star=on*smoothstep(size,0.0,d);
+        float t=0.6+0.4*sin(tw+r*6.2831);
+        return star*t;
       }
 
       void main(){
-        vec2 uv = gl_FragCoord.xy / u_res;
-        float asp = u_res.x / u_res.y;
-        vec2 p = (uv - 0.5) * vec2(asp, 1.0);
+        vec2 uv=gl_FragCoord.xy/u_res;
+        float asp=u_res.x/u_res.y;
+        vec2 p=(uv-0.5)*vec2(asp,1.0);
 
-        float t = u_time * 0.18;
+        float t=u_time;
+        vec2 m=(u_mouse/u_res-0.5)*vec2(asp,1.0);
+        vec2 par=0.018*(m-p);
 
-        vec2 m = (u_mouse / u_res - 0.5) * vec2(asp, 1.0);
-        p += m * 0.06;
+        vec3 base=vec3(0.045,0.060,0.125);
+        base += vec3(0.020,0.026,0.038)*(1.0-uv.y)*0.75;
 
-        vec2 c1 = vec2(0.45*sin(t*1.10), 0.32*cos(t*0.90));
-        vec2 c2 = vec2(0.40*sin(t*0.70+2.2), 0.28*cos(t*0.80+1.4));
-        vec2 c3 = vec2(0.42*sin(t*0.90+4.1), 0.34*cos(t*0.60+3.3));
-        vec2 c4 = vec2(0.38*sin(t*0.55+1.2), 0.30*cos(t*1.00+5.0));
+        float s1=starLayer(uv+par*0.7,120.0,0.018,0.24,t*1.2);
+        float s2=starLayer(uv+par*1.0,180.0,0.011,0.18,t*1.0+2.0);
+        float s3=starLayer(uv+par*1.4,260.0,0.008,0.14,t*0.85+4.0);
+        float stars=s1+s2+s3;
 
-        float f1 = metaball(p, c1, 0.38);
-        float f2 = metaball(p, c2, 0.34);
-        float f3 = metaball(p, c3, 0.36);
-        float f4 = metaball(p, c4, 0.32);
+        vec2 q=p+par*1.2;
+        q += 0.055*vec2(fbm(q*1.35+t*0.045), fbm(q*1.20-t*0.040));
 
-        float sum = f1 + f2 + f3 + f4 + 1e-5;
+        float n1=fbm(q*1.25+vec2(0.0,t*0.070));
+        float n2=fbm(q*2.00+vec2(t*0.050,-t*0.040));
 
-        // Palette: #FF6B6B, #4D96FF, #6BCB77
-        vec3 red   = vec3(1.0, 0.42, 0.42);
-        vec3 blue  = vec3(0.30, 0.59, 1.0);
-        vec3 green = vec3(0.42, 0.80, 0.47);
+        vec3 cyan=vec3(0.12,0.88,0.95);
+        vec3 vio =vec3(0.70,0.42,0.98);
+        vec3 nebCol=mix(cyan,vio,n2);
 
-        vec3 blobCol = (blue*f1 + red*f2 + green*f3 + 0.5*(blue+red)*f4) / sum;
+        float band=exp(-abs(q.y*1.15+(n2-0.5)*0.75)*2.1);
+        float topMask=smoothstep(0.06,0.72,uv.y);
+        float neb=smoothstep(0.42,0.95,n1)*band*topMask;
 
-        float field = f1 + f2 + f3 + f4;
-        field = smoothstep(0.65, 1.35, field); // soft edges
+        vec3 col=base;
+        col += nebCol*neb*0.38;
+        col += vec3(1.0)*stars*0.78;
+        col += nebCol*stars*0.05;
 
-        vec3 base = vec3(0.039); // near #0A0A0A
-        base += vec3(0.010,0.010,0.012) * (1.0-uv.y) * 0.6;
+        float gr=hash(gl_FragCoord.xy+vec2(t*60.0,-t*50.0));
+        col += (gr-0.5)*0.008;
 
-        vec3 col = base + blobCol * (field * 0.22); // subtle intensity
-
-        // micro grain
-        float g = hash(gl_FragCoord.xy + vec2(t*120.0, -t*90.0));
-        col += (g - 0.5) * 0.012;
-
-        // vignette
-        float vig = smoothstep(1.10, 0.25, length(p));
+        float vig=smoothstep(1.20,0.28,length(p));
         col *= vig;
 
-        gl_FragColor = vec4(clamp(col,0.0,1.0), 1.0);
+        gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
       }
     `;
 
@@ -618,7 +648,7 @@
     const uTime = gl.getUniformLocation(prog, "u_time");
     const uMouse = gl.getUniformLocation(prog, "u_mouse");
 
-    const DPR_MAX = 1.5;         // keep smooth on phones
+    const DPR_MAX = 1.6;
     const FRAME_MS = 1000 / 60;
 
     let rafId = null;
@@ -664,7 +694,6 @@
 
       resizeGL();
 
-      // smooth mouse
       const lerp = 0.08;
       mx = mx + (mxT - mx) * lerp;
       my = my + (myT - my) * lerp;
@@ -729,36 +758,40 @@
     let targetX = 0, targetY = 0;
 
     let last = performance.now();
-    let cruise = rand(26, 52);
+    let cruise = rand(28, 58);
 
     let nextTargetAt = 0;
-    let nextBoostAt = performance.now() + rand(16000, 28000);
+    let nextBoostAt = performance.now() + rand(14000, 26000);
     let boostUntil = 0;
 
-    let size = { w: 96, h: 64 };
+    let size = { w: 110, h: 74 };
 
     const isMobile = () => window.matchMedia("(max-width: 640px)").matches;
 
     const measure = () => {
       const r = el.getBoundingClientRect();
-      size = { w: r.width || 96, h: r.height || 64 };
+      size = { w: r.width || 110, h: r.height || 74 };
     };
 
     const boundsDesktop = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
       const M = Math.max(10, Math.min(24, Math.round(Math.min(w, h) * 0.02)));
+
       return {
         minX: M,
         maxX: Math.max(M, w - size.w - M),
         minY: M + 6,
         maxY: Math.max(M, h - size.h - M),
+        originX: 0,
+        originY: 0,
       };
     };
 
     const boundsMobile = () => {
       const hr = hero?.getBoundingClientRect();
       const nr = name?.getBoundingClientRect();
+
       if (!hr || !nr) return boundsDesktop();
 
       const heroW = hr.width;
@@ -769,33 +802,42 @@
       const nw = nr.width;
       const nh = nr.height;
 
-      const padX = Math.max(22, Math.min(40, heroW * 0.08));
-      const padTop = 14;
-      const padBottom = 62;
+      const padX = Math.max(26, Math.min(44, heroW * 0.08));
+      const padTop = 18;
+      const padBottom = 70;
 
       const minX = clamp(nx - padX, 8, heroW - size.w - 8);
       const maxX = clamp(nx + nw + padX - size.w, 8, heroW - size.w - 8);
       const minY = clamp(ny - padTop, 8, heroH - size.h - 8);
       const maxY = clamp(ny + nh + padBottom - size.h, 8, heroH - size.h - 8);
 
-      return { minX, maxX: Math.max(minX, maxX), minY, maxY: Math.max(minY, maxY) };
+      return {
+        minX,
+        maxX: Math.max(minX, maxX),
+        minY,
+        maxY: Math.max(minY, maxY),
+        originX: hr.left,
+        originY: hr.top,
+      };
     };
 
     const getBounds = () => (isMobile() ? boundsMobile() : boundsDesktop());
 
     const pickTarget = (force = false) => {
       const b = getBounds();
+
       targetX = rand(b.minX, b.maxX);
       targetY = rand(b.minY, b.maxY);
-      if (force || Math.random() < 0.45) cruise = rand(isMobile() ? 20 : 26, isMobile() ? 44 : 52);
-      nextTargetAt = performance.now() + rand(2400, 5200);
+
+      if (force || Math.random() < 0.45) cruise = rand(isMobile() ? 22 : 28, isMobile() ? 46 : 58);
+      nextTargetAt = performance.now() + rand(2200, 4800);
     };
 
     const pickFarTarget = () => {
       const b = getBounds();
       targetX = rand(b.minX, b.maxX);
       targetY = rand(b.minY, b.maxY);
-      nextTargetAt = performance.now() + rand(1600, 2600);
+      nextTargetAt = performance.now() + rand(1400, 2400);
     };
 
     const clampToBounds = () => {
@@ -814,11 +856,10 @@
 
       if (now > nextTargetAt) pickTarget(false);
 
-      // occasional boost (desktop only; subtle)
       if (!isMobile() && now > nextBoostAt) {
-        boostUntil = now + rand(1400, 2200);
-        nextBoostAt = now + rand(18000, 32000);
-        cruise = rand(78, 120);
+        boostUntil = now + rand(1600, 3200);
+        nextBoostAt = now + rand(16000, 30000);
+        cruise = rand(86, 140);
         pickFarTarget();
       }
 
@@ -836,7 +877,7 @@
       vx += (desiredVX - vx) * steer;
       vy += (desiredVY - vy) * steer;
 
-      const maxSpeed = boosting ? 150 : (isMobile() ? 54 : 74);
+      const maxSpeed = boosting ? 165 : (isMobile() ? 58 : 82);
       const sp = Math.hypot(vx, vy) || 0.0001;
       if (sp > maxSpeed) {
         vx = (vx / sp) * maxSpeed;
@@ -849,12 +890,12 @@
       clampToBounds();
 
       const dir = vx >= 0 ? 1 : -1;
-      const bob = Math.sin(now * 0.003 + 1.7) * (boosting ? 1.8 : 2.6);
+      const bob = Math.sin(now * 0.003 + 1.7) * (boosting ? 2.2 : 3.0);
 
-      const trail = clamp((sp - 14) / 100, 0, 1);
+      const trail = clamp((sp - 14) / 110, 0, 1);
       el.style.setProperty("--trail", trail.toFixed(3));
 
-      const op = clamp((isMobile() ? 0.46 : 0.38) + trail * 0.12, 0.34, 0.56);
+      const op = clamp((isMobile() ? 0.58 : 0.50) + trail * 0.14, 0.48, 0.68);
       el.style.opacity = String(op);
 
       el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y + bob)}px, 0) scaleX(${dir})`;
@@ -917,6 +958,7 @@
     };
 
     setupHeroObserver();
+
     return { start, stop, resize };
   }
 
