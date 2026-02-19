@@ -14,119 +14,32 @@
     return v;
   };
 
+  const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const motionOK = !reduceMotionPref;
+
+  // Keep background animated if you want (set to false to fully respect reduce-motion)
+  const FORCE_BG_ANIMATION = true;
+  const bgMotionOK = FORCE_BG_ANIMATION ? true : motionOK;
+
+  const gsap = window.gsap || null;
+  const ScrollTrigger = window.ScrollTrigger || null;
+
+  if (gsap && ScrollTrigger) {
+    try { gsap.registerPlugin(ScrollTrigger); } catch (_) {}
+  }
+
   // Footer year
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
 
   // Header height -> CSS var
   const headerEl = document.querySelector("header");
-  const headerH = () => (headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0);
-
   const setHeaderHeight = () => {
-    document.documentElement.style.setProperty("--header-h", `${headerH()}px`);
-    // If ScrollTrigger exists, keep pin math correct
-    if (window.ScrollTrigger && typeof window.ScrollTrigger.refresh === "function") {
-      window.ScrollTrigger.refresh();
-    }
+    const hh = headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0;
+    document.documentElement.style.setProperty("--header-h", `${hh}px`);
   };
   setHeaderHeight();
   window.addEventListener("resize", setHeaderHeight, { passive: true });
-
-  // Reduced motion preference
-  const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  // Keep background animated
-  const FORCE_ANIMATION = true;
-  const prefersReducedMotion = !FORCE_ANIMATION && reduceMotionPref;
-  // =========================
-  // Lenis (smooth scrolling)
-  // =========================
-  let lenis = null;
-
-  function initLenis() {
-    if (prefersReducedMotion) return null;
-
-    const LenisCtor = window.Lenis;
-    if (!LenisCtor) return null;
-
-    lenis = new LenisCtor({
-      lerp: 0.085,
-      smoothWheel: true,
-      smoothTouch: false,
-      wheelMultiplier: 1.0,
-    });
-
-    // If GSAP exists, drive Lenis via GSAP ticker (best for ScrollTrigger sync)
-    if (window.gsap) {
-      window.gsap.ticker.add((t) => lenis.raf(t * 1000));
-      window.gsap.ticker.lagSmoothing(0);
-    } else {
-      const raf = (time) => {
-        lenis.raf(time);
-        requestAnimationFrame(raf);
-      };
-      requestAnimationFrame(raf);
-    }
-
-    return lenis;
-  }
-
-  // =========================
-  // Smooth scrolling (Lenis) + smooth anchor jumps
-  // =========================
- const canSmoothScroll =
-    !reduceMotionPref &&
-    !!window.Lenis &&
-    window.matchMedia("(pointer: fine)").matches;
-
-  if (canSmoothScroll) {
-    lenis = new window.Lenis({
-      lerp: 0.085,
-      wheelMultiplier: 1.05,
-      smoothWheel: true,
-      smoothTouch: false,
-    });
-
-    const raf = (time) => {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    };
-    requestAnimationFrame(raf);
-  }
-
-  // Smooth internal anchors (so nav clicks feel “fluid”)
-  const bindAnchorSmoothScroll = () => {
-    const anchors = Array.from(document.querySelectorAll('a[href^="#"]'));
-    anchors.forEach((a) => {
-      a.addEventListener("click", (e) => {
-        const href = a.getAttribute("href");
-        if (!href || href === "#") return;
-
-        const target = document.querySelector(href);
-        if (!target) return;
-
-        e.preventDefault();
-
-        const offset = headerH() + 14;
-
-        if (lenis) {
-          lenis.scrollTo(target, { offset: -offset, duration: 1.05 });
-        } else {
-          target.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-
-        // close mobile menu if open
-        const menu = document.getElementById("mobile-menu");
-        const btn = document.getElementById("menu-btn");
-        if (menu && btn && !menu.classList.contains("hidden")) {
-          menu.classList.add("hidden");
-          btn.setAttribute("aria-expanded", "false");
-          setHeaderHeight();
-        }
-      });
-    });
-  };
-  bindAnchorSmoothScroll();
 
   // =========================
   // Mobile menu
@@ -177,38 +90,102 @@
 
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", () => update(), { passive: true });
-
-    // If Lenis is enabled, ensure progress stays accurate
-    if (lenis) {
-      lenis.on("scroll", () => update());
-    }
-
     update();
   }
 
   // =========================
-  // Scroll reveal + chip cascade
-  // (No auto-glint anymore -> removes “pop-up flashes” on repeated scroll)
+  // Lenis (smooth scrolling)
   // =========================
-  const revealTargets = Array.from(document.querySelectorAll("main .os-header, main .glass"));
+  let lenis = null;
 
-  if (revealTargets.length) {
-    if (reduceMotionPref) {
-      revealTargets.forEach((el) => el.classList.add("reveal", "is-visible"));
+  function initLenis() {
+    if (!motionOK) return null;
+    if (!window.Lenis) return null;
+
+    lenis = new window.Lenis({
+      lerp: 0.085,
+      smoothWheel: true,
+      smoothTouch: false,
+      wheelMultiplier: 1.0,
+    });
+
+    // If GSAP exists, drive Lenis through GSAP ticker (best ScrollTrigger sync)
+    if (gsap) {
+      gsap.ticker.add((t) => lenis.raf(t * 1000));
+      gsap.ticker.lagSmoothing(0);
     } else {
-      revealTargets.forEach((el, i) => {
+      const raf = (time) => {
+        lenis.raf(time);
+        requestAnimationFrame(raf);
+      };
+      requestAnimationFrame(raf);
+    }
+
+    return lenis;
+  }
+
+  initLenis();
+
+  // Smooth anchor nav with header offset
+  function initAnchorScroll() {
+    const anchors = Array.from(document.querySelectorAll('a[href^="#"]'));
+    if (!anchors.length) return;
+
+    const scrollToTarget = (target) => {
+      if (!target) return;
+      const hh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 0;
+      const top = target.getBoundingClientRect().top + window.pageYOffset - hh + 10;
+
+      if (lenis) {
+        lenis.scrollTo(top, { duration: 1.15 });
+      } else {
+        window.scrollTo({ top, behavior: motionOK ? "smooth" : "auto" });
+      }
+    };
+
+    anchors.forEach((a) => {
+      const href = a.getAttribute("href");
+      if (!href || href === "#") return;
+
+      a.addEventListener("click", (e) => {
+        const target = document.querySelector(href);
+        if (!target) return;
+        e.preventDefault();
+        scrollToTarget(target);
+      });
+    });
+  }
+  initAnchorScroll();
+
+  // =========================
+  // Reveal system (ScrollTrigger if available; IO fallback)
+  // =========================
+  function initReveals() {
+    const targets = Array.from(document.querySelectorAll("main .os-header, main .glass"));
+    if (!targets.length) return;
+
+    // Prepare reveal classes / delays
+    if (motionOK) {
+      targets.forEach((el, i) => {
         el.classList.add("reveal");
         el.style.transitionDelay = `${Math.min(180, (i % 8) * 22)}ms`;
       });
+    } else {
+      targets.forEach((el) => el.classList.add("reveal", "is-visible"));
+      return;
+    }
 
-      const io = new IntersectionObserver(
-        (entries) => {
-          for (const e of entries) {
-            if (!e.isIntersecting) continue;
-
-            const el = e.target;
+    // Use ScrollTrigger when available (smooth + consistent with Lenis)
+    if (ScrollTrigger && gsap) {
+      targets.forEach((el) => {
+        ScrollTrigger.create({
+          trigger: el,
+          start: "top 88%",
+          once: true,
+          onEnter: () => {
             const baseDelay = parseDelayMs(el.style.transitionDelay);
 
+            // cascade pills inside skill cards
             if (el.classList.contains("skill-card")) {
               const pills = Array.from(el.querySelectorAll(".pill"));
               pills.forEach((pill, idx) => {
@@ -217,114 +194,48 @@
             }
 
             el.classList.add("is-visible");
-            io.unobserve(el);
-          }
+          },
+        });
+      });
+
+      // Ensure correct positions after images load
+      window.addEventListener(
+        "load",
+        () => {
+          try { ScrollTrigger.refresh(); } catch (_) {}
         },
-        { threshold: 0.14, rootMargin: "0px 0px -12% 0px" }
+        { once: true }
       );
 
-      revealTargets.forEach((el) => io.observe(el));
+      return;
     }
-  }
 
-  // =========================
-  // Scrollytelling: Hero -> Highlights (GSAP ScrollTrigger)
-  // =========================
-  const gsap = window.gsap;
-  const ScrollTrigger = window.ScrollTrigger;
+    // Fallback: IntersectionObserver
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
 
-  if (gsap && ScrollTrigger && !reduceMotionPref) {
-    gsap.registerPlugin(ScrollTrigger);
+          const el = e.target;
+          const baseDelay = parseDelayMs(el.style.transitionDelay);
 
-    // If Lenis is enabled, keep ScrollTrigger in sync
-    if (lenis) lenis.on("scroll", ScrollTrigger.update);
+          if (el.classList.contains("skill-card")) {
+            const pills = Array.from(el.querySelectorAll(".pill"));
+            pills.forEach((pill, idx) => {
+              pill.style.transitionDelay = `${baseDelay + 120 + idx * 45}ms`;
+            });
+          }
 
-    const intro = document.getElementById("intro");
-    const introContent = document.getElementById("intro-content");
-    const name = document.getElementById("name-title");
-    const kicker = intro?.querySelector(".os-kicker");
-    const headline = intro?.querySelector(".headline");
-    const scrollBtn = intro?.querySelector(".scroll-indicator");
-    const portal = document.getElementById("hero-portal");
-
-    const mm = gsap.matchMedia();
-
-    // Desktop scrollytelling: pin hero, scrub transform, “portal” transition into next section
-    mm.add("(min-width: 768px)", () => {
-      if (!intro || !introContent || !name || !portal) return;
-
-      gsap.set(portal, { opacity: 0, scale: 0.55 });
-      gsap.set(introContent, { y: 0, opacity: 1 });
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: intro,
-          start: () => `top top+=${headerH()}`,
-          end: () => `+=${Math.round(window.innerHeight * 0.9)}`,
-          scrub: 0.7,
-          pin: true,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-        },
-      });
-
-      tl.to(name, { scale: 0.86, y: -44, ease: "none" }, 0);
-      tl.to(headline, { y: -14, opacity: 0.86, ease: "none" }, 0);
-      tl.to(kicker, { y: -10, opacity: 0, ease: "none" }, 0);
-      tl.to(scrollBtn, { y: 18, opacity: 0, ease: "none" }, 0);
-
-      // “Portal” ramps up then fades as we release into the next section
-      tl.to(portal, { opacity: 0.62, scale: 1.12, ease: "none" }, 0.10);
-      tl.to(portal, { opacity: 0.0, scale: 1.62, ease: "none" }, 0.78);
-    });
-
-    // Mobile scrollytelling: no pin (safer), but we still scrub a subtle “portal” cue
-    mm.add("(max-width: 767px)", () => {
-      if (!intro || !portal) return;
-
-      gsap.set(portal, { opacity: 0, scale: 0.55 });
-
-      gsap.to(portal, {
-        opacity: 0.55,
-        scale: 1.08,
-        ease: "none",
-        scrollTrigger: {
-          trigger: intro,
-          start: "top top+=90",
-          end: "bottom top+=10",
-          scrub: true,
-          invalidateOnRefresh: true,
-        },
-      });
-
-      gsap.to(portal, {
-        opacity: 0,
-        scale: 1.45,
-        ease: "none",
-        scrollTrigger: {
-          trigger: "#signals",
-          start: "top bottom",
-          end: "top center",
-          scrub: true,
-          invalidateOnRefresh: true,
-        },
-      });
-    });
-
-    // One more small polish: overlay breathes slightly while scrolling
-    gsap.to(".bg-overlay", {
-      opacity: 0.18,
-      ease: "none",
-      scrollTrigger: {
-        trigger: "main",
-        start: "top top",
-        end: "bottom bottom",
-        scrub: true,
+          el.classList.add("is-visible");
+          io.unobserve(el);
+        }
       },
-    });
+      { threshold: 0.14, rootMargin: "0px 0px -12% 0px" }
+    );
 
-    window.addEventListener("load", () => ScrollTrigger.refresh(), { passive: true });
+    targets.forEach((el) => io.observe(el));
   }
+  initReveals();
 
   // =========================
   // Projects drawer (pin = click, open repo = double click)
@@ -348,6 +259,7 @@
   let selectedIndex = 0;
   let lastDragTime = 0;
 
+  // exposed no-ops for scrollytelling
   let startAuto = () => {};
   let stopAuto = () => {};
 
@@ -597,6 +509,99 @@
   }
 
   // =========================
+  // Scrollytelling: HERO + PROJECTS (GSAP/ScrollTrigger)
+  // =========================
+  function initScrollytelling() {
+    if (!motionOK) return;
+    if (!gsap || !ScrollTrigger) return;
+
+    // Sync Lenis with ScrollTrigger (if Lenis exists)
+    if (lenis) {
+      lenis.on("scroll", ScrollTrigger.update);
+    }
+
+    const intro = document.getElementById("intro");
+    const name = document.getElementById("name-title");
+    const headline = intro?.querySelector(".headline");
+    const enter = intro?.querySelector(".scroll-indicator");
+    const kicker = intro?.querySelector(".os-kicker");
+    const overlay = document.querySelector(".bg-overlay");
+
+    // HERO: cinematic boot (desktop pins)
+    ScrollTrigger.matchMedia({
+      "(min-width: 641px)": () => {
+        if (!intro || !name) return;
+
+        gsap.timeline({
+          scrollTrigger: {
+            trigger: intro,
+            start: "top top",
+            end: "+=140%",
+            scrub: 0.9,
+            pin: true,
+            anticipatePin: 1,
+          },
+        })
+          .to(intro, { "--heroShade": 0.92, "--heroVeil": 1, ease: "none" }, 0)
+          .to(overlay, { opacity: 0.18, ease: "none" }, 0)
+          .to(name, { scale: 0.88, y: -14, ease: "none" }, 0.05)
+          .to(headline, { autoAlpha: 0, y: -12, ease: "none" }, 0.10)
+          .to(enter, { autoAlpha: 0, y: -10, ease: "none" }, 0.10)
+          .to(kicker, { autoAlpha: 0.28, ease: "none" }, 0.08);
+      },
+
+      // Mobile: keep lightweight (no pin), still morph
+      "(max-width: 640px)": () => {
+        if (!intro || !name) return;
+
+        gsap.timeline({
+          scrollTrigger: {
+            trigger: intro,
+            start: "top top",
+            end: "bottom top",
+            scrub: 0.75,
+          },
+        })
+          .to(intro, { "--heroShade": 0.82, "--heroVeil": 0.8, ease: "none" }, 0)
+          .to(name, { scale: 0.94, y: -8, ease: "none" }, 0.12)
+          .to(headline, { autoAlpha: 0.35, ease: "none" }, 0.15)
+          .to(enter, { autoAlpha: 0, ease: "none" }, 0.15);
+      },
+    });
+
+    // PROJECTS: pinned horizontal scrub (desktop only)
+    ScrollTrigger.matchMedia({
+      "(min-width: 641px)": () => {
+        if (!projectsSection || !track) return;
+
+        const maxScroll = () => Math.max(0, track.scrollWidth - track.clientWidth);
+
+        gsap.to(track, {
+          scrollLeft: () => maxScroll(),
+          ease: "none",
+          scrollTrigger: {
+            trigger: projectsSection,
+            start: "top top+=90",
+            end: () => "+=" + (maxScroll() + window.innerHeight * 0.65),
+            pin: true,
+            scrub: 0.9,
+            invalidateOnRefresh: true,
+            anticipatePin: 1,
+            onEnter: () => { try { stopAuto(); } catch (_) {} },
+            onEnterBack: () => { try { stopAuto(); } catch (_) {} },
+            onLeave: () => { try { startAuto(); } catch (_) {} },
+            onLeaveBack: () => { try { startAuto(); } catch (_) {} },
+          },
+        });
+      },
+    });
+
+    // refresh after all images load (important for accurate scrollWidth)
+    window.addEventListener("load", () => ScrollTrigger.refresh(), { once: true });
+  }
+  initScrollytelling();
+
+  // =========================
   // Background animation (WebGL primary + 2D fallback)
   // =========================
   const canvas = document.getElementById("ai-bg");
@@ -713,7 +718,7 @@
 
     return {
       start() {
-        if (prefersReducedMotion) return;
+        if (!bgMotionOK) return;
         if (running) return;
         running = true;
         last = performance.now();
@@ -727,6 +732,7 @@
     };
   }
 
+  // Shader init
   function initShaderBackground() {
     const gl =
       canvas.getContext("webgl", {
@@ -907,7 +913,7 @@
 
     return {
       start() {
-        if (prefersReducedMotion) return;
+        if (!bgMotionOK) return;
         if (running) return;
         running = true;
         lastFrame = 0;
@@ -926,7 +932,7 @@
 
   const startBgIfVisible = () => {
     if (!bg) return;
-    if (prefersReducedMotion) return;
+    if (!bgMotionOK) return;
     if (document.hidden) return;
     bg.start();
   };
@@ -977,15 +983,12 @@
         maxX: Math.max(M, w - size.w - M),
         minY: M + 6,
         maxY: Math.max(M, h - size.h - M),
-        originX: 0,
-        originY: 0,
       };
     };
 
     const boundsMobile = () => {
       const hr = hero?.getBoundingClientRect();
       const nr = name?.getBoundingClientRect();
-
       if (!hr || !nr) return boundsDesktop();
 
       const heroW = hr.width;
@@ -1120,7 +1123,7 @@
     };
 
     const start = () => {
-      if (prefersReducedMotion) return;
+      if (!motionOK) return;
       if (running) return;
       if (isMobile() && !heroVisible) return;
 
@@ -1173,6 +1176,5 @@
       rover?.start();
       rover?.resize();
     }
-    
   });
 })();
