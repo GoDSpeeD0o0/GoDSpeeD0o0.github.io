@@ -38,13 +38,43 @@
   // Keep background animated
   const FORCE_ANIMATION = true;
   const prefersReducedMotion = !FORCE_ANIMATION && reduceMotionPref;
+  // =========================
+  // Lenis (smooth scrolling)
+  // =========================
+  let lenis = null;
+
+  function initLenis() {
+    if (prefersReducedMotion) return null;
+
+    const LenisCtor = window.Lenis;
+    if (!LenisCtor) return null;
+
+    lenis = new LenisCtor({
+      lerp: 0.085,
+      smoothWheel: true,
+      smoothTouch: false,
+      wheelMultiplier: 1.0,
+    });
+
+    // If GSAP exists, drive Lenis via GSAP ticker (best for ScrollTrigger sync)
+    if (window.gsap) {
+      window.gsap.ticker.add((t) => lenis.raf(t * 1000));
+      window.gsap.ticker.lagSmoothing(0);
+    } else {
+      const raf = (time) => {
+        lenis.raf(time);
+        requestAnimationFrame(raf);
+      };
+      requestAnimationFrame(raf);
+    }
+
+    return lenis;
+  }
 
   // =========================
   // Smooth scrolling (Lenis) + smooth anchor jumps
   // =========================
-  let lenis = null;
-
-  const canSmoothScroll =
+ const canSmoothScroll =
     !reduceMotionPref &&
     !!window.Lenis &&
     window.matchMedia("(pointer: fine)").matches;
@@ -1143,5 +1173,6 @@
       rover?.start();
       rover?.resize();
     }
+    
   });
 })();

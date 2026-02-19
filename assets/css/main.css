@@ -14,7 +14,7 @@
   --header-h: 72px;
 }
 
-html { scroll-behavior: smooth; }
+html { scroll-behavior: auto; }
 
 /* Anchor offset for sticky header */
 section { scroll-margin-top: calc(var(--header-h) + 18px); }
@@ -359,7 +359,7 @@ button:focus-visible {
   inset: 0;
   pointer-events: none;
   background: radial-gradient(520px 260px at 50% 38%, rgba(0,0,0,0.22), rgba(0,0,0,0.0) 72%);
-  opacity: 0.55;
+  opacity: var(--heroShade);
 }
 .hero-screen > * { position: relative; z-index: 1; }
 
