@@ -21,7 +21,7 @@
     />
 
     <link rel="icon" href="favicon.ico" />
-    <link rel="stylesheet" href="assets/css/main.css?v=50" />
+    <link rel="stylesheet" href="assets/css/main.css?v=42" />
   </head>
 
   <body class="min-h-screen text-white">
@@ -41,7 +41,7 @@
 
     <!-- NAV -->
     <header class="sticky top-0 z-20 border-b border-white/10 backdrop-blur">
-      <nav class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-3">
+      <nav class="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between gap-3">
         <a href="#intro" class="flex items-center gap-3">
           <span class="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.8)]"></span>
           <span class="font-extrabold tracking-tight">Prateek</span>
@@ -72,7 +72,7 @@
 
       <!-- Mobile menu -->
       <div id="mobile-menu" class="md:hidden hidden border-t border-white/10">
-        <div class="mx-auto max-w-6xl px-4 py-3 flex flex-col gap-3 text-white/85">
+        <div class="mx-auto max-w-7xl px-4 py-3 flex flex-col gap-3 text-white/85">
           <a class="nav-pill w-fit" href="#signals">Highlights</a>
           <a class="nav-pill w-fit" href="#skills">Skills</a>
           <a class="nav-pill w-fit" href="#education">Education</a>
@@ -91,10 +91,10 @@
       <div id="scroll-progress-bar"></div>
     </div>
 
-    <main class="mx-auto max-w-6xl px-4">
+    <main class="mx-auto max-w-7xl px-4">
       <!-- INTRO -->
       <section id="intro" class="hero-screen">
-        <!-- Rover (mobile: constrained around name; desktop: fixed roaming) -->
+        <!-- Rover -->
         <div id="flyby" aria-hidden="true">
           <svg viewBox="0 0 48 32" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
             <rect x="18" y="5" width="12" height="10" fill="#0B1020" opacity="0.55"/>
@@ -128,7 +128,7 @@
           </svg>
         </div>
 
-        <div class="w-full">
+        <div class="hero-inner w-full">
           <div class="mono os-kicker">Generative AI · Data Science · Software Engineering</div>
 
           <h1 id="name-title" class="name-display name-neo3d">Prateek Parashar</h1>
@@ -141,7 +141,7 @@
         </div>
       </section>
 
-      <!-- HIGHLIGHTS -->
+      <!-- HIGHLIGHTS (REORDERED) -->
       <section id="signals" class="pt-2 md:pt-4">
         <div class="os-header">
           <h2 class="section-title">Highlights</h2>
@@ -149,8 +149,6 @@
         </div>
 
         <div class="mt-4 stat-grid">
-          <!-- ORDER FIXED: Core Stack → Focus → Diffusion Speedup → Retention Lift -->
-
           <div class="glass stat card-hover">
             <div class="label mono">CORE STACK</div>
             <div class="value">Python · SQL</div>
@@ -355,14 +353,10 @@
             <span class="mono">‹</span>
           </button>
 
-          <div
-            id="projects-track"
-            class="hscroll drawer-track flex gap-4 overflow-x-auto pb-6"
-            data-lenis-prevent
-          >
+          <div id="projects-track" class="hscroll drawer-track flex gap-4 overflow-x-auto pb-6">
             <article class="glass card-hover project-card" tabindex="0" role="button"
               aria-label="Slack Python QnA Bot" data-repo="https://github.com/AII-projects/slackbot">
-              <div class="project-thumb"><img src="assets/img/1.png" alt="Slackbot thumbnail" loading="lazy" /></div>
+              <div class="project-thumb"><img src="assets/img/1.png" alt="Slackbot thumbnail" loading="lazy" decoding="async" /></div>
               <div class="project-meta">
                 <div class="project-title">Slack Python QnA Bot</div>
                 <div class="mono text-xs text-white/60">Nov 2025</div>
@@ -379,7 +373,7 @@
 
             <article class="glass card-hover project-card" tabindex="0" role="button"
               aria-label="Faster Diffusion" data-repo="https://github.com/GoDSpeeD0o0/GenAIProject">
-              <div class="project-thumb"><img src="assets/img/2.png" alt="Faster Diffusion thumbnail" loading="lazy" /></div>
+              <div class="project-thumb"><img src="assets/img/2.png" alt="Faster Diffusion thumbnail" loading="lazy" decoding="async" /></div>
               <div class="project-meta">
                 <div class="project-title">Faster Diffusion</div>
                 <div class="mono text-xs text-white/60">Spring 2025</div>
@@ -397,7 +391,7 @@
             <article class="glass card-hover project-card" tabindex="0" role="button"
               aria-label="Particle Pollution Analysis research"
               data-repo="https://github.com/GoDSpeeD0o0/Research-Paper/tree/main/MachineLearningAnalysis_Particle_Pollution">
-              <div class="project-thumb"><img src="assets/img/3.png" alt="Particle Pollution Analysis thumbnail" loading="lazy" /></div>
+              <div class="project-thumb"><img src="assets/img/3.png" alt="Particle Pollution Analysis thumbnail" loading="lazy" decoding="async" /></div>
               <div class="project-meta">
                 <div class="project-title">Particle Pollution Analysis (Research)</div>
                 <div class="mono text-xs text-white/60">May 2022</div>
@@ -414,7 +408,7 @@
 
             <article class="glass card-hover project-card" tabindex="0" role="button"
               aria-label="Tweet Sentiment Analysis" data-repo="https://github.com/GoDSpeeD0o0/TextSentimentAnalysis">
-              <div class="project-thumb"><img src="assets/img/4.png" alt="Tweet Sentiment Analysis thumbnail" loading="lazy" /></div>
+              <div class="project-thumb"><img src="assets/img/4.png" alt="Tweet Sentiment Analysis thumbnail" loading="lazy" decoding="async" /></div>
               <div class="project-meta">
                 <div class="project-title">Tweet Sentiment Analysis</div>
                 <div class="mono text-xs text-white/60">Apr 2024</div>
@@ -426,6 +420,25 @@
               </ul>
               <div class="flex flex-wrap gap-2">
                 <span class="pill">NLP</span><span class="pill">Transformers</span><span class="pill">ALBERT</span>
+              </div>
+            </article>
+
+            <!-- NEW PROJECT #5 -->
+            <article class="glass card-hover project-card" tabindex="0" role="button"
+              aria-label="Digital Assets Analytics Pipeline"
+              data-repo="https://github.com/AII-projects/DigitalAssetsAnalyticsPipeline">
+              <div class="project-thumb"><img src="assets/img/5.webp" alt="Digital Assets Analytics Pipeline thumbnail" loading="lazy" decoding="async" /></div>
+              <div class="project-meta">
+                <div class="project-title">Digital Assets Analytics Pipeline</div>
+                <div class="mono text-xs text-white/60">2024</div>
+              </div>
+              <p class="project-desc">End-to-end pipeline for ingesting, validating, and analyzing digital asset data.</p>
+              <ul class="project-bullets">
+                <li>Built modular ETL + analytics layers for reproducible reporting.</li>
+                <li>Added data-quality checks and automated scheduled runs.</li>
+              </ul>
+              <div class="flex flex-wrap gap-2">
+                <span class="pill">ETL</span><span class="pill">Python</span><span class="pill">Analytics</span>
               </div>
             </article>
           </div>
@@ -498,10 +511,10 @@
     </main>
 
     <!-- Scrollytelling libs -->
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/bundled/lenis.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
 
-    <script src="assets/js/main.js?v=50"></script>
+    <script src="assets/js/main.js?v=42"></script>
   </body>
 </html>

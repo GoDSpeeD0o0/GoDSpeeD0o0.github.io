@@ -14,15 +14,7 @@
   --header-h: 72px;
 }
 
-/* Lenis handles smooth scrolling */
-html { scroll-behavior: auto; }
-
-/* Lenis recommended styles */
-html.lenis { height: auto; }
-.lenis.lenis-smooth { scroll-behavior: auto; }
-.lenis.lenis-smooth body { scroll-behavior: auto; }
-.lenis.lenis-stopped { overflow: hidden; }
-.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+html { scroll-behavior: smooth; }
 
 body {
   margin: 0;
@@ -36,6 +28,9 @@ body {
 }
 
 main { position: relative; z-index: 1; }
+
+/* Make anchor jumps respect sticky header */
+section[id] { scroll-margin-top: calc(var(--header-h) + 18px); }
 
 .mono {
   font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
@@ -51,7 +46,7 @@ button:focus-visible {
   border-radius: 12px;
 }
 
-/* ===== Scroll progress ===== */
+/* ===== Scroll progress (FIX: hide the track at top so no random line) ===== */
 #scroll-progress {
   position: fixed;
   left: 0;
@@ -60,9 +55,13 @@ button:focus-visible {
   height: 3px;
   z-index: 25;
   pointer-events: none;
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(8px);
+
+  background: transparent;
+  opacity: 0;
+  transition: opacity 180ms ease;
 }
+#scroll-progress.is-on { opacity: 1; }
+
 #scroll-progress-bar {
   height: 100%;
   width: 100%;
@@ -284,7 +283,7 @@ button:focus-visible {
   color: transparent;
 }
 
-/* Glass cards */
+/* Glass cards + glint sweep */
 .glass {
   background: var(--card);
   border: 1px solid var(--border);
@@ -292,6 +291,30 @@ button:focus-visible {
   backdrop-filter: blur(10px);
   position: relative;
   overflow: hidden;
+}
+.glass::after {
+  content: "";
+  position: absolute;
+  top: -40%;
+  left: -70%;
+  width: 60%;
+  height: 200%;
+  transform: rotate(18deg) translateX(-120%);
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.00),
+    rgba(255,255,255,0.10),
+    rgba(255,255,255,0.00)
+  );
+  opacity: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+.glass.glint::after { animation: glintSweep 950ms ease-out 1; }
+@keyframes glintSweep {
+  0%   { opacity: 0; transform: rotate(18deg) translateX(-140%); }
+  18%  { opacity: 0.55; }
+  100% { opacity: 0; transform: rotate(18deg) translateX(240%); }
 }
 
 .card-hover { transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
@@ -315,11 +338,11 @@ button:focus-visible {
   font-size: 0.85rem;
 }
 
-/* Hero */
+/* ===== HERO scrollytelling variables ===== */
 .hero-screen {
-  /* scrollytelling knobs (GSAP animates these vars) */
-  --heroShade: 0.55;
-  --heroVeil: 0;
+  --hero-vig: 0.55;
+  --hero-warp: 0;
+  --hero-warp-y: 0px;
 
   min-height: calc(100vh - var(--header-h));
   display: flex;
@@ -331,23 +354,22 @@ button:focus-visible {
   overflow: hidden;
 }
 
-/* cinematic bottom veil that eases into the next section */
-.hero-screen::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 160px;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    rgba(7,16,35,0.00) 0%,
-    rgba(7,16,35,0.60) 55%,
-    rgba(7,16,35,0.96) 100%
-  );
-  opacity: var(--heroVeil);
-  transform: translateY(calc(24px * (1 - var(--heroVeil))));
+/* “Warp” layer that ramps up during hero→next section scroll */
+.hero-screen::before{
+  content:"";
+  position:absolute;
+  inset:-20%;
+  pointer-events:none;
+  background:
+    radial-gradient(620px 320px at 50% 52%,
+      rgba(34,211,238,0.26),
+      rgba(34,211,238,0.00) 62%),
+    radial-gradient(680px 360px at 50% 58%,
+      rgba(168,85,247,0.22),
+      rgba(168,85,247,0.00) 66%);
+  opacity: var(--hero-warp);
+  transform: translateY(var(--hero-warp-y));
+  filter: blur(18px);
 }
 
 .hero-screen::after {
@@ -356,9 +378,12 @@ button:focus-visible {
   inset: 0;
   pointer-events: none;
   background: radial-gradient(520px 260px at 50% 38%, rgba(0,0,0,0.22), rgba(0,0,0,0.0) 72%);
-  opacity: var(--heroShade);
+  opacity: var(--hero-vig);
 }
+
 .hero-screen > * { position: relative; z-index: 1; }
+
+.hero-inner { will-change: transform, opacity, filter; }
 
 .name-display {
   font-family: "Orbitron", system-ui, sans-serif;
@@ -474,11 +499,11 @@ button:focus-visible {
 .hscroll::-webkit-scrollbar { display: none; }
 .projects-drawer { position: relative; }
 .projects-drawer::before, .projects-drawer::after {
-  content:""; position:absolute; top:0; bottom:0; width:86px; z-index:1; pointer-events:none;
+  content:""; position:absolute; top:0; bottom:0; width:72px; z-index:1; pointer-events:none;
 }
 .projects-drawer::before { left:0; background: linear-gradient(90deg, rgba(7,16,35,0.92), rgba(7,16,35,0)); }
 .projects-drawer::after  { right:0; background: linear-gradient(270deg, rgba(7,16,35,0.92), rgba(7,16,35,0)); }
-.drawer-track { padding-left:62px; padding-right:62px; scroll-padding-left:62px; scroll-padding-right:62px; }
+.drawer-track { padding-left:48px; padding-right:48px; scroll-padding-left:48px; scroll-padding-right:48px; }
 
 .drawer-btn {
   position:absolute; top:50%; transform:translateY(-50%); z-index:2;
@@ -506,7 +531,7 @@ button:focus-visible {
 .project-card {
   position: relative;
   flex: 0 0 auto;
-  width: min(86vw, 520px);
+  width: min(86vw, 540px);
   padding: 20px;
   scroll-snap-align: start;
   display:flex;
@@ -516,11 +541,11 @@ button:focus-visible {
   box-shadow:0 0 0 1px rgba(255,255,255,0.06) inset, 0 18px 56px rgba(0,0,0,0.34);
   transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, opacity 180ms ease, filter 180ms ease;
 }
-@media (min-width: 1024px) { .project-card { width: 480px; } }
+@media (min-width: 1024px) { .project-card { width: 520px; } }
+
 .project-card.is-dim { opacity:0.66; filter:saturate(0.92) brightness(0.98); }
 .project-card.is-active { opacity:1; border-color: rgba(34,211,238,0.28); box-shadow:0 0 0 1px rgba(255,255,255,0.08) inset, 0 24px 70px rgba(0,0,0,0.44), 0 0 34px rgba(34,211,238,0.12); }
 
-/* Slightly clearer thumbnails (less dull) */
 .project-thumb {
   width:100%;
   aspect-ratio:16/9;
@@ -537,15 +562,16 @@ button:focus-visible {
   height:100%;
   object-fit:cover;
   display:block;
-  transform:none;
-  opacity:1;
-  filter: saturate(1.07) contrast(1.05) brightness(1.03);
+  transform: none;           /* FIX: remove upscaling blur */
+  opacity: 1;                /* FIX: stop dulling */
+  filter: saturate(1.08) contrast(1.05);
 }
 .project-thumb::after {
   content:"";
   position:absolute;
   inset:0;
-  background: linear-gradient(180deg, rgba(0,0,0,0.00), rgba(0,0,0,0.46));
+  /* FIX: less dark overlay so thumbs stay crisp */
+  background: linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.40));
 }
 
 .project-meta { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
@@ -565,7 +591,7 @@ button:focus-visible {
   .project-card { width: 100%; }
 }
 
-/* ===== CONTACT ===== */
+/* ===== CONTACT (more spacing + smoother hover) ===== */
 .contact-wrap {
   display: flex;
   justify-content: flex-start;
@@ -577,16 +603,15 @@ button:focus-visible {
 .contact-bar {
   display: inline-flex;
   align-items: center;
-  gap: 22px;
-
-  padding: 14px 16px;
-  border-radius: 18px;
+  gap: 26px;                 /* FIX: more spacing between icons */
+  padding: 14px 18px;
+  border-radius: 20px;
 
   width: fit-content;
   max-width: 92vw;
 
   overflow: visible;
-  background: rgba(255,255,255,0.045);
+  background: rgba(255,255,255,0.040);
   border: 1px solid rgba(255,255,255,0.12);
   backdrop-filter: blur(10px);
 
@@ -595,36 +620,40 @@ button:focus-visible {
     0 18px 44px rgba(0,0,0,0.26);
 }
 
+/* prevent glint sweep from bleeding outside since overflow is visible */
+.contact-bar.glass::after { display: none; }
+
 .contact-icon {
   position: relative;
-  width: 62px;
-  height: 62px;
+  width: 64px;              /* FIX: slightly bigger */
+  height: 64px;
 
   display: inline-flex;
   align-items: center;
   justify-content: center;
 
-  border-radius: 16px;
+  border-radius: 18px;
   border: 1px solid rgba(255,255,255,0.14);
   background:
     radial-gradient(circle at 30% 30%, rgba(34,211,238,0.11), rgba(255,255,255,0.05)),
     radial-gradient(circle at 70% 70%, rgba(168,85,247,0.10), rgba(0,0,0,0));
   text-decoration: none;
 
+  will-change: transform;
   transform: translateZ(0);
   transition:
-    transform 160ms ease,
+    transform 170ms cubic-bezier(.2,.9,.2,1),
     border-color 160ms ease,
-    box-shadow 160ms ease,
+    box-shadow 180ms ease,
     filter 160ms ease,
     background 160ms ease;
 }
 
 .contact-icon:hover,
 .contact-icon:focus-visible {
-  transform: translateY(-2px) scale(1.06);
+  transform: translateY(-2px) scale(1.07);
   border-color: rgba(255,255,255,0.26);
-  filter: brightness(1.05);
+  filter: brightness(1.06);
   box-shadow:
     0 0 0 1px rgba(255,255,255,0.07) inset,
     0 18px 46px rgba(0,0,0,0.34),
@@ -632,13 +661,11 @@ button:focus-visible {
     0 0 20px rgba(168,85,247,0.08);
 }
 
-.contact-icon:active {
-  transform: translateY(-1px) scale(1.02);
-}
+.contact-icon:active { transform: translateY(-1px) scale(1.03); }
 
 .contact-icon svg {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   stroke: rgba(255,255,255,0.92);
   stroke-width: 2.1;
   fill: none;
@@ -646,20 +673,16 @@ button:focus-visible {
   stroke-linejoin: round;
   transition: transform 160ms ease, opacity 160ms ease;
 }
-
 .contact-icon:hover svg,
-.contact-icon:focus-visible svg {
-  transform: scale(1.08);
-}
+.contact-icon:focus-visible svg { transform: scale(1.08); }
 
-/* tooltip label — no layout shift */
+/* tooltip label */
 .contact-icon::after {
   content: attr(data-label);
   position: absolute;
   left: 50%;
   bottom: calc(100% + 10px);
   transform: translateX(-50%) translateY(6px);
-
   opacity: 0;
   pointer-events: none;
 
@@ -688,10 +711,7 @@ button:focus-visible {
   transform: translateX(-50%) translateY(0);
 }
 
-/* Touch devices: no hover tooltip */
-@media (hover: none) {
-  .contact-icon::after { display: none; }
-}
+@media (hover: none) { .contact-icon::after { display: none; } }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
@@ -700,8 +720,8 @@ button:focus-visible {
   #flyby .thruster { animation: none; }
   .reveal { opacity: 1; transform: none; filter: none; transition: none; }
   .os-rule { transform: scaleX(1); transition: none; }
+  .glass::after { display: none; }
   .skill-card .pill { opacity: 1; transform: none; transition: none; }
   #scroll-progress-bar { animation: none; }
   .timeline::after { animation: none; display: none; }
-  .hero-screen::before { opacity: 0.65; transform: none; }
 }

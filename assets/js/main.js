@@ -14,20 +14,6 @@
     return v;
   };
 
-  const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const motionOK = !reduceMotionPref;
-
-  // Keep background animated if you want (set to false to fully respect reduce-motion)
-  const FORCE_BG_ANIMATION = true;
-  const bgMotionOK = FORCE_BG_ANIMATION ? true : motionOK;
-
-  const gsap = window.gsap || null;
-  const ScrollTrigger = window.ScrollTrigger || null;
-
-  if (gsap && ScrollTrigger) {
-    try { gsap.registerPlugin(ScrollTrigger); } catch (_) {}
-  }
-
   // Footer year
   const yearEl = document.getElementById("year");
   if (yearEl) yearEl.textContent = new Date().getFullYear();
@@ -40,6 +26,104 @@
   };
   setHeaderHeight();
   window.addEventListener("resize", setHeaderHeight, { passive: true });
+
+  // Reduced motion preference
+  const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Keep background animated (you wanted it always on)
+  const FORCE_ANIMATION = true;
+  const prefersReducedMotion = !FORCE_ANIMATION && reduceMotionPref;
+
+  // =========================
+  // Smooth scrolling + Scrollytelling (Lenis + GSAP ScrollTrigger)
+  // =========================
+  const hasLenis = typeof window.Lenis === "function";
+  const hasGSAP = typeof window.gsap !== "undefined" && typeof window.ScrollTrigger !== "undefined";
+
+  let lenis = null;
+
+  if (hasLenis && !reduceMotionPref) {
+    try {
+      lenis = new window.Lenis({
+        lerp: 0.09,
+        smoothWheel: true,
+        smoothTouch: false,
+        wheelMultiplier: 1.0,
+        touchMultiplier: 1.35,
+      });
+
+      // Avoid double-smoothing from CSS
+      document.documentElement.style.scrollBehavior = "auto";
+
+      // RAF loop
+      const raf = (time) => {
+        lenis.raf(time);
+        requestAnimationFrame(raf);
+      };
+      requestAnimationFrame(raf);
+    } catch (_) {
+      lenis = null;
+    }
+  }
+
+  if (hasGSAP) {
+    window.gsap.registerPlugin(window.ScrollTrigger);
+
+    // Keep ScrollTrigger updated with Lenis
+    if (lenis) {
+      lenis.on("scroll", () => window.ScrollTrigger.update());
+      window.ScrollTrigger.addEventListener("refresh", () => lenis.resize());
+    }
+
+    // HERO → NEXT SECTION transition (pinned + scrubbed)
+    if (!reduceMotionPref) {
+      const hero = document.getElementById("intro");
+      const heroInner = hero?.querySelector(".hero-inner");
+      const heroKicker = hero?.querySelector(".os-kicker");
+      const heroName = document.getElementById("name-title");
+      const heroHeadline = hero?.querySelector(".headline");
+      const heroEnter = hero?.querySelector(".scroll-indicator");
+
+      if (hero && heroInner && heroName) {
+        window.gsap.timeline({
+          scrollTrigger: {
+            trigger: hero,
+            start: "top top",
+            end: "+=120%",
+            scrub: true,
+            pin: true,
+            anticipatePin: 1,
+          },
+        })
+          .to(hero, { "--hero-warp": 0.9, "--hero-warp-y": "80px", "--hero-vig": 0.78, ease: "none" }, 0)
+          .to(heroName, { y: -90, scale: 0.84, ease: "none" }, 0)
+          .to(heroKicker, { autoAlpha: 0, y: -18, ease: "none" }, 0)
+          .to(heroHeadline, { autoAlpha: 0, y: -10, ease: "none" }, 0.05)
+          .to(heroEnter, { autoAlpha: 0, y: 18, ease: "none" }, 0.05);
+      }
+    }
+  }
+
+  // Smooth anchor scrolling with Lenis (nav pills feel premium)
+  const headerOffset = () => (headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0);
+  document.querySelectorAll('a[href^="#"]').forEach((a) => {
+    const href = a.getAttribute("href") || "";
+    if (href.length < 2) return;
+    a.addEventListener("click", (e) => {
+      const target = document.querySelector(href);
+      if (!target) return;
+
+      // allow default if no Lenis
+      if (!lenis) return;
+
+      e.preventDefault();
+      lenis.scrollTo(target, {
+        offset: -(headerOffset() + 18),
+        duration: 1.05,
+        easing: (t) => 1 - Math.pow(1 - t, 3),
+      });
+    });
+  });
 
   // =========================
   // Mobile menu
@@ -68,10 +152,11 @@
   }
 
   // =========================
-  // Scroll progress
+  // Scroll progress (FIX: hide when at top)
   // =========================
+  const progressWrap = document.getElementById("scroll-progress");
   const progressBar = document.getElementById("scroll-progress-bar");
-  if (progressBar) {
+  if (progressWrap && progressBar) {
     let raf = 0;
 
     const update = () => {
@@ -80,7 +165,9 @@
       const scrollTop = window.scrollY || doc.scrollTop || 0;
       const max = Math.max(1, doc.scrollHeight - window.innerHeight);
       const p = clamp(scrollTop / max, 0, 1);
+
       progressBar.style.transform = `scaleX(${p})`;
+      progressWrap.classList.toggle("is-on", p > 0.01);
     };
 
     const onScroll = () => {
@@ -94,98 +181,27 @@
   }
 
   // =========================
-  // Lenis (smooth scrolling)
+  // Scroll reveal + glint + chip cascade
   // =========================
-  let lenis = null;
+  const revealTargets = Array.from(document.querySelectorAll("main .os-header, main .glass"));
 
-  function initLenis() {
-    if (!motionOK) return null;
-    if (!window.Lenis) return null;
-
-    lenis = new window.Lenis({
-      lerp: 0.085,
-      smoothWheel: true,
-      smoothTouch: false,
-      wheelMultiplier: 1.0,
-    });
-
-    // If GSAP exists, drive Lenis through GSAP ticker (best ScrollTrigger sync)
-    if (gsap) {
-      gsap.ticker.add((t) => lenis.raf(t * 1000));
-      gsap.ticker.lagSmoothing(0);
+  if (revealTargets.length) {
+    if (reduceMotionPref) {
+      revealTargets.forEach((el) => el.classList.add("reveal", "is-visible"));
     } else {
-      const raf = (time) => {
-        lenis.raf(time);
-        requestAnimationFrame(raf);
-      };
-      requestAnimationFrame(raf);
-    }
-
-    return lenis;
-  }
-
-  initLenis();
-
-  // Smooth anchor nav with header offset
-  function initAnchorScroll() {
-    const anchors = Array.from(document.querySelectorAll('a[href^="#"]'));
-    if (!anchors.length) return;
-
-    const scrollToTarget = (target) => {
-      if (!target) return;
-      const hh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 0;
-      const top = target.getBoundingClientRect().top + window.pageYOffset - hh + 10;
-
-      if (lenis) {
-        lenis.scrollTo(top, { duration: 1.15 });
-      } else {
-        window.scrollTo({ top, behavior: motionOK ? "smooth" : "auto" });
-      }
-    };
-
-    anchors.forEach((a) => {
-      const href = a.getAttribute("href");
-      if (!href || href === "#") return;
-
-      a.addEventListener("click", (e) => {
-        const target = document.querySelector(href);
-        if (!target) return;
-        e.preventDefault();
-        scrollToTarget(target);
-      });
-    });
-  }
-  initAnchorScroll();
-
-  // =========================
-  // Reveal system (ScrollTrigger if available; IO fallback)
-  // =========================
-  function initReveals() {
-    const targets = Array.from(document.querySelectorAll("main .os-header, main .glass"));
-    if (!targets.length) return;
-
-    // Prepare reveal classes / delays
-    if (motionOK) {
-      targets.forEach((el, i) => {
+      revealTargets.forEach((el, i) => {
         el.classList.add("reveal");
         el.style.transitionDelay = `${Math.min(180, (i % 8) * 22)}ms`;
       });
-    } else {
-      targets.forEach((el) => el.classList.add("reveal", "is-visible"));
-      return;
-    }
 
-    // Use ScrollTrigger when available (smooth + consistent with Lenis)
-    if (ScrollTrigger && gsap) {
-      targets.forEach((el) => {
-        ScrollTrigger.create({
-          trigger: el,
-          start: "top 88%",
-          once: true,
-          onEnter: () => {
+      const io = new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (!e.isIntersecting) continue;
+
+            const el = e.target;
             const baseDelay = parseDelayMs(el.style.transitionDelay);
 
-            // cascade pills inside skill cards
             if (el.classList.contains("skill-card")) {
               const pills = Array.from(el.querySelectorAll(".pill"));
               pills.forEach((pill, idx) => {
@@ -194,48 +210,20 @@
             }
 
             el.classList.add("is-visible");
-          },
-        });
-      });
 
-      // Ensure correct positions after images load
-      window.addEventListener(
-        "load",
-        () => {
-          try { ScrollTrigger.refresh(); } catch (_) {}
+            if (el.classList.contains("glass")) {
+              window.setTimeout(() => el.classList.add("glint"), baseDelay + 160);
+            }
+
+            io.unobserve(el);
+          }
         },
-        { once: true }
+        { threshold: 0.14, rootMargin: "0px 0px -12% 0px" }
       );
 
-      return;
+      revealTargets.forEach((el) => io.observe(el));
     }
-
-    // Fallback: IntersectionObserver
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (!e.isIntersecting) continue;
-
-          const el = e.target;
-          const baseDelay = parseDelayMs(el.style.transitionDelay);
-
-          if (el.classList.contains("skill-card")) {
-            const pills = Array.from(el.querySelectorAll(".pill"));
-            pills.forEach((pill, idx) => {
-              pill.style.transitionDelay = `${baseDelay + 120 + idx * 45}ms`;
-            });
-          }
-
-          el.classList.add("is-visible");
-          io.unobserve(el);
-        }
-      },
-      { threshold: 0.14, rootMargin: "0px 0px -12% 0px" }
-    );
-
-    targets.forEach((el) => io.observe(el));
   }
-  initReveals();
 
   // =========================
   // Projects drawer (pin = click, open repo = double click)
@@ -259,7 +247,6 @@
   let selectedIndex = 0;
   let lastDragTime = 0;
 
-  // exposed no-ops for scrollytelling
   let startAuto = () => {};
   let stopAuto = () => {};
 
@@ -509,99 +496,6 @@
   }
 
   // =========================
-  // Scrollytelling: HERO + PROJECTS (GSAP/ScrollTrigger)
-  // =========================
-  function initScrollytelling() {
-    if (!motionOK) return;
-    if (!gsap || !ScrollTrigger) return;
-
-    // Sync Lenis with ScrollTrigger (if Lenis exists)
-    if (lenis) {
-      lenis.on("scroll", ScrollTrigger.update);
-    }
-
-    const intro = document.getElementById("intro");
-    const name = document.getElementById("name-title");
-    const headline = intro?.querySelector(".headline");
-    const enter = intro?.querySelector(".scroll-indicator");
-    const kicker = intro?.querySelector(".os-kicker");
-    const overlay = document.querySelector(".bg-overlay");
-
-    // HERO: cinematic boot (desktop pins)
-    ScrollTrigger.matchMedia({
-      "(min-width: 641px)": () => {
-        if (!intro || !name) return;
-
-        gsap.timeline({
-          scrollTrigger: {
-            trigger: intro,
-            start: "top top",
-            end: "+=140%",
-            scrub: 0.9,
-            pin: true,
-            anticipatePin: 1,
-          },
-        })
-          .to(intro, { "--heroShade": 0.92, "--heroVeil": 1, ease: "none" }, 0)
-          .to(overlay, { opacity: 0.18, ease: "none" }, 0)
-          .to(name, { scale: 0.88, y: -14, ease: "none" }, 0.05)
-          .to(headline, { autoAlpha: 0, y: -12, ease: "none" }, 0.10)
-          .to(enter, { autoAlpha: 0, y: -10, ease: "none" }, 0.10)
-          .to(kicker, { autoAlpha: 0.28, ease: "none" }, 0.08);
-      },
-
-      // Mobile: keep lightweight (no pin), still morph
-      "(max-width: 640px)": () => {
-        if (!intro || !name) return;
-
-        gsap.timeline({
-          scrollTrigger: {
-            trigger: intro,
-            start: "top top",
-            end: "bottom top",
-            scrub: 0.75,
-          },
-        })
-          .to(intro, { "--heroShade": 0.82, "--heroVeil": 0.8, ease: "none" }, 0)
-          .to(name, { scale: 0.94, y: -8, ease: "none" }, 0.12)
-          .to(headline, { autoAlpha: 0.35, ease: "none" }, 0.15)
-          .to(enter, { autoAlpha: 0, ease: "none" }, 0.15);
-      },
-    });
-
-    // PROJECTS: pinned horizontal scrub (desktop only)
-    ScrollTrigger.matchMedia({
-      "(min-width: 641px)": () => {
-        if (!projectsSection || !track) return;
-
-        const maxScroll = () => Math.max(0, track.scrollWidth - track.clientWidth);
-
-        gsap.to(track, {
-          scrollLeft: () => maxScroll(),
-          ease: "none",
-          scrollTrigger: {
-            trigger: projectsSection,
-            start: "top top+=90",
-            end: () => "+=" + (maxScroll() + window.innerHeight * 0.65),
-            pin: true,
-            scrub: 0.9,
-            invalidateOnRefresh: true,
-            anticipatePin: 1,
-            onEnter: () => { try { stopAuto(); } catch (_) {} },
-            onEnterBack: () => { try { stopAuto(); } catch (_) {} },
-            onLeave: () => { try { startAuto(); } catch (_) {} },
-            onLeaveBack: () => { try { startAuto(); } catch (_) {} },
-          },
-        });
-      },
-    });
-
-    // refresh after all images load (important for accurate scrollWidth)
-    window.addEventListener("load", () => ScrollTrigger.refresh(), { once: true });
-  }
-  initScrollytelling();
-
-  // =========================
   // Background animation (WebGL primary + 2D fallback)
   // =========================
   const canvas = document.getElementById("ai-bg");
@@ -718,7 +612,7 @@
 
     return {
       start() {
-        if (!bgMotionOK) return;
+        if (prefersReducedMotion) return;
         if (running) return;
         running = true;
         last = performance.now();
@@ -913,7 +807,7 @@
 
     return {
       start() {
-        if (!bgMotionOK) return;
+        if (prefersReducedMotion) return;
         if (running) return;
         running = true;
         lastFrame = 0;
@@ -932,7 +826,7 @@
 
   const startBgIfVisible = () => {
     if (!bg) return;
-    if (!bgMotionOK) return;
+    if (prefersReducedMotion) return;
     if (document.hidden) return;
     bg.start();
   };
@@ -983,12 +877,15 @@
         maxX: Math.max(M, w - size.w - M),
         minY: M + 6,
         maxY: Math.max(M, h - size.h - M),
+        originX: 0,
+        originY: 0,
       };
     };
 
     const boundsMobile = () => {
       const hr = hero?.getBoundingClientRect();
       const nr = name?.getBoundingClientRect();
+
       if (!hr || !nr) return boundsDesktop();
 
       const heroW = hr.width;
@@ -1123,7 +1020,7 @@
     };
 
     const start = () => {
-      if (!motionOK) return;
+      if (prefersReducedMotion) return;
       if (running) return;
       if (isMobile() && !heroVisible) return;
 
@@ -1155,7 +1052,6 @@
     };
 
     setupHeroObserver();
-
     return { start, stop, resize };
   }
 
