@@ -94,6 +94,9 @@
     <main class="mx-auto max-w-6xl px-4">
       <!-- INTRO -->
       <section id="intro" class="hero-screen">
+        <!-- Portal glow for the hero -> next section transition -->
+        <div id="hero-portal" aria-hidden="true"></div>
+
         <!-- Rover (mobile: constrained around name; desktop: fixed roaming) -->
         <div id="flyby" aria-hidden="true">
           <svg viewBox="0 0 48 32" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
@@ -128,7 +131,7 @@
           </svg>
         </div>
 
-        <div class="w-full">
+        <div id="intro-content" class="w-full">
           <div class="mono os-kicker">Generative AI · Data Science · Software Engineering</div>
 
           <h1 id="name-title" class="name-display name-neo3d">Prateek Parashar</h1>
@@ -141,14 +144,13 @@
         </div>
       </section>
 
-      <!-- HIGHLIGHTS -->
+      <!-- HIGHLIGHTS (re-ordered: Core Stack -> Focus -> Diffusion -> Retention) -->
       <section id="signals" class="pt-2 md:pt-4">
         <div class="os-header">
           <h2 class="section-title">Highlights</h2>
           <div class="os-rule"></div>
         </div>
 
-        <!-- ORDER FIXED: Core Stack → Focus → Diffusion Speedup → Retention Lift -->
         <div class="mt-4 stat-grid">
           <div class="glass stat card-hover">
             <div class="label mono">CORE STACK</div>
@@ -357,7 +359,7 @@
           <div id="projects-track" class="hscroll drawer-track flex gap-4 overflow-x-auto pb-6">
             <article class="glass card-hover project-card" tabindex="0" role="button"
               aria-label="Slack Python QnA Bot" data-repo="https://github.com/AII-projects/slackbot">
-              <div class="project-thumb"><img src="assets/img/1.webp" alt="Slackbot thumbnail" loading="lazy" /></div>
+              <div class="project-thumb"><img src="assets/img/1.png" alt="Slackbot thumbnail" loading="lazy" decoding="async" /></div>
               <div class="project-meta">
                 <div class="project-title">Slack Python QnA Bot</div>
                 <div class="mono text-xs text-white/60">Nov 2025</div>
@@ -374,7 +376,7 @@
 
             <article class="glass card-hover project-card" tabindex="0" role="button"
               aria-label="Faster Diffusion" data-repo="https://github.com/GoDSpeeD0o0/GenAIProject">
-              <div class="project-thumb"><img src="assets/img/2.webp" alt="Faster Diffusion thumbnail" loading="lazy" /></div>
+              <div class="project-thumb"><img src="assets/img/2.png" alt="Faster Diffusion thumbnail" loading="lazy" decoding="async" /></div>
               <div class="project-meta">
                 <div class="project-title">Faster Diffusion</div>
                 <div class="mono text-xs text-white/60">Spring 2025</div>
@@ -392,7 +394,7 @@
             <article class="glass card-hover project-card" tabindex="0" role="button"
               aria-label="Particle Pollution Analysis research"
               data-repo="https://github.com/GoDSpeeD0o0/Research-Paper/tree/main/MachineLearningAnalysis_Particle_Pollution">
-              <div class="project-thumb"><img src="assets/img/3.webp" alt="Particle Pollution Analysis thumbnail" loading="lazy" /></div>
+              <div class="project-thumb"><img src="assets/img/3.png" alt="Particle Pollution Analysis thumbnail" loading="lazy" decoding="async" /></div>
               <div class="project-meta">
                 <div class="project-title">Particle Pollution Analysis (Research)</div>
                 <div class="mono text-xs text-white/60">May 2022</div>
@@ -409,7 +411,7 @@
 
             <article class="glass card-hover project-card" tabindex="0" role="button"
               aria-label="Tweet Sentiment Analysis" data-repo="https://github.com/GoDSpeeD0o0/TextSentimentAnalysis">
-              <div class="project-thumb"><img src="assets/img/4.webp" alt="Tweet Sentiment Analysis thumbnail" loading="lazy" /></div>
+              <div class="project-thumb"><img src="assets/img/4.png" alt="Tweet Sentiment Analysis thumbnail" loading="lazy" decoding="async" /></div>
               <div class="project-meta">
                 <div class="project-title">Tweet Sentiment Analysis</div>
                 <div class="mono text-xs text-white/60">Apr 2024</div>
@@ -440,14 +442,26 @@
 
         <div class="mt-4 contact-wrap">
           <div class="contact-bar glass" role="navigation" aria-label="Contact links">
-            <a class="contact-icon" href="mailto:pparash7@asu.edu" aria-label="Email" data-label="Email">
+            <a
+              class="contact-icon"
+              href="mailto:pparash7@asu.edu"
+              aria-label="Email"
+              data-label="Email"
+            >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 6h16v12H4z"></path>
                 <path d="M4 7l8 6 8-6"></path>
               </svg>
             </a>
 
-            <a class="contact-icon" href="https://linkedin.com/in/prateekp7" target="_blank" rel="noopener" aria-label="LinkedIn" data-label="LinkedIn">
+            <a
+              class="contact-icon"
+              href="https://linkedin.com/in/prateekp7"
+              target="_blank"
+              rel="noopener"
+              aria-label="LinkedIn"
+              data-label="LinkedIn"
+            >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M6.5 9.5v9"></path>
                 <path d="M6.5 6.5h.01"></path>
@@ -456,7 +470,14 @@
               </svg>
             </a>
 
-            <a class="contact-icon" href="https://github.com/GoDSpeeD0o0" target="_blank" rel="noopener" aria-label="GitHub" data-label="GitHub">
+            <a
+              class="contact-icon"
+              href="https://github.com/GoDSpeeD0o0"
+              target="_blank"
+              rel="noopener"
+              aria-label="GitHub"
+              data-label="GitHub"
+            >
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M9 19c-4 1.2-4-2-5-2"></path>
                 <path
@@ -472,6 +493,11 @@
         <span class="mono">©</span> <span id="year"></span> Prateek Parashar
       </footer>
     </main>
+
+    <!-- Scrollytelling libs (free, CDN) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/bundled/lenis.min.js"></script>
 
     <script src="assets/js/main.js?v=42"></script>
   </body>

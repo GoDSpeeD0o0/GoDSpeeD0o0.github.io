@@ -20,9 +20,14 @@
 
   // Header height -> CSS var
   const headerEl = document.querySelector("header");
+  const headerH = () => (headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0);
+
   const setHeaderHeight = () => {
-    const hh = headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0;
-    document.documentElement.style.setProperty("--header-h", `${hh}px`);
+    document.documentElement.style.setProperty("--header-h", `${headerH()}px`);
+    // If ScrollTrigger exists, keep pin math correct
+    if (window.ScrollTrigger && typeof window.ScrollTrigger.refresh === "function") {
+      window.ScrollTrigger.refresh();
+    }
   };
   setHeaderHeight();
   window.addEventListener("resize", setHeaderHeight, { passive: true });
@@ -35,17 +40,63 @@
   const prefersReducedMotion = !FORCE_ANIMATION && reduceMotionPref;
 
   // =========================
-  // Hover “popups” fix: disable hover-lift/tooltips while scrolling
+  // Smooth scrolling (Lenis) + smooth anchor jumps
   // =========================
-  let scrollIdleTimer = 0;
-  const markScrolling = () => {
-    document.body.classList.add("is-scrolling");
-    clearTimeout(scrollIdleTimer);
-    scrollIdleTimer = setTimeout(() => {
-      document.body.classList.remove("is-scrolling");
-    }, 140);
+  let lenis = null;
+
+  const canSmoothScroll =
+    !reduceMotionPref &&
+    !!window.Lenis &&
+    window.matchMedia("(pointer: fine)").matches;
+
+  if (canSmoothScroll) {
+    lenis = new window.Lenis({
+      lerp: 0.085,
+      wheelMultiplier: 1.05,
+      smoothWheel: true,
+      smoothTouch: false,
+    });
+
+    const raf = (time) => {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    };
+    requestAnimationFrame(raf);
+  }
+
+  // Smooth internal anchors (so nav clicks feel “fluid”)
+  const bindAnchorSmoothScroll = () => {
+    const anchors = Array.from(document.querySelectorAll('a[href^="#"]'));
+    anchors.forEach((a) => {
+      a.addEventListener("click", (e) => {
+        const href = a.getAttribute("href");
+        if (!href || href === "#") return;
+
+        const target = document.querySelector(href);
+        if (!target) return;
+
+        e.preventDefault();
+
+        const offset = headerH() + 14;
+
+        if (lenis) {
+          lenis.scrollTo(target, { offset: -offset, duration: 1.05 });
+        } else {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+
+        // close mobile menu if open
+        const menu = document.getElementById("mobile-menu");
+        const btn = document.getElementById("menu-btn");
+        if (menu && btn && !menu.classList.contains("hidden")) {
+          menu.classList.add("hidden");
+          btn.setAttribute("aria-expanded", "false");
+          setHeaderHeight();
+        }
+      });
+    });
   };
-  window.addEventListener("scroll", markScrolling, { passive: true });
+  bindAnchorSmoothScroll();
 
   // =========================
   // Mobile menu
@@ -96,11 +147,18 @@
 
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", () => update(), { passive: true });
+
+    // If Lenis is enabled, ensure progress stays accurate
+    if (lenis) {
+      lenis.on("scroll", () => update());
+    }
+
     update();
   }
 
   // =========================
-  // Scroll reveal (no auto glint on scroll)
+  // Scroll reveal + chip cascade
+  // (No auto-glint anymore -> removes “pop-up flashes” on repeated scroll)
   // =========================
   const revealTargets = Array.from(document.querySelectorAll("main .os-header, main .glass"));
 
@@ -137,6 +195,105 @@
 
       revealTargets.forEach((el) => io.observe(el));
     }
+  }
+
+  // =========================
+  // Scrollytelling: Hero -> Highlights (GSAP ScrollTrigger)
+  // =========================
+  const gsap = window.gsap;
+  const ScrollTrigger = window.ScrollTrigger;
+
+  if (gsap && ScrollTrigger && !reduceMotionPref) {
+    gsap.registerPlugin(ScrollTrigger);
+
+    // If Lenis is enabled, keep ScrollTrigger in sync
+    if (lenis) lenis.on("scroll", ScrollTrigger.update);
+
+    const intro = document.getElementById("intro");
+    const introContent = document.getElementById("intro-content");
+    const name = document.getElementById("name-title");
+    const kicker = intro?.querySelector(".os-kicker");
+    const headline = intro?.querySelector(".headline");
+    const scrollBtn = intro?.querySelector(".scroll-indicator");
+    const portal = document.getElementById("hero-portal");
+
+    const mm = gsap.matchMedia();
+
+    // Desktop scrollytelling: pin hero, scrub transform, “portal” transition into next section
+    mm.add("(min-width: 768px)", () => {
+      if (!intro || !introContent || !name || !portal) return;
+
+      gsap.set(portal, { opacity: 0, scale: 0.55 });
+      gsap.set(introContent, { y: 0, opacity: 1 });
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: intro,
+          start: () => `top top+=${headerH()}`,
+          end: () => `+=${Math.round(window.innerHeight * 0.9)}`,
+          scrub: 0.7,
+          pin: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      tl.to(name, { scale: 0.86, y: -44, ease: "none" }, 0);
+      tl.to(headline, { y: -14, opacity: 0.86, ease: "none" }, 0);
+      tl.to(kicker, { y: -10, opacity: 0, ease: "none" }, 0);
+      tl.to(scrollBtn, { y: 18, opacity: 0, ease: "none" }, 0);
+
+      // “Portal” ramps up then fades as we release into the next section
+      tl.to(portal, { opacity: 0.62, scale: 1.12, ease: "none" }, 0.10);
+      tl.to(portal, { opacity: 0.0, scale: 1.62, ease: "none" }, 0.78);
+    });
+
+    // Mobile scrollytelling: no pin (safer), but we still scrub a subtle “portal” cue
+    mm.add("(max-width: 767px)", () => {
+      if (!intro || !portal) return;
+
+      gsap.set(portal, { opacity: 0, scale: 0.55 });
+
+      gsap.to(portal, {
+        opacity: 0.55,
+        scale: 1.08,
+        ease: "none",
+        scrollTrigger: {
+          trigger: intro,
+          start: "top top+=90",
+          end: "bottom top+=10",
+          scrub: true,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      gsap.to(portal, {
+        opacity: 0,
+        scale: 1.45,
+        ease: "none",
+        scrollTrigger: {
+          trigger: "#signals",
+          start: "top bottom",
+          end: "top center",
+          scrub: true,
+          invalidateOnRefresh: true,
+        },
+      });
+    });
+
+    // One more small polish: overlay breathes slightly while scrolling
+    gsap.to(".bg-overlay", {
+      opacity: 0.18,
+      ease: "none",
+      scrollTrigger: {
+        trigger: "main",
+        start: "top top",
+        end: "bottom bottom",
+        scrub: true,
+      },
+    });
+
+    window.addEventListener("load", () => ScrollTrigger.refresh(), { passive: true });
   }
 
   // =========================
@@ -540,7 +697,6 @@
     };
   }
 
-  // Shader init
   function initShaderBackground() {
     const gl =
       canvas.getContext("webgl", {
