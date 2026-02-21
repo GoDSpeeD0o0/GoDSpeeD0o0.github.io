@@ -12,6 +12,10 @@
     <!-- Tailwind CDN (no build step) -->
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <!-- GSAP + ScrollTrigger (Scrollytelling) -->
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,15 +25,22 @@
     />
 
     <link rel="icon" href="favicon.ico" />
-    <link rel="stylesheet" href="assets/css/main.css?v=42" />
+    <link rel="stylesheet" href="assets/css/main.css?v=atlas1" />
   </head>
 
   <body class="min-h-screen text-white">
-    <!-- Background -->
+    <!-- Background layers -->
     <canvas
       id="ai-bg"
       aria-hidden="true"
-      style="position:fixed; inset:0; z-index:-3; width:100vw; height:100vh; pointer-events:none;"
+      style="position:fixed; inset:0; z-index:-4; width:100vw; height:100vh; pointer-events:none;"
+    ></canvas>
+
+    <!-- Neural Atlas constellation overlay -->
+    <canvas
+      id="atlas-bg"
+      aria-hidden="true"
+      style="position:fixed; inset:0; z-index:-2; width:100vw; height:100vh; pointer-events:none;"
     ></canvas>
 
     <!-- overlay -->
@@ -41,7 +52,7 @@
 
     <!-- NAV -->
     <header class="sticky top-0 z-20 border-b border-white/10 backdrop-blur">
-      <nav class="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between gap-3">
+      <nav class="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-3">
         <a href="#intro" class="flex items-center gap-3">
           <span class="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.8)]"></span>
           <span class="font-extrabold tracking-tight">Prateek</span>
@@ -72,7 +83,7 @@
 
       <!-- Mobile menu -->
       <div id="mobile-menu" class="md:hidden hidden border-t border-white/10">
-        <div class="mx-auto max-w-7xl px-4 py-3 flex flex-col gap-3 text-white/85">
+        <div class="mx-auto max-w-6xl px-4 py-3 flex flex-col gap-3 text-white/85">
           <a class="nav-pill w-fit" href="#signals">Highlights</a>
           <a class="nav-pill w-fit" href="#skills">Skills</a>
           <a class="nav-pill w-fit" href="#education">Education</a>
@@ -91,10 +102,10 @@
       <div id="scroll-progress-bar"></div>
     </div>
 
-    <main class="mx-auto max-w-7xl px-4">
-      <!-- INTRO -->
-      <section id="intro" class="hero-screen">
-        <!-- Rover -->
+    <main class="mx-auto max-w-6xl px-4">
+      <!-- INTRO (Scrollytelling pin target) -->
+      <section id="intro" class="hero-screen" data-atlas="intro">
+        <!-- Rover (mobile: orbit around name; desktop: section companion) -->
         <div id="flyby" aria-hidden="true">
           <svg viewBox="0 0 48 32" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
             <rect x="18" y="5" width="12" height="10" fill="#0B1020" opacity="0.55"/>
@@ -111,25 +122,18 @@
             <rect x="9"  y="14" width="5" height="8" fill="#CFEAFF" opacity="0.60"/>
             <rect x="34" y="14" width="5" height="8" fill="#CFEAFF" opacity="0.60"/>
 
-            <rect x="20" y="8" width="8" height="4" fill="#0B1020" opacity="0.25"/>
-
             <rect x="21" y="9" width="2" height="2" fill="#22D3EE" opacity="0.85"/>
             <rect x="25" y="9" width="2" height="2" fill="#A855F7" opacity="0.75"/>
-            <rect x="22" y="10" width="1" height="1" fill="#FFFFFF" opacity="0.65"/>
-            <rect x="26" y="10" width="1" height="1" fill="#FFFFFF" opacity="0.55"/>
 
-            <rect x="23" y="3" width="2" height="2" fill="#0B1020" opacity="0.45"/>
             <rect x="23" y="2" width="2" height="1" fill="#22D3EE" opacity="0.70"/>
 
             <rect class="thruster" x="17" y="26" width="3" height="3" fill="#22D3EE" opacity="0.70"/>
             <rect class="thruster" x="28" y="26" width="3" height="3" fill="#A855F7" opacity="0.60"/>
-            <rect class="thruster" x="18" y="29" width="1" height="1" fill="#FFFFFF" opacity="0.55"/>
-            <rect class="thruster" x="29" y="29" width="1" height="1" fill="#FFFFFF" opacity="0.45"/>
           </svg>
         </div>
 
-        <div class="hero-inner w-full">
-          <div class="mono os-kicker">Generative AI · Data Science · Software Engineering</div>
+        <div class="w-full">
+          <div class="mono os-kicker atlas-coords">ATLAS://BOOT · NODE 00</div>
 
           <h1 id="name-title" class="name-display name-neo3d">Prateek Parashar</h1>
 
@@ -141,32 +145,37 @@
         </div>
       </section>
 
-      <!-- HIGHLIGHTS (REORDERED) -->
-      <section id="signals" class="pt-2 md:pt-4">
+      <!-- HIGHLIGHTS (order fixed) -->
+      <section id="signals" class="mt-14" data-atlas="telemetry">
         <div class="os-header">
+          <div class="os-kicker mono atlas-coords">ATLAS://TELEMETRY · NODE 01</div>
           <h2 class="section-title">Highlights</h2>
           <div class="os-rule"></div>
         </div>
 
-        <div class="mt-4 stat-grid">
+        <div class="mt-6 stat-grid gap-6">
+          <!-- 1) CORE STACK -->
           <div class="glass stat card-hover">
             <div class="label mono">CORE STACK</div>
             <div class="value">Python · SQL</div>
             <div class="note">Automation · APIs · data modeling</div>
           </div>
 
+          <!-- 2) FOCUS -->
           <div class="glass stat card-hover">
             <div class="label mono">FOCUS</div>
             <div class="value">GenAI · NLP</div>
             <div class="note">Transformers · diffusion · evaluation</div>
           </div>
 
+          <!-- 3) DIFFUSION SPEEDUP -->
           <div class="glass stat card-hover">
             <div class="label mono">DIFFUSION SPEEDUP</div>
             <div class="value">-41%</div>
             <div class="note">Inference time reduction while maintaining quality.</div>
           </div>
 
+          <!-- 4) RETENTION -->
           <div class="glass stat card-hover">
             <div class="label mono">RETENTION LIFT</div>
             <div class="value">+21%</div>
@@ -176,45 +185,44 @@
       </section>
 
       <!-- SKILLS -->
-      <section id="skills" class="mt-12">
+      <section id="skills" class="mt-14" data-atlas="skills">
         <div class="os-header">
+          <div class="os-kicker mono atlas-coords">ATLAS://CAPABILITIES · NODE 02</div>
           <h2 class="section-title">Skills & Certifications</h2>
           <div class="os-rule"></div>
         </div>
 
-        <div class="mt-4 grid lg:grid-cols-12 gap-7">
-          <div class="lg:col-span-8 grid sm:grid-cols-2 gap-7">
-            <div class="glass card-hover p-5 skill-card skill-cyan">
+        <div class="mt-6 grid lg:grid-cols-12 gap-6">
+          <div class="lg:col-span-8 grid sm:grid-cols-2 gap-6">
+            <div class="glass card-hover p-6 skill-card skill-cyan">
               <div class="mono text-xs skill-kicker"><span class="skill-dot"></span>LANGUAGES & APIS</div>
-              <div class="mt-3 flex flex-wrap gap-2">
+              <div class="mt-4 flex flex-wrap gap-2">
                 <span class="pill">Python</span><span class="pill">SQL</span><span class="pill">FastAPI</span>
                 <span class="pill">JavaScript (ES6+)</span><span class="pill">HTML5</span><span class="pill">CSS3</span>
               </div>
-              <p class="mt-3 text-xs text-white/60 mono">
-                Libraries: NumPy · SciPy · scikit-learn · Seaborn
-              </p>
+              <p class="mt-4 text-xs text-white/60 mono">Libraries: NumPy · SciPy · scikit-learn · Seaborn</p>
             </div>
 
-            <div class="glass card-hover p-5 skill-card skill-violet">
+            <div class="glass card-hover p-6 skill-card skill-violet">
               <div class="mono text-xs skill-kicker"><span class="skill-dot"></span>GENAI / DEEP LEARNING</div>
-              <div class="mt-3 flex flex-wrap gap-2">
+              <div class="mt-4 flex flex-wrap gap-2">
                 <span class="pill">Diffusion</span><span class="pill">Transformers</span><span class="pill">NLP</span>
                 <span class="pill">Inference optimization</span><span class="pill">LLM training</span>
               </div>
-              <p class="mt-3 text-xs text-white/60 mono">Focus: evaluation · system design</p>
+              <p class="mt-4 text-xs text-white/60 mono">Focus: evaluation · system design</p>
             </div>
 
-            <div class="glass card-hover p-5 skill-card skill-emerald">
+            <div class="glass card-hover p-6 skill-card skill-emerald">
               <div class="mono text-xs skill-kicker"><span class="skill-dot"></span>DATA / ANALYTICS</div>
-              <div class="mt-3 flex flex-wrap gap-2">
+              <div class="mt-4 flex flex-wrap gap-2">
                 <span class="pill">Power BI</span><span class="pill">Data modeling</span><span class="pill">Data mining</span>
                 <span class="pill">Dashboards</span><span class="pill">Reporting automation</span>
               </div>
             </div>
 
-            <div class="glass card-hover p-5 skill-card skill-amber">
+            <div class="glass card-hover p-6 skill-card skill-amber">
               <div class="mono text-xs skill-kicker"><span class="skill-dot"></span>INFRA / DELIVERY</div>
-              <div class="mt-3 flex flex-wrap gap-2">
+              <div class="mt-4 flex flex-wrap gap-2">
                 <span class="pill">Docker</span><span class="pill">Kubernetes</span><span class="pill">AWS (Cloud)</span>
                 <span class="pill">Git</span><span class="pill">Slack API</span>
               </div>
@@ -222,7 +230,7 @@
           </div>
 
           <aside class="lg:col-span-4">
-            <div class="glass card-hover p-5 skill-card skill-violet skill-cert cert-card">
+            <div class="glass card-hover p-6 skill-card skill-violet skill-cert cert-card">
               <div class="mono text-xs skill-kicker"><span class="skill-dot"></span>CERTIFICATIONS</div>
 
               <div class="cert-list">
@@ -245,28 +253,29 @@
       </section>
 
       <!-- EDUCATION -->
-      <section id="education" class="mt-12">
+      <section id="education" class="mt-14" data-atlas="education">
         <div class="os-header">
+          <div class="os-kicker mono atlas-coords">ATLAS://EDU · NODE 03</div>
           <h2 class="section-title">Education</h2>
           <div class="os-rule"></div>
         </div>
 
-        <div class="mt-4 grid md:grid-cols-2 gap-7">
-          <div class="glass card-hover p-5">
+        <div class="mt-6 grid md:grid-cols-2 gap-6">
+          <div class="glass card-hover p-6">
             <div class="mono text-xs text-white/60">M.S.</div>
             <div class="mt-2 font-semibold">Data Science, Analytics & Engineering</div>
-            <div class="edu-row mt-2">
+            <div class="edu-row mt-3">
               <div class="text-white/70 text-sm">Arizona State University · Tempe, AZ</div>
               <div class="edu-gpa mono">GPA 4.0/4.0</div>
             </div>
             <div class="text-white/70 text-sm mt-1">Dec 2026</div>
-            <div class="mono text-xs text-white/60 mt-2">Coursework: Generative AI · Data Mining</div>
+            <div class="mono text-xs text-white/60 mt-3">Coursework: Generative AI · Data Mining</div>
           </div>
 
-          <div class="glass card-hover p-5">
+          <div class="glass card-hover p-6">
             <div class="mono text-xs text-white/60">B.Tech</div>
             <div class="mt-2 font-semibold">Computer Science</div>
-            <div class="edu-row mt-2">
+            <div class="edu-row mt-3">
               <div class="text-white/70 text-sm">DIT University · Dehradun, India</div>
               <div class="edu-gpa mono">GPA 3.56/4.0</div>
             </div>
@@ -276,56 +285,57 @@
       </section>
 
       <!-- EXPERIENCE -->
-      <section id="experience" class="mt-12">
+      <section id="experience" class="mt-14" data-atlas="experience">
         <div class="os-header">
+          <div class="os-kicker mono atlas-coords">ATLAS://LOGS · NODE 04</div>
           <h2 class="section-title">Experience</h2>
           <div class="os-rule"></div>
         </div>
 
         <div class="timeline">
           <div class="timeline-item">
-            <article class="glass card-hover p-5">
-              <div class="flex flex-col md:flex-row md:items-baseline md:justify-between gap-1">
+            <article class="glass card-hover p-6">
+              <div class="flex flex-col md:flex-row md:items-baseline md:justify-between gap-2">
                 <h3 class="font-semibold">Data Analyst Intern · BTP ECO Products</h3>
                 <div class="mono text-xs text-white/60">Gurugram, India · Jul 2022 — Aug 2024</div>
               </div>
-              <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
+              <ul class="mt-4 text-white/80 list-disc pl-5 space-y-2">
                 <li>Automated reporting by deploying 5+ Power BI dashboards.</li>
                 <li>Extracted insights using SQL + data modeling to support decisions.</li>
               </ul>
-              <div class="mt-4 flex flex-wrap gap-2">
+              <div class="mt-5 flex flex-wrap gap-2">
                 <span class="badge">Power BI</span><span class="badge">SQL modeling</span><span class="badge">Automation</span>
               </div>
             </article>
           </div>
 
           <div class="timeline-item">
-            <article class="glass card-hover p-5">
-              <div class="flex flex-col md:flex-row md:items-baseline md:justify-between gap-1">
+            <article class="glass card-hover p-6">
+              <div class="flex flex-col md:flex-row md:items-baseline md:justify-between gap-2">
                 <h3 class="font-semibold">SDE Intern · BTP ECO Products</h3>
                 <div class="mono text-xs text-white/60">Gurugram, India · Jul 2021 — Sep 2021</div>
               </div>
-              <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
+              <ul class="mt-4 text-white/80 list-disc pl-5 space-y-2">
                 <li>Built production web components to improve frontend modularity.</li>
                 <li>Optimized cross-browser compatibility; reported +21% retention.</li>
               </ul>
-              <div class="mt-4 flex flex-wrap gap-2">
+              <div class="mt-5 flex flex-wrap gap-2">
                 <span class="badge">Frontend</span><span class="badge">+21% retention</span><span class="badge">Compatibility</span>
               </div>
             </article>
           </div>
 
           <div class="timeline-item">
-            <article class="glass card-hover p-5">
-              <div class="flex flex-col md:flex-row md:items-baseline md:justify-between gap-1">
+            <article class="glass card-hover p-6">
+              <div class="flex flex-col md:flex-row md:items-baseline md:justify-between gap-2">
                 <h3 class="font-semibold">Cyber Security Intern · Virtually Testing Foundation</h3>
                 <div class="mono text-xs text-white/60">Remote · Jan 2021 — Mar 2021</div>
               </div>
-              <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
+              <ul class="mt-4 text-white/80 list-disc pl-5 space-y-2">
                 <li>Identified vulnerabilities via security testing and supported technical campaigns.</li>
                 <li>Drafted accountability frameworks to standardize remote workflows.</li>
               </ul>
-              <div class="mt-4 flex flex-wrap gap-2">
+              <div class="mt-5 flex flex-wrap gap-2">
                 <span class="badge">Security testing</span><span class="badge">Frameworks</span><span class="badge">Remote ops</span>
               </div>
             </article>
@@ -333,30 +343,32 @@
         </div>
       </section>
 
-      <!-- PROJECTS -->
-      <section id="projects" class="mt-12">
+      <!-- PROJECTS (Infinite drawer) -->
+      <section id="projects" class="mt-14" data-atlas="projects">
         <div class="os-header">
+          <div class="os-kicker mono atlas-coords">ATLAS://WAYPOINTS · NODE 05</div>
           <h2 class="section-title">Projects</h2>
           <div class="os-rule"></div>
         </div>
 
-        <div class="projects-toolbar">
+        <div class="projects-toolbar mt-4">
           <div class="mono text-xs text-white/60">
-            Project <span id="projects-current">01</span> of <span id="projects-total">00</span>
-            <span class="mono text-xs text-white/50 ml-3">• choose your build</span>
+            Waypoint <span id="projects-current">01</span> of <span id="projects-total">00</span>
+            <span class="mono text-xs text-white/50 ml-3">• click to pin</span>
           </div>
-          <div id="projects-dots" class="projects-dots"></div>
+          <div id="projects-dots" class="projects-dots" aria-label="Project waypoints"></div>
         </div>
 
-        <div class="projects-drawer mt-4">
+        <div class="projects-drawer mt-6">
           <button id="projects-prev" class="drawer-btn drawer-left" aria-label="Previous project">
             <span class="mono">‹</span>
           </button>
 
-          <div id="projects-track" class="hscroll drawer-track flex gap-4 overflow-x-auto pb-6">
+          <div id="projects-track" class="hscroll drawer-track flex gap-6 overflow-x-auto pb-6">
+            <!-- Base set (JS clones to make infinite) -->
             <article class="glass card-hover project-card" tabindex="0" role="button"
               aria-label="Slack Python QnA Bot" data-repo="https://github.com/AII-projects/slackbot">
-              <div class="project-thumb"><img src="assets/img/1.png" alt="Slackbot thumbnail" loading="lazy" decoding="async" /></div>
+              <div class="project-thumb"><img src="assets/img/1.png" alt="Slackbot thumbnail" loading="lazy" /></div>
               <div class="project-meta">
                 <div class="project-title">Slack Python QnA Bot</div>
                 <div class="mono text-xs text-white/60">Nov 2025</div>
@@ -373,7 +385,7 @@
 
             <article class="glass card-hover project-card" tabindex="0" role="button"
               aria-label="Faster Diffusion" data-repo="https://github.com/GoDSpeeD0o0/GenAIProject">
-              <div class="project-thumb"><img src="assets/img/2.png" alt="Faster Diffusion thumbnail" loading="lazy" decoding="async" /></div>
+              <div class="project-thumb"><img src="assets/img/2.png" alt="Faster Diffusion thumbnail" loading="lazy" /></div>
               <div class="project-meta">
                 <div class="project-title">Faster Diffusion</div>
                 <div class="mono text-xs text-white/60">Spring 2025</div>
@@ -391,7 +403,7 @@
             <article class="glass card-hover project-card" tabindex="0" role="button"
               aria-label="Particle Pollution Analysis research"
               data-repo="https://github.com/GoDSpeeD0o0/Research-Paper/tree/main/MachineLearningAnalysis_Particle_Pollution">
-              <div class="project-thumb"><img src="assets/img/3.png" alt="Particle Pollution Analysis thumbnail" loading="lazy" decoding="async" /></div>
+              <div class="project-thumb"><img src="assets/img/3.png" alt="Particle Pollution Analysis thumbnail" loading="lazy" /></div>
               <div class="project-meta">
                 <div class="project-title">Particle Pollution Analysis (Research)</div>
                 <div class="mono text-xs text-white/60">May 2022</div>
@@ -402,13 +414,13 @@
                 <li>Built a framework for predicting air-quality trends.</li>
               </ul>
               <div class="flex flex-wrap gap-2">
-                <span class="pill">Machine Learning</span><span class="pill">Data Analysis</span><span class="pill">Research</span>
+                <span class="pill">Machine Learning</span><span class="pill">Data</span><span class="pill">Research</span>
               </div>
             </article>
 
             <article class="glass card-hover project-card" tabindex="0" role="button"
               aria-label="Tweet Sentiment Analysis" data-repo="https://github.com/GoDSpeeD0o0/TextSentimentAnalysis">
-              <div class="project-thumb"><img src="assets/img/4.png" alt="Tweet Sentiment Analysis thumbnail" loading="lazy" decoding="async" /></div>
+              <div class="project-thumb"><img src="assets/img/4.png" alt="Tweet Sentiment Analysis thumbnail" loading="lazy" /></div>
               <div class="project-meta">
                 <div class="project-title">Tweet Sentiment Analysis</div>
                 <div class="mono text-xs text-white/60">Apr 2024</div>
@@ -423,22 +435,22 @@
               </div>
             </article>
 
-            <!-- NEW PROJECT #5 -->
+            <!-- NEW: 5) DigitalAssetsAnalyticsPipeline -->
             <article class="glass card-hover project-card" tabindex="0" role="button"
               aria-label="Digital Assets Analytics Pipeline"
               data-repo="https://github.com/AII-projects/DigitalAssetsAnalyticsPipeline">
-              <div class="project-thumb"><img src="assets/img/5.webp" alt="Digital Assets Analytics Pipeline thumbnail" loading="lazy" decoding="async" /></div>
+              <div class="project-thumb"><img src="assets/img/5.webp" alt="Digital Assets Analytics Pipeline thumbnail" loading="lazy" /></div>
               <div class="project-meta">
                 <div class="project-title">Digital Assets Analytics Pipeline</div>
-                <div class="mono text-xs text-white/60">2024</div>
+                <div class="mono text-xs text-white/60">Pipeline</div>
               </div>
-              <p class="project-desc">End-to-end pipeline for ingesting, validating, and analyzing digital asset data.</p>
+              <p class="project-desc">Analytics pipeline for digital assets — ingestion → transforms → usable insights.</p>
               <ul class="project-bullets">
-                <li>Built modular ETL + analytics layers for reproducible reporting.</li>
-                <li>Added data-quality checks and automated scheduled runs.</li>
+                <li>Designed pipeline structure for reliable data flow.</li>
+                <li>Focused on clean outputs and extensibility.</li>
               </ul>
               <div class="flex flex-wrap gap-2">
-                <span class="pill">ETL</span><span class="pill">Python</span><span class="pill">Analytics</span>
+                <span class="pill">Pipelines</span><span class="pill">Analytics</span><span class="pill">Engineering</span>
               </div>
             </article>
           </div>
@@ -450,34 +462,23 @@
       </section>
 
       <!-- CONTACT -->
-      <section id="contact" class="mt-12">
+      <section id="contact" class="mt-14" data-atlas="contact">
         <div class="os-header">
+          <div class="os-kicker mono atlas-coords">ATLAS://ENDPOINTS · NODE 06</div>
           <h2 class="section-title">Contact</h2>
           <div class="os-rule"></div>
         </div>
 
-        <div class="mt-4 contact-wrap">
+        <div class="mt-6 contact-wrap">
           <div class="contact-bar glass" role="navigation" aria-label="Contact links">
-            <a
-              class="contact-icon"
-              href="mailto:pparash7@asu.edu"
-              aria-label="Email"
-              data-label="Email"
-            >
+            <a class="contact-icon" href="mailto:pparash7@asu.edu" aria-label="Email" data-label="Email">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 6h16v12H4z"></path>
                 <path d="M4 7l8 6 8-6"></path>
               </svg>
             </a>
 
-            <a
-              class="contact-icon"
-              href="https://linkedin.com/in/prateekp7"
-              target="_blank"
-              rel="noopener"
-              aria-label="LinkedIn"
-              data-label="LinkedIn"
-            >
+            <a class="contact-icon" href="https://linkedin.com/in/prateekp7" target="_blank" rel="noopener" aria-label="LinkedIn" data-label="LinkedIn">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M6.5 9.5v9"></path>
                 <path d="M6.5 6.5h.01"></path>
@@ -486,14 +487,7 @@
               </svg>
             </a>
 
-            <a
-              class="contact-icon"
-              href="https://github.com/GoDSpeeD0o0"
-              target="_blank"
-              rel="noopener"
-              aria-label="GitHub"
-              data-label="GitHub"
-            >
+            <a class="contact-icon" href="https://github.com/GoDSpeeD0o0" target="_blank" rel="noopener" aria-label="GitHub" data-label="GitHub">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M9 19c-4 1.2-4-2-5-2"></path>
                 <path
@@ -510,11 +504,6 @@
       </footer>
     </main>
 
-    <!-- Scrollytelling libs -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
-
-    <script src="assets/js/main.js?v=42"></script>
+    <script src="assets/js/main.js?v=atlas1"></script>
   </body>
 </html>
