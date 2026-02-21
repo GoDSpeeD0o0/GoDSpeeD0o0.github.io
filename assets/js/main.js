@@ -30,14 +30,100 @@
   // Reduced motion preference
   const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // Keep background animated unless user explicitly prefers reduced motion.
-  const prefersReducedMotion = reduceMotionPref;
+  // Keep background animated (you wanted it always on)
+  const FORCE_ANIMATION = true;
+  const prefersReducedMotion = !FORCE_ANIMATION && reduceMotionPref;
 
-  // GSAP (optional)
+  // =========================
+  // Smooth scrolling + Scrollytelling (Lenis + GSAP ScrollTrigger)
+  // =========================
+  const hasLenis = typeof window.Lenis === "function";
   const hasGSAP = typeof window.gsap !== "undefined" && typeof window.ScrollTrigger !== "undefined";
-  if (hasGSAP) {
-    try { window.gsap.registerPlugin(window.ScrollTrigger); } catch (_) {}
+
+  let lenis = null;
+
+  if (hasLenis && !reduceMotionPref) {
+    try {
+      lenis = new window.Lenis({
+        lerp: 0.09,
+        smoothWheel: true,
+        smoothTouch: false,
+        wheelMultiplier: 1.0,
+        touchMultiplier: 1.35,
+      });
+
+      // Avoid double-smoothing from CSS
+      document.documentElement.style.scrollBehavior = "auto";
+
+      // RAF loop
+      const raf = (time) => {
+        lenis.raf(time);
+        requestAnimationFrame(raf);
+      };
+      requestAnimationFrame(raf);
+    } catch (_) {
+      lenis = null;
+    }
   }
+
+  if (hasGSAP) {
+    window.gsap.registerPlugin(window.ScrollTrigger);
+
+    // Keep ScrollTrigger updated with Lenis
+    if (lenis) {
+      lenis.on("scroll", () => window.ScrollTrigger.update());
+      window.ScrollTrigger.addEventListener("refresh", () => lenis.resize());
+    }
+
+    // HERO → NEXT SECTION transition (pinned + scrubbed)
+    if (!reduceMotionPref) {
+      const hero = document.getElementById("intro");
+      const heroInner = hero?.querySelector(".hero-inner");
+      const heroKicker = hero?.querySelector(".os-kicker");
+      const heroName = document.getElementById("name-title");
+      const heroHeadline = hero?.querySelector(".headline");
+      const heroEnter = hero?.querySelector(".scroll-indicator");
+
+      if (hero && heroInner && heroName) {
+        window.gsap.timeline({
+          scrollTrigger: {
+            trigger: hero,
+            start: "top top",
+            end: "+=120%",
+            scrub: true,
+            pin: true,
+            anticipatePin: 1,
+          },
+        })
+          .to(hero, { "--hero-warp": 0.9, "--hero-warp-y": "80px", "--hero-vig": 0.78, ease: "none" }, 0)
+          .to(heroName, { y: -90, scale: 0.84, ease: "none" }, 0)
+          .to(heroKicker, { autoAlpha: 0, y: -18, ease: "none" }, 0)
+          .to(heroHeadline, { autoAlpha: 0, y: -10, ease: "none" }, 0.05)
+          .to(heroEnter, { autoAlpha: 0, y: 18, ease: "none" }, 0.05);
+      }
+    }
+  }
+
+  // Smooth anchor scrolling with Lenis (nav pills feel premium)
+  const headerOffset = () => (headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0);
+  document.querySelectorAll('a[href^="#"]').forEach((a) => {
+    const href = a.getAttribute("href") || "";
+    if (href.length < 2) return;
+    a.addEventListener("click", (e) => {
+      const target = document.querySelector(href);
+      if (!target) return;
+
+      // allow default if no Lenis
+      if (!lenis) return;
+
+      e.preventDefault();
+      lenis.scrollTo(target, {
+        offset: -(headerOffset() + 18),
+        duration: 1.05,
+        easing: (t) => 1 - Math.pow(1 - t, 3),
+      });
+    });
+  });
 
   // =========================
   // Mobile menu
@@ -66,10 +152,11 @@
   }
 
   // =========================
-  // Scroll progress
+  // Scroll progress (FIX: hide when at top)
   // =========================
+  const progressWrap = document.getElementById("scroll-progress");
   const progressBar = document.getElementById("scroll-progress-bar");
-  if (progressBar) {
+  if (progressWrap && progressBar) {
     let raf = 0;
 
     const update = () => {
@@ -78,7 +165,9 @@
       const scrollTop = window.scrollY || doc.scrollTop || 0;
       const max = Math.max(1, doc.scrollHeight - window.innerHeight);
       const p = clamp(scrollTop / max, 0, 1);
+
       progressBar.style.transform = `scaleX(${p})`;
+      progressWrap.classList.toggle("is-on", p > 0.01);
     };
 
     const onScroll = () => {
@@ -92,12 +181,12 @@
   }
 
   // =========================
-  // Scroll reveal + glint + chip cascade (kept light)
+  // Scroll reveal + glint + chip cascade
   // =========================
   const revealTargets = Array.from(document.querySelectorAll("main .os-header, main .glass"));
 
   if (revealTargets.length) {
-    if (prefersReducedMotion) {
+    if (reduceMotionPref) {
       revealTargets.forEach((el) => el.classList.add("reveal", "is-visible"));
     } else {
       revealTargets.forEach((el, i) => {
@@ -137,39 +226,408 @@
   }
 
   // =========================
-  // Neural Atlas: active section tracking (for rover + constellation clustering)
+  // Projects drawer (pin = click, open repo = double click)
   // =========================
-  const SECTION_THEME = {
-    intro:     { rover: ["rgba(255,255,255,0.10)", "rgba(34,211,238,0.08)"], atlas: ["rgba(34,211,238,0.28)", "rgba(168,85,247,0.18)"] },
-    telemetry: { rover: ["rgba(34,211,238,0.12)", "rgba(168,85,247,0.09)"], atlas: ["rgba(34,211,238,0.35)", "rgba(168,85,247,0.20)"] },
-    skills:    { rover: ["rgba(34,211,238,0.14)", "rgba(168,85,247,0.12)"], atlas: ["rgba(34,211,238,0.40)", "rgba(168,85,247,0.26)"] },
-    education: { rover: ["rgba(255,255,255,0.10)", "rgba(34,211,238,0.06)"], atlas: ["rgba(255,255,255,0.10)", "rgba(34,211,238,0.18)"] },
-    experience:{ rover: ["rgba(255,255,255,0.10)", "rgba(34,211,238,0.10)"], atlas: ["rgba(34,211,238,0.30)", "rgba(255,255,255,0.10)"] },
-    projects:  { rover: ["rgba(168,85,247,0.16)", "rgba(34,211,238,0.10)"], atlas: ["rgba(168,85,247,0.34)", "rgba(34,211,238,0.20)"] },
-    contact:   { rover: ["rgba(34,211,238,0.12)", "rgba(168,85,247,0.10)"], atlas: ["rgba(34,211,238,0.28)", "rgba(168,85,247,0.18)"] },
-  };
+  const projectsSection = document.getElementById("projects");
+  const track = document.getElementById("projects-track");
+  const prev = document.getElementById("projects-prev");
+  const next = document.getElementById("projects-next");
+  const dotsEl = document.getElementById("projects-dots");
+  const currentEl = document.getElementById("projects-current");
+  const totalEl = document.getElementById("projects-total");
 
-  const atlasSections = Array.from(document.querySelectorAll("section[data-atlas]"));
-  let activeAtlasKey = "intro";
+  const AUTO_SCROLL_MS = 10_000;
+  const RESUME_AFTER_MS = 2200;
 
-  const applyTheme = (key) => {
-    const t = SECTION_THEME[key] || SECTION_THEME.intro;
-    document.documentElement.style.setProperty("--rover-c1", t.rover[0]);
-    document.documentElement.style.setProperty("--rover-c2", t.rover[1]);
-    document.documentElement.style.setProperty("--atlas-c1", t.atlas[0]);
-    document.documentElement.style.setProperty("--atlas-c2", t.atlas[1]);
-  };
+  let autoTimer = null;
+  let resumeTimer = null;
+  let projectsInView = false;
+
+  let manualLock = false;
+  let selectedIndex = 0;
+  let lastDragTime = 0;
+
+  let startAuto = () => {};
+  let stopAuto = () => {};
+
+  if (track && projectsSection) {
+    const getCards = () => Array.from(track.querySelectorAll(".project-card"));
+
+    const normIndex = (idx) => {
+      const cards = getCards();
+      if (cards.length === 0) return 0;
+      return ((idx % cards.length) + cards.length) % cards.length;
+    };
+
+    const getTrackPadLeft = () => {
+      const s = getComputedStyle(track);
+      return parseFloat(s.paddingLeft || "0") || 0;
+    };
+
+    const scrollToCard = (idx, smooth) => {
+      const cards = getCards();
+      if (cards.length === 0) return;
+
+      const i = normIndex(idx);
+      const padLeft = getTrackPadLeft();
+      const left = Math.max(0, cards[i].offsetLeft - padLeft);
+      track.scrollTo({ left, behavior: smooth ? "smooth" : "auto" });
+    };
+
+    const getScrollActiveIndex = () => {
+      const cards = getCards();
+      if (cards.length === 0) return 0;
+
+      const center = track.scrollLeft + track.clientWidth * 0.5;
+      let best = 0;
+      let bestD = Infinity;
+
+      for (let i = 0; i < cards.length; i++) {
+        const c = cards[i];
+        const cx = c.offsetLeft + c.offsetWidth * 0.5;
+        const d = Math.abs(cx - center);
+        if (d < bestD) {
+          bestD = d;
+          best = i;
+        }
+      }
+      return best;
+    };
+
+    const getActiveIndex = () => (manualLock ? normIndex(selectedIndex) : getScrollActiveIndex());
+
+    const updateProjectsUI = () => {
+      const cards = getCards();
+      if (cards.length === 0) return;
+
+      const idx = getActiveIndex();
+
+      cards.forEach((c, i) => {
+        c.classList.toggle("is-active", i === idx);
+        c.classList.toggle("is-dim", i !== idx);
+      });
+
+      const dots = Array.from(dotsEl?.querySelectorAll(".dot") || []);
+      dots.forEach((d, i) => d.classList.toggle("active", i === idx));
+
+      if (currentEl) currentEl.textContent = String(idx + 1).padStart(2, "0");
+      if (totalEl) totalEl.textContent = String(cards.length).padStart(2, "0");
+    };
+
+    const pauseAutoInternal = () => {
+      if (autoTimer) clearInterval(autoTimer);
+      autoTimer = null;
+      clearTimeout(resumeTimer);
+    };
+
+    stopAuto = () => pauseAutoInternal();
+
+    startAuto = () => {
+      if (!track) return;
+      if (!projectsInView) return;
+      if (document.hidden) return;
+      if (manualLock) return;
+      if (autoTimer) return;
+
+      autoTimer = setInterval(() => {
+        if (manualLock) return;
+        scrollToCard(getScrollActiveIndex() + 1, true);
+        updateProjectsUI();
+      }, AUTO_SCROLL_MS);
+    };
+
+    const scheduleResume = () => {
+      if (manualLock) return;
+      clearTimeout(resumeTimer);
+      resumeTimer = setTimeout(() => startAuto(), RESUME_AFTER_MS);
+    };
+
+    const lockToIndex = (idx, smooth = true) => {
+      manualLock = true;
+      selectedIndex = normIndex(idx);
+      pauseAutoInternal();
+      scrollToCard(selectedIndex, smooth);
+      updateProjectsUI();
+    };
+
+    const unlockSelection = () => {
+      if (!manualLock) return;
+      manualLock = false;
+      updateProjectsUI();
+      startAuto();
+    };
+
+    const openRepoForCard = (cardEl) => {
+      const url = cardEl?.dataset?.repo;
+      if (!url) return;
+      window.open(url, "_blank", "noopener");
+    };
+
+    const cards = getCards();
+    if (totalEl) totalEl.textContent = String(cards.length).padStart(2, "0");
+
+    if (dotsEl) {
+      dotsEl.innerHTML = "";
+      cards.forEach((_, i) => {
+        const b = document.createElement("button");
+        b.className = "dot";
+        b.type = "button";
+        b.setAttribute("aria-label", `Go to project ${i + 1}`);
+        b.addEventListener("click", () => lockToIndex(i, true));
+        dotsEl.appendChild(b);
+      });
+    }
+
+    prev?.addEventListener("click", () => lockToIndex(getActiveIndex() - 1, true));
+    next?.addEventListener("click", () => lockToIndex(getActiveIndex() + 1, true));
+
+    cards.forEach((card, i) => {
+      card.addEventListener("click", () => {
+        if (performance.now() - lastDragTime < 240) return;
+        lockToIndex(i, true);
+      });
+
+      card.addEventListener("dblclick", () => {
+        if (performance.now() - lastDragTime < 240) return;
+        openRepoForCard(card);
+      });
+
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          openRepoForCard(card);
+        }
+      });
+    });
+
+    let pointerActive = false;
+    let dragging = false;
+    let startX = 0;
+    let startLeft = 0;
+    let pid = null;
+    const DRAG_THRESHOLD = 7;
+
+    track.classList.add("grab");
+
+    const endPointer = () => {
+      if (!pointerActive) return;
+      pointerActive = false;
+
+      if (dragging) {
+        dragging = false;
+        track.classList.remove("grabbing");
+        lastDragTime = performance.now();
+        updateProjectsUI();
+        scheduleResume();
+      }
+      pid = null;
+    };
+
+    track.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      pointerActive = true;
+      dragging = false;
+      startX = e.clientX;
+      startLeft = track.scrollLeft;
+      pid = e.pointerId;
+    });
+
+    track.addEventListener("pointermove", (e) => {
+      if (!pointerActive) return;
+      const dx = e.clientX - startX;
+
+      if (!dragging) {
+        if (Math.abs(dx) < DRAG_THRESHOLD) return;
+        dragging = true;
+        pauseAutoInternal();
+        try { track.setPointerCapture(pid); } catch (_) {}
+        track.classList.add("grabbing");
+      }
+
+      track.scrollLeft = startLeft - dx;
+    });
+
+    track.addEventListener("pointerup", endPointer);
+    track.addEventListener("pointercancel", endPointer);
+    track.addEventListener("lostpointercapture", endPointer);
+
+    let scrollRAF = 0;
+    track.addEventListener(
+      "scroll",
+      () => {
+        if (scrollRAF) cancelAnimationFrame(scrollRAF);
+        scrollRAF = requestAnimationFrame(() => updateProjectsUI());
+      },
+      { passive: true }
+    );
+
+    window.addEventListener("resize", () => updateProjectsUI(), { passive: true });
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        projectsInView = !!entry?.isIntersecting && entry.intersectionRatio >= 0.25;
+        if (projectsInView) startAuto();
+        else stopAuto();
+      },
+      { threshold: [0, 0.25, 0.6, 1] }
+    );
+    io.observe(projectsSection);
+
+    document.addEventListener("pointerdown", (e) => {
+      if (!manualLock) return;
+
+      const insideCard = e.target.closest(".project-card");
+      if (insideCard) return;
+
+      const insideControl = e.target.closest(".drawer-btn") || e.target.closest(".dot");
+      if (insideControl) return;
+
+      const insideProjects = e.target.closest("#projects");
+      if (!insideProjects) {
+        unlockSelection();
+        return;
+      }
+
+      unlockSelection();
+    });
+
+    updateProjectsUI();
+  }
 
   // =========================
   // Background animation (WebGL primary + 2D fallback)
   // =========================
   const canvas = document.getElementById("ai-bg");
-  const atlasCanvas = document.getElementById("atlas-bg");
+  if (!canvas) return;
 
-  // --- Base shader background (kept from your version) ---
+  function init2DBackground() {
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if (!ctx) return null;
+
+    let rafId = null;
+    let running = false;
+
+    let w = 0, h = 0, dpr = 1;
+    let stars = [];
+    let nodes = [];
+
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = window.innerWidth;
+      h = window.innerHeight;
+
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      canvas.style.width = "100vw";
+      canvas.style.height = "100vh";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const starCount = clamp(Math.round((w * h) / 9000), 120, 220);
+      stars = Array.from({ length: starCount }, () => ({
+        x: rand(0, w),
+        y: rand(0, h),
+        r: rand(0.6, 1.6),
+        a: rand(0.05, 0.20),
+        vy: rand(0.02, 0.09),
+        vx: rand(-0.03, 0.03),
+      }));
+
+      const nodeCount = clamp(Math.round((w * h) / 70000), 14, 22);
+      nodes = Array.from({ length: nodeCount }, () => ({
+        x: rand(0, w),
+        y: rand(0, h * 0.65),
+        vx: rand(-0.08, 0.08),
+        vy: rand(-0.06, 0.06),
+      }));
+    }
+
+    window.addEventListener("resize", resize, { passive: true });
+    resize();
+
+    let last = performance.now();
+
+    function frame(now) {
+      if (!running) return;
+
+      const dt = clamp(now - last, 10, 40);
+      last = now;
+
+      ctx.clearRect(0, 0, w, h);
+
+      for (const s of stars) {
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+
+        if (s.y > h + 10) s.y = -10;
+        if (s.x < -10) s.x = w + 10;
+        if (s.x > w + 10) s.x = -10;
+
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${s.a})`;
+        ctx.fill();
+      }
+
+      const maxD = Math.min(170, Math.max(120, w * 0.16));
+      const maxD2 = maxD * maxD;
+
+      for (const p of nodes) {
+        p.x += p.vx * dt * 0.05;
+        p.y += p.vy * dt * 0.05;
+
+        if (p.x < -20) p.x = w + 20;
+        if (p.x > w + 20) p.x = -20;
+        if (p.y < -20) p.y = h * 0.65 + 20;
+        if (p.y > h * 0.65 + 20) p.y = -20;
+      }
+
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = nodes[i], b = nodes[j];
+          const dx = a.x - b.x;
+          const dy = a.y - b.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 > maxD2) continue;
+
+          const p = 1 - d2 / maxD2;
+          ctx.strokeStyle = `rgba(34,211,238,${0.08 * p})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+
+      for (const p of nodes) {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255,0.18)";
+        ctx.fill();
+      }
+
+      rafId = requestAnimationFrame(frame);
+    }
+
+    return {
+      start() {
+        if (prefersReducedMotion) return;
+        if (running) return;
+        running = true;
+        last = performance.now();
+        rafId = requestAnimationFrame(frame);
+      },
+      stop() {
+        running = false;
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = null;
+      },
+    };
+  }
+
+  // Shader init
   function initShaderBackground() {
-    if (!canvas) return null;
-
     const gl =
       canvas.getContext("webgl", {
         alpha: true,
@@ -363,198 +821,21 @@
     };
   }
 
-  const shaderBg = initShaderBackground();
+  let bg = initShaderBackground();
+  if (!bg) bg = init2DBackground();
 
-  // --- Neural Atlas overlay: constellation that clusters around active section header ---
-  function initAtlasOverlay() {
-    if (!atlasCanvas) return null;
-    const ctx = atlasCanvas.getContext("2d", { alpha: true });
-    if (!ctx) return null;
-
-    let rafId = null;
-    let running = false;
-
-    let w = 0, h = 0, dpr = 1;
-
-    const N = 28;
-    let nodes = [];
-    let center = { x: window.innerWidth * 0.5, y: window.innerHeight * 0.35 };
-    let centerT = { ...center };
-
-    let currentAnchorEl = null;
-
-    const cssVar = (name, fallback) => {
-      const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-      return v || fallback;
-    };
-
-    const parseRGBA = (s, fallback = [255,255,255,0.2]) => {
-      // expects "rgba(r,g,b,a)"
-      const m = s.match(/rgba?\(([^)]+)\)/i);
-      if (!m) return fallback;
-      const parts = m[1].split(",").map((x) => parseFloat(x.trim()));
-      if (parts.length >= 3) {
-        const a = parts.length === 4 ? parts[3] : 1;
-        return [parts[0], parts[1], parts[2], a];
-      }
-      return fallback;
-    };
-
-    const rgbaStr = (arr, mulA = 1) => `rgba(${arr[0]},${arr[1]},${arr[2]},${clamp(arr[3] * mulA, 0, 1)})`;
-
-    function resize() {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      w = window.innerWidth;
-      h = window.innerHeight;
-      atlasCanvas.width = Math.floor(w * dpr);
-      atlasCanvas.height = Math.floor(h * dpr);
-      atlasCanvas.style.width = "100vw";
-      atlasCanvas.style.height = "100vh";
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      // regenerate or re-center a bit
-      if (nodes.length === 0) {
-        nodes = Array.from({ length: N }, (_, i) => ({
-          x: center.x + rand(-120, 120),
-          y: center.y + rand(-90, 90),
-          ox: rand(-140, 140),
-          oy: rand(-100, 100),
-          tox: 0,
-          toy: 0,
-          r: rand(1.1, 2.4),
-          p: rand(0, Math.PI * 2),
-          s: rand(0.25, 0.7),
-        }));
-      }
-    }
-    window.addEventListener("resize", resize, { passive: true });
-    resize();
-
-    function setAnchorElement(el) {
-      currentAnchorEl = el;
-      // refresh target offsets so constellation "re-maps" per section
-      nodes.forEach((n) => {
-        n.tox = rand(-150, 150);
-        n.toy = rand(-110, 110);
-      });
-    }
-
-    function updateTargetFromAnchor() {
-      if (!currentAnchorEl) return;
-
-      const r = currentAnchorEl.getBoundingClientRect();
-      // anchor slightly above the section title for “map orbit”
-      const x = r.left + r.width * 0.5;
-      const y = r.top + Math.min(28, r.height * 0.4);
-
-      centerT.x = clamp(x, 60, w - 60);
-      centerT.y = clamp(y, 60, h - 80);
-    }
-
-    let last = performance.now();
-
-    function frame(now) {
-      if (!running) return;
-
-      const dt = clamp((now - last) / 1000, 0.01, 0.05);
-      last = now;
-
-      updateTargetFromAnchor();
-
-      // lerp center
-      center.x += (centerT.x - center.x) * 0.08;
-      center.y += (centerT.y - center.y) * 0.08;
-
-      // colors from CSS vars (changes with active section)
-      const c1 = parseRGBA(cssVar("--atlas-c1", "rgba(34,211,238,0.35)"), [34,211,238,0.35]);
-      const c2 = parseRGBA(cssVar("--atlas-c2", "rgba(168,85,247,0.22)"), [168,85,247,0.22]);
-
-      ctx.clearRect(0, 0, w, h);
-      ctx.globalCompositeOperation = "lighter";
-
-      // animate node offsets toward their per-section target offsets
-      for (const n of nodes) {
-        n.ox += (n.tox - n.ox) * 0.05;
-        n.oy += (n.toy - n.oy) * 0.05;
-
-        // subtle orbit + drift around center
-        n.p += dt * (0.55 + n.s);
-        const wobX = Math.cos(n.p) * 9;
-        const wobY = Math.sin(n.p * 1.2) * 6;
-
-        const tx = center.x + n.ox * 0.55 + wobX;
-        const ty = center.y + n.oy * 0.55 + wobY;
-
-        n.x += (tx - n.x) * 0.08;
-        n.y += (ty - n.y) * 0.08;
-      }
-
-      // lines
-      const maxD = 165;
-      const maxD2 = maxD * maxD;
-
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const a = nodes[i], b = nodes[j];
-          const dx = a.x - b.x;
-          const dy = a.y - b.y;
-          const d2 = dx * dx + dy * dy;
-          if (d2 > maxD2) continue;
-
-          const p = 1 - d2 / maxD2;
-          ctx.lineWidth = 1;
-          ctx.strokeStyle = (j % 2 === 0)
-            ? rgbaStr(c1, 0.22 * p)
-            : rgbaStr(c2, 0.18 * p);
-
-          ctx.beginPath();
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-          ctx.stroke();
-        }
-      }
-
-      // nodes
-      for (let i = 0; i < nodes.length; i++) {
-        const n = nodes[i];
-        const glow = i % 3 === 0 ? c2 : c1;
-
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-        ctx.fillStyle = rgbaStr(glow, 0.42);
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r + 2.2, 0, Math.PI * 2);
-        ctx.fillStyle = rgbaStr(glow, 0.10);
-        ctx.fill();
-      }
-
-      ctx.globalCompositeOperation = "source-over";
-      rafId = requestAnimationFrame(frame);
-    }
-
-    return {
-      start() {
-        if (prefersReducedMotion) return;
-        if (running) return;
-        running = true;
-        last = performance.now();
-        rafId = requestAnimationFrame(frame);
-      },
-      stop() {
-        running = false;
-        if (rafId) cancelAnimationFrame(rafId);
-        rafId = null;
-      },
-      setAnchorElement,
-    };
-  }
-
-  const atlas = initAtlasOverlay();
+  const startBgIfVisible = () => {
+    if (!bg) return;
+    if (prefersReducedMotion) return;
+    if (document.hidden) return;
+    bg.start();
+  };
+  const stopBg = () => bg && bg.stop();
 
   // =========================
-  // Rover: Section Companion + project inspection hover
+  // Rover movement:
+  // - Desktop: roam around viewport
+  // - Mobile: roam around the name inside hero
   // =========================
   function initRover() {
     const el = document.getElementById("flyby");
@@ -566,120 +847,155 @@
     let rafId = null;
     let running = false;
 
-    let x = 24, y = 120;
-    let xT = x, yT = y;
+    let x = 0, y = 0;
+    let vx = 0, vy = 0;
+    let targetX = 0, targetY = 0;
 
-    let dir = 1;
+    let last = performance.now();
+    let cruise = rand(28, 58);
 
-    // Section anchor + inspection target
-    let anchorEl = null;
-    let inspectEl = null;
+    let nextTargetAt = 0;
+    let nextBoostAt = performance.now() + rand(14000, 26000);
+    let boostUntil = 0;
 
-    // scan pulse
-    let scanUntil = 0;
-
-    // orbit phase
-    let t = rand(0, 1000);
+    let size = { w: 110, h: 74 };
 
     const isMobile = () => window.matchMedia("(max-width: 640px)").matches;
 
-    const getCenterOfEl = (domEl) => {
-      if (!domEl) return { x: window.innerWidth * 0.5, y: window.innerHeight * 0.35 };
-      const r = domEl.getBoundingClientRect();
-      return { x: r.left + r.width * 0.5, y: r.top + r.height * 0.5 };
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      size = { w: r.width || 110, h: r.height || 74 };
     };
 
-    const getThumbCenter = (cardEl) => {
-      const thumb = cardEl?.querySelector?.(".project-thumb");
-      return getCenterOfEl(thumb || cardEl);
+    const boundsDesktop = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const M = Math.max(10, Math.min(24, Math.round(Math.min(w, h) * 0.02)));
+
+      return {
+        minX: M,
+        maxX: Math.max(M, w - size.w - M),
+        minY: M + 6,
+        maxY: Math.max(M, h - size.h - M),
+        originX: 0,
+        originY: 0,
+      };
     };
 
-    const setAnchorElement = (domEl) => {
-      anchorEl = domEl;
+    const boundsMobile = () => {
+      const hr = hero?.getBoundingClientRect();
+      const nr = name?.getBoundingClientRect();
+
+      if (!hr || !nr) return boundsDesktop();
+
+      const heroW = hr.width;
+      const heroH = hr.height;
+
+      const nx = nr.left - hr.left;
+      const ny = nr.top - hr.top;
+      const nw = nr.width;
+      const nh = nr.height;
+
+      const padX = Math.max(26, Math.min(44, heroW * 0.08));
+      const padTop = 18;
+      const padBottom = 70;
+
+      const minX = clamp(nx - padX, 8, heroW - size.w - 8);
+      const maxX = clamp(nx + nw + padX - size.w, 8, heroW - size.w - 8);
+      const minY = clamp(ny - padTop, 8, heroH - size.h - 8);
+      const maxY = clamp(ny + nh + padBottom - size.h, 8, heroH - size.h - 8);
+
+      return {
+        minX,
+        maxX: Math.max(minX, maxX),
+        minY,
+        maxY: Math.max(minY, maxY),
+        originX: hr.left,
+        originY: hr.top,
+      };
     };
 
-    const inspectCard = (cardEl) => {
-      inspectEl = cardEl;
+    const getBounds = () => (isMobile() ? boundsMobile() : boundsDesktop());
+
+    const pickTarget = (force = false) => {
+      const b = getBounds();
+
+      targetX = rand(b.minX, b.maxX);
+      targetY = rand(b.minY, b.maxY);
+
+      if (force || Math.random() < 0.45) cruise = rand(isMobile() ? 22 : 28, isMobile() ? 46 : 58);
+      nextTargetAt = performance.now() + rand(2200, 4800);
     };
 
-    const clearInspect = () => {
-      inspectEl = null;
+    const pickFarTarget = () => {
+      const b = getBounds();
+      targetX = rand(b.minX, b.maxX);
+      targetY = rand(b.minY, b.maxY);
+      nextTargetAt = performance.now() + rand(1400, 2400);
     };
 
-    const scan = () => {
-      if (prefersReducedMotion) return;
-      scanUntil = performance.now() + 900;
-      el.classList.add("scan");
-      window.setTimeout(() => el.classList.remove("scan"), 920);
+    const clampToBounds = () => {
+      const b = getBounds();
+      if (x < b.minX) { x = b.minX; vx = Math.abs(vx) * 0.7; }
+      if (x > b.maxX) { x = b.maxX; vx = -Math.abs(vx) * 0.7; }
+      if (y < b.minY) { y = b.minY; vy = Math.abs(vy) * 0.7; }
+      if (y > b.maxY) { y = b.maxY; vy = -Math.abs(vy) * 0.7; }
     };
 
-    function stepDesktop(now) {
-      const target = inspectEl ? getThumbCenter(inspectEl) : getCenterOfEl(anchorEl);
+    const tick = (now) => {
+      if (!running) return;
 
-      // patrol orbit around the target (small and clean)
-      const baseX = clamp(target.x, 80, window.innerWidth - 80);
-      const baseY = clamp(target.y, 90, window.innerHeight - 90);
+      const dt = clamp((now - last) / 1000, 0.01, 0.05);
+      last = now;
 
-      const rX = inspectEl ? 22 : 28;
-      const rY = inspectEl ? 12 : 16;
+      if (now > nextTargetAt) pickTarget(false);
 
-      t += 0.016;
-      const patrolX = Math.cos(t * 2.2) * rX;
-      const patrolY = Math.sin(t * 1.9) * rY;
-
-      // scan pass (small sweep)
-      let sweep = 0;
-      if (now < scanUntil) {
-        const p = 1 - (scanUntil - now) / 900; // 0..1
-        sweep = (p * 2 - 1) * 42;
+      if (!isMobile() && now > nextBoostAt) {
+        boostUntil = now + rand(1600, 3200);
+        nextBoostAt = now + rand(16000, 30000);
+        cruise = rand(86, 140);
+        pickFarTarget();
       }
 
-      xT = baseX + patrolX + sweep - el.getBoundingClientRect().width * 0.5;
-      yT = baseY + patrolY - el.getBoundingClientRect().height * 0.5;
+      const boosting = !isMobile() && now < boostUntil;
+      el.classList.toggle("boost", boosting);
 
-      // smooth follow
-      x += (xT - x) * 0.085;
-      y += (yT - y) * 0.085;
+      const dx = targetX - x;
+      const dy = targetY - y;
+      const dist = Math.hypot(dx, dy) || 0.0001;
 
-      // direction based on motion
-      const vx = xT - x;
-      dir = vx >= 0 ? 1 : -1;
+      const desiredVX = (dx / dist) * cruise;
+      const desiredVY = (dy / dist) * cruise;
 
-      // trail intensity based on speed
-      const sp = Math.hypot(vx, yT - y);
-      const trail = clamp(sp / 140, 0.06, 0.24);
+      const steer = boosting ? 0.10 : 0.08;
+      vx += (desiredVX - vx) * steer;
+      vy += (desiredVY - vy) * steer;
+
+      const maxSpeed = boosting ? 165 : (isMobile() ? 58 : 82);
+      const sp = Math.hypot(vx, vy) || 0.0001;
+      if (sp > maxSpeed) {
+        vx = (vx / sp) * maxSpeed;
+        vy = (vy / sp) * maxSpeed;
+      }
+
+      x += vx * dt;
+      y += vy * dt;
+
+      clampToBounds();
+
+      const dir = vx >= 0 ? 1 : -1;
+      const bob = Math.sin(now * 0.003 + 1.7) * (boosting ? 2.2 : 3.0);
+
+      const trail = clamp((sp - 14) / 110, 0, 1);
       el.style.setProperty("--trail", trail.toFixed(3));
-      el.style.opacity = String(clamp(0.46 + trail * 0.55, 0.42, 0.62));
 
-      const bob = Math.sin(now * 0.003) * 2.2;
+      const op = clamp((isMobile() ? 0.58 : 0.50) + trail * 0.14, 0.48, 0.68);
+      el.style.opacity = String(op);
+
       el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y + bob)}px, 0) scaleX(${dir})`;
-    }
 
-    function stepMobile(now) {
-      // orbit around the name baseline inside the hero
-      if (!hero || !name) return;
-
-      const hr = hero.getBoundingClientRect();
-      const nr = name.getBoundingClientRect();
-
-      const size = el.getBoundingClientRect();
-      const cx = (nr.left - hr.left) + nr.width * 0.5;
-      const cy = (nr.top - hr.top) + nr.height * 0.78;
-
-      const rx = Math.min(84, Math.max(54, nr.width * 0.55));
-      const ry = 18;
-
-      t += 0.028;
-      const ox = Math.cos(t) * rx;
-      const oy = Math.sin(t * 1.3) * ry;
-
-      const px = cx + ox - size.width * 0.5;
-      const py = cy + oy - size.height * 0.5;
-
-      el.style.opacity = "0.44";
-      el.style.setProperty("--trail", "0.10");
-      el.style.transform = `translate3d(${Math.round(px)}px, ${Math.round(py)}px, 0)`;
-    }
+      rafId = requestAnimationFrame(tick);
+    };
 
     let heroVisible = true;
     let heroIO = null;
@@ -703,21 +1019,22 @@
       heroIO.observe(hero);
     };
 
-    const tick = (now) => {
-      if (!running) return;
-
-      if (isMobile()) stepMobile(now);
-      else stepDesktop(now);
-
-      rafId = requestAnimationFrame(tick);
-    };
-
     const start = () => {
       if (prefersReducedMotion) return;
       if (running) return;
       if (isMobile() && !heroVisible) return;
 
       running = true;
+      measure();
+
+      const b = getBounds();
+      x = rand(b.minX, b.maxX);
+      y = rand(b.minY, b.maxY);
+      vx = rand(-10, 10);
+      vy = rand(-8, 8);
+
+      pickTarget(true);
+      last = performance.now();
       rafId = requestAnimationFrame(tick);
     };
 
@@ -729,489 +1046,31 @@
     };
 
     const resize = () => {
-      // no-op but kept for compatibility
+      measure();
+      clampToBounds();
+      pickTarget(true);
     };
 
     setupHeroObserver();
-
-    return { start, stop, resize, setAnchorElement, inspectCard, clearInspect, scan };
+    return { start, stop, resize };
   }
 
   const rover = initRover();
+  if (rover && !document.hidden) rover.start();
+  window.addEventListener("resize", () => rover?.resize(), { passive: true });
 
-  // =========================
-  // Active section switching (ScrollTrigger preferred, IO fallback)
-  // =========================
-  function getSectionHeaderEl(sectionEl) {
-    if (!sectionEl) return null;
-    // prefer os-header (map coordinates block)
-    return sectionEl.querySelector(".os-header") || sectionEl.querySelector("h2") || sectionEl;
-  }
+  startBgIfVisible();
 
-  function setActiveSectionByKey(key, sectionEl) {
-    if (!key) return;
-    if (key === activeAtlasKey) return;
-
-    activeAtlasKey = key;
-    applyTheme(key);
-
-    const header = getSectionHeaderEl(sectionEl);
-
-    rover?.setAnchorElement(header);
-    atlas?.setAnchorElement(header);
-    rover?.scan();
-  }
-
-  // initial
-  applyTheme(activeAtlasKey);
-  rover?.start();
-  shaderBg?.start();
-  atlas?.start();
-
-  if (hasGSAP && !prefersReducedMotion) {
-    // Hero scrollytelling: pin + “boot -> telemetry” morph
-    const intro = document.getElementById("intro");
-    const name = document.getElementById("name-title");
-    const headline = intro?.querySelector(".headline");
-    const kicker = intro?.querySelector(".os-kicker");
-    const enter = intro?.querySelector(".scroll-indicator");
-
-    if (intro && name) {
-      const tl = window.gsap.timeline({
-        scrollTrigger: {
-          trigger: intro,
-          start: "top top",
-          end: "+=80%",
-          scrub: 1,
-          pin: true,
-          anticipatePin: 1,
-        },
-      });
-
-      tl.to(name, { scale: 0.78, y: -30, ease: "none" }, 0);
-      if (headline) tl.to(headline, { opacity: 0.12, y: -14, ease: "none" }, 0);
-      if (kicker) tl.to(kicker, { opacity: 0.0, y: -10, ease: "none" }, 0);
-      if (enter) tl.to(enter, { opacity: 0, y: 10, ease: "none" }, 0.08);
-    }
-
-    // Section triggers for theme switching (smooth on enter/back)
-    atlasSections.forEach((sec) => {
-      const key = sec.getAttribute("data-atlas") || "intro";
-      window.ScrollTrigger.create({
-        trigger: sec,
-        start: "top 55%",
-        end: "bottom 45%",
-        onEnter: () => setActiveSectionByKey(key, sec),
-        onEnterBack: () => setActiveSectionByKey(key, sec),
-      });
-    });
-  } else {
-    // IO fallback
-    const io = new IntersectionObserver(
-      (entries) => {
-        // pick the most visible
-        const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (!visible) return;
-        const sec = visible.target;
-        const key = sec.getAttribute("data-atlas") || "intro";
-        setActiveSectionByKey(key, sec);
-      },
-      { threshold: [0.18, 0.28, 0.4, 0.55] }
-    );
-    atlasSections.forEach((s) => io.observe(s));
-  }
-
-  // =========================
-  // Projects drawer (Infinite, 5s autoplay, pause/resume)
-  // =========================
-  const projectsSection = document.getElementById("projects");
-  const track = document.getElementById("projects-track");
-  const prev = document.getElementById("projects-prev");
-  const next = document.getElementById("projects-next");
-  const dotsEl = document.getElementById("projects-dots");
-  const currentEl = document.getElementById("projects-current");
-  const totalEl = document.getElementById("projects-total");
-
-  const AUTO_SCROLL_MS = 5000;
-  const RESUME_AFTER_MS = 2600;
-
-  let autoTimer = null;
-  let resumeTimer = null;
-  let projectsInView = false;
-
-  let manualLock = false;
-  let selectedLogical = 0;
-  let lastDragTime = 0;
-
-  let setWidth = 0;
-  let baseCount = 0;
-
-  let startAuto = () => {};
-  let stopAuto = () => {};
-
-  if (track && projectsSection) {
-    // tag base cards with logical indices
-    const baseCards = Array.from(track.querySelectorAll(".project-card"));
-    baseCount = baseCards.length;
-
-    baseCards.forEach((c, i) => { c.dataset.idx = String(i); });
-
-    // clone to create: [base][clone][clone]
-    const frag = document.createDocumentFragment();
-    const makeClone = (el) => {
-      const c = el.cloneNode(true);
-      c.dataset.idx = el.dataset.idx;
-      return c;
-    };
-    baseCards.forEach((c) => frag.appendChild(makeClone(c)));
-    baseCards.forEach((c) => frag.appendChild(makeClone(c)));
-    track.appendChild(frag);
-
-    const getAllCards = () => Array.from(track.querySelectorAll(".project-card"));
-
-    const getTrackPadLeft = () => {
-      const s = getComputedStyle(track);
-      return parseFloat(s.paddingLeft || "0") || 0;
-    };
-
-    const computeSetWidth = () => {
-      const cards = getAllCards();
-      if (cards.length < baseCount * 2) return 0;
-      // distance between set0 and set1 start
-      return cards[baseCount].offsetLeft - cards[0].offsetLeft;
-    };
-
-    const scrollToPhysical = (physicalIndex, smooth) => {
-      const cards = getAllCards();
-      if (cards.length === 0) return;
-
-      const i = clamp(physicalIndex, 0, cards.length - 1);
-      const padLeft = getTrackPadLeft();
-      const left = Math.max(0, cards[i].offsetLeft - padLeft);
-
-      track.scrollTo({
-        left,
-        behavior: smooth ? "smooth" : "auto",
-      });
-    };
-
-    const scrollToLogical = (logicalIndex, smooth) => {
-      const idx = ((logicalIndex % baseCount) + baseCount) % baseCount;
-      // always target middle set for stability
-      scrollToPhysical(baseCount + idx, smooth);
-    };
-
-    const maybeTeleport = () => {
-      if (!setWidth) return;
-      const left = track.scrollLeft;
-
-      // Keep scroll near the middle set
-      if (left < setWidth * 0.35) track.scrollLeft = left + setWidth;
-      else if (left > setWidth * 1.65) track.scrollLeft = left - setWidth;
-    };
-
-    const getScrollActivePhysicalIndex = () => {
-      const cards = getAllCards();
-      if (cards.length === 0) return 0;
-
-      const center = track.scrollLeft + track.clientWidth * 0.5;
-      let best = 0;
-      let bestD = Infinity;
-
-      for (let i = 0; i < cards.length; i++) {
-        const c = cards[i];
-        const cx = c.offsetLeft + c.offsetWidth * 0.5;
-        const d = Math.abs(cx - center);
-        if (d < bestD) {
-          bestD = d;
-          best = i;
-        }
-      }
-      return best;
-    };
-
-    const getActiveLogical = () => {
-      if (manualLock) return ((selectedLogical % baseCount) + baseCount) % baseCount;
-
-      const cards = getAllCards();
-      const pIdx = getScrollActivePhysicalIndex();
-      const el = cards[pIdx];
-      const logical = parseInt(el?.dataset?.idx || "0", 10);
-      return ((logical % baseCount) + baseCount) % baseCount;
-    };
-
-    const updateProjectsUI = () => {
-      maybeTeleport();
-
-      const cards = getAllCards();
-      if (cards.length === 0) return;
-
-      const activeLogical = getActiveLogical();
-
-      // dim all, highlight the nearest physical with that logical index (prefer currently centered)
-      const activePhysical = getScrollActivePhysicalIndex();
-
-      cards.forEach((c, i) => {
-        const logical = parseInt(c.dataset.idx || "0", 10);
-        const isLogicalMatch = logical === activeLogical;
-
-        // pick the physical card closest to center among matches
-        let isActive = false;
-        if (isLogicalMatch) {
-          // if it's the closest match to center, mark active
-          // (simple: make only the centered physical active)
-          isActive = (i === activePhysical);
-        }
-
-        c.classList.toggle("is-active", isActive);
-        c.classList.toggle("is-dim", !isActive);
-      });
-
-      const dots = Array.from(dotsEl?.querySelectorAll(".dot") || []);
-      dots.forEach((d, i) => d.classList.toggle("active", i === activeLogical));
-
-      if (currentEl) currentEl.textContent = String(activeLogical + 1).padStart(2, "0");
-      if (totalEl) totalEl.textContent = String(baseCount).padStart(2, "0");
-    };
-
-    const pauseAutoInternal = () => {
-      if (autoTimer) clearInterval(autoTimer);
-      autoTimer = null;
-      clearTimeout(resumeTimer);
-    };
-
-    stopAuto = () => pauseAutoInternal();
-
-    startAuto = () => {
-      if (!track) return;
-      if (!projectsInView) return;
-      if (document.hidden) return;
-      if (manualLock) return;
-      if (autoTimer) return;
-
-      autoTimer = setInterval(() => {
-        if (manualLock) return;
-
-        const activePhysical = getScrollActivePhysicalIndex();
-        // cinematic easing: use smooth scroll (browser), but we also tune CSS transforms
-        scrollToPhysical(activePhysical + 1, true);
-        updateProjectsUI();
-      }, AUTO_SCROLL_MS);
-    };
-
-    const scheduleResume = () => {
-      if (manualLock) return;
-      clearTimeout(resumeTimer);
-      resumeTimer = setTimeout(() => startAuto(), RESUME_AFTER_MS);
-    };
-
-    const lockToLogical = (logicalIndex, smooth = true) => {
-      manualLock = true;
-      selectedLogical = ((logicalIndex % baseCount) + baseCount) % baseCount;
-      pauseAutoInternal();
-      scrollToLogical(selectedLogical, smooth);
-      updateProjectsUI();
-    };
-
-    const unlockSelection = () => {
-      if (!manualLock) return;
-      manualLock = false;
-      updateProjectsUI();
-      startAuto();
-    };
-
-    const openRepoForCard = (cardEl) => {
-      const url = cardEl?.dataset?.repo;
-      if (!url) return;
-      window.open(url, "_blank", "noopener");
-    };
-
-    // Build dots for logical set
-    if (dotsEl) {
-      dotsEl.innerHTML = "";
-      for (let i = 0; i < baseCount; i++) {
-        const b = document.createElement("button");
-        b.className = "dot";
-        b.type = "button";
-        b.setAttribute("aria-label", `Go to project ${i + 1}`);
-        b.addEventListener("click", () => lockToLogical(i, true));
-        dotsEl.appendChild(b);
-      }
-    }
-
-    // Bind events (all cards including clones)
-    const bindCard = (card) => {
-      const logical = parseInt(card.dataset.idx || "0", 10);
-
-      card.addEventListener("click", () => {
-        if (performance.now() - lastDragTime < 240) return;
-        lockToLogical(logical, true);
-      });
-
-      card.addEventListener("dblclick", () => {
-        if (performance.now() - lastDragTime < 240) return;
-        openRepoForCard(card);
-      });
-
-      card.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          openRepoForCard(card);
-        }
-      });
-
-      // rover inspect on hover (desktop only)
-      card.addEventListener("mouseenter", () => {
-        if (window.matchMedia("(hover: hover)").matches) rover?.inspectCard(card);
-      });
-      card.addEventListener("mouseleave", () => rover?.clearInspect());
-    };
-
-    getAllCards().forEach(bindCard);
-
-    // Drawer buttons
-    prev?.addEventListener("click", () => lockToLogical(getActiveLogical() - 1, true));
-    next?.addEventListener("click", () => lockToLogical(getActiveLogical() + 1, true));
-
-    // Mouse drag-to-scroll (desktop only, keeps touch native)
-    let pointerActive = false;
-    let dragging = false;
-    let startX = 0;
-    let startLeft = 0;
-    let pid = null;
-    const DRAG_THRESHOLD = 7;
-
-    track.classList.add("grab");
-
-    const endPointer = () => {
-      if (!pointerActive) return;
-      pointerActive = false;
-
-      if (dragging) {
-        dragging = false;
-        track.classList.remove("grabbing");
-        lastDragTime = performance.now();
-        updateProjectsUI();
-        scheduleResume();
-      }
-      pid = null;
-    };
-
-    track.addEventListener("pointerdown", (e) => {
-      // Only mouse drag; touch uses native scroll
-      if (e.pointerType !== "mouse") return;
-      if (e.button !== 0) return;
-
-      pointerActive = true;
-      dragging = false;
-      startX = e.clientX;
-      startLeft = track.scrollLeft;
-      pid = e.pointerId;
-    });
-
-    track.addEventListener("pointermove", (e) => {
-      if (!pointerActive) return;
-      const dx = e.clientX - startX;
-
-      if (!dragging) {
-        if (Math.abs(dx) < DRAG_THRESHOLD) return;
-        dragging = true;
-        pauseAutoInternal();
-        try { track.setPointerCapture(pid); } catch (_) {}
-        track.classList.add("grabbing");
-      }
-
-      track.scrollLeft = startLeft - dx;
-    });
-
-    track.addEventListener("pointerup", endPointer);
-    track.addEventListener("pointercancel", endPointer);
-    track.addEventListener("lostpointercapture", endPointer);
-
-    // Scroll updates + teleport
-    let scrollRAF = 0;
-    track.addEventListener(
-      "scroll",
-      () => {
-        if (scrollRAF) cancelAnimationFrame(scrollRAF);
-        scrollRAF = requestAnimationFrame(() => updateProjectsUI());
-      },
-      { passive: true }
-    );
-
-    // Click outside to unpin (inside projects but outside card)
-    document.addEventListener("pointerdown", (e) => {
-      if (!manualLock) return;
-
-      const insideCard = e.target.closest(".project-card");
-      if (insideCard) return;
-
-      const insideControl = e.target.closest(".drawer-btn") || e.target.closest(".dot");
-      if (insideControl) return;
-
-      const insideProjects = e.target.closest("#projects");
-      if (!insideProjects) {
-        unlockSelection();
-        return;
-      }
-
-      unlockSelection();
-    });
-
-    // On view: start/stop autoplay
-    const io = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        projectsInView = !!entry?.isIntersecting && entry.intersectionRatio >= 0.25;
-        if (projectsInView) startAuto();
-        else stopAuto();
-      },
-      { threshold: [0, 0.25, 0.6, 1] }
-    );
-    io.observe(projectsSection);
-
-    // Resize: recompute setWidth and recenter
-    const onResize = () => {
-      setWidth = computeSetWidth();
-      // recenter to middle set
-      scrollToLogical(getActiveLogical(), false);
-      updateProjectsUI();
-    };
-    window.addEventListener("resize", onResize, { passive: true });
-
-    // compute setWidth + start in middle set
-    setWidth = computeSetWidth();
-    if (totalEl) totalEl.textContent = String(baseCount).padStart(2, "0");
-    scrollToLogical(0, false);
-    updateProjectsUI();
-    startAuto();
-  }
-
-  // =========================
-  // Ensure initial section anchors for rover/atlas
-  // =========================
-  const initialSection = document.querySelector("section[data-atlas='telemetry']") || document.querySelector("#signals");
-  if (initialSection) {
-    // seed anchor so atlas isn't “floating” randomly
-    setActiveSectionByKey("intro", document.getElementById("intro"));
-    rover?.setAnchorElement(getSectionHeaderEl(initialSection));
-    atlas?.setAnchorElement(getSectionHeaderEl(initialSection));
-  }
-
-  // =========================
-  // Visibility handling
-  // =========================
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
-      shaderBg?.stop();
-      atlas?.stop();
+      stopBg();
+      stopAuto();
       rover?.stop();
-      stopAuto?.();
     } else {
-      shaderBg?.start();
-      atlas?.start();
+      startBgIfVisible();
+      startAuto();
       rover?.start();
-      startAuto?.();
+      rover?.resize();
     }
   });
 })();
