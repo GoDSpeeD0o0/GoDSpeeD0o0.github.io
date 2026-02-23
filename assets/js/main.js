@@ -224,277 +224,446 @@
       revealTargets.forEach((el) => io.observe(el));
     }
   }
+// =========================
+// Micro-metrics tooltips (Highlights) (NEW)
+// =========================
+(() => {
+  const stats = Array.from(document.querySelectorAll("#signals .stat"));
+  if (!stats.length) return;
 
-  // =========================
-  // Projects drawer (pin = click, open repo = double click)
-  // =========================
-  const projectsSection = document.getElementById("projects");
-  const track = document.getElementById("projects-track");
-  const prev = document.getElementById("projects-prev");
-  const next = document.getElementById("projects-next");
-  const dotsEl = document.getElementById("projects-dots");
-  const currentEl = document.getElementById("projects-current");
-  const totalEl = document.getElementById("projects-total");
-
-  const AUTO_SCROLL_MS = 10_000;
-  const RESUME_AFTER_MS = 2200;
-
-  let autoTimer = null;
-  let resumeTimer = null;
-  let projectsInView = false;
-
-  let manualLock = false;
-  let selectedIndex = 0;
-  let lastDragTime = 0;
-
-  let startAuto = () => {};
-  let stopAuto = () => {};
-
-  if (track && projectsSection) {
-    const getCards = () => Array.from(track.querySelectorAll(".project-card"));
-
-    const normIndex = (idx) => {
-      const cards = getCards();
-      if (cards.length === 0) return 0;
-      return ((idx % cards.length) + cards.length) % cards.length;
-    };
-
-    const getTrackPadLeft = () => {
-      const s = getComputedStyle(track);
-      return parseFloat(s.paddingLeft || "0") || 0;
-    };
-
-    const scrollToCard = (idx, smooth) => {
-      const cards = getCards();
-      if (cards.length === 0) return;
-
-      const i = normIndex(idx);
-      const padLeft = getTrackPadLeft();
-      const left = Math.max(0, cards[i].offsetLeft - padLeft);
-      track.scrollTo({ left, behavior: smooth ? "smooth" : "auto" });
-    };
-
-    const getScrollActiveIndex = () => {
-      const cards = getCards();
-      if (cards.length === 0) return 0;
-
-      const center = track.scrollLeft + track.clientWidth * 0.5;
-      let best = 0;
-      let bestD = Infinity;
-
-      for (let i = 0; i < cards.length; i++) {
-        const c = cards[i];
-        const cx = c.offsetLeft + c.offsetWidth * 0.5;
-        const d = Math.abs(cx - center);
-        if (d < bestD) {
-          bestD = d;
-          best = i;
-        }
-      }
-      return best;
-    };
-
-    const getActiveIndex = () => (manualLock ? normIndex(selectedIndex) : getScrollActiveIndex());
-
-    const updateProjectsUI = () => {
-      const cards = getCards();
-      if (cards.length === 0) return;
-
-      const idx = getActiveIndex();
-
-      cards.forEach((c, i) => {
-        c.classList.toggle("is-active", i === idx);
-        c.classList.toggle("is-dim", i !== idx);
-      });
-
-      const dots = Array.from(dotsEl?.querySelectorAll(".dot") || []);
-      dots.forEach((d, i) => d.classList.toggle("active", i === idx));
-
-      if (currentEl) currentEl.textContent = String(idx + 1).padStart(2, "0");
-      if (totalEl) totalEl.textContent = String(cards.length).padStart(2, "0");
-    };
-
-    const pauseAutoInternal = () => {
-      if (autoTimer) clearInterval(autoTimer);
-      autoTimer = null;
-      clearTimeout(resumeTimer);
-    };
-
-    stopAuto = () => pauseAutoInternal();
-
-    startAuto = () => {
-      if (!track) return;
-      if (!projectsInView) return;
-      if (document.hidden) return;
-      if (manualLock) return;
-      if (autoTimer) return;
-
-      autoTimer = setInterval(() => {
-        if (manualLock) return;
-        scrollToCard(getScrollActiveIndex() + 1, true);
-        updateProjectsUI();
-      }, AUTO_SCROLL_MS);
-    };
-
-    const scheduleResume = () => {
-      if (manualLock) return;
-      clearTimeout(resumeTimer);
-      resumeTimer = setTimeout(() => startAuto(), RESUME_AFTER_MS);
-    };
-
-    const lockToIndex = (idx, smooth = true) => {
-      manualLock = true;
-      selectedIndex = normIndex(idx);
-      pauseAutoInternal();
-      scrollToCard(selectedIndex, smooth);
-      updateProjectsUI();
-    };
-
-    const unlockSelection = () => {
-      if (!manualLock) return;
-      manualLock = false;
-      updateProjectsUI();
-      startAuto();
-    };
-
-    const openRepoForCard = (cardEl) => {
-      const url = cardEl?.dataset?.repo;
-      if (!url) return;
-      window.open(url, "_blank", "noopener");
-    };
-
-    const cards = getCards();
-    if (totalEl) totalEl.textContent = String(cards.length).padStart(2, "0");
-
-    if (dotsEl) {
-      dotsEl.innerHTML = "";
-      cards.forEach((_, i) => {
-        const b = document.createElement("button");
-        b.className = "dot";
-        b.type = "button";
-        b.setAttribute("aria-label", `Go to project ${i + 1}`);
-        b.addEventListener("click", () => lockToIndex(i, true));
-        dotsEl.appendChild(b);
-      });
+  const MAP = {
+    "DIFFUSION SPEEDUP": {
+      title: "-41% diffusion inference",
+      body: "Profiled the inference path, removed hotspots, and validated output quality on a fixed prompt suite + metric checks.",
+      meta: "perf • evaluation"
+    },
+    "RETENTION LIFT": {
+      title: "+21% retention (reported)",
+      body: "Cross-browser compatibility + performance cleanup: layout stability, faster interactions, fewer UI regressions.",
+      meta: "ux • performance"
+    },
+    "CORE STACK": {
+      title: "Python · SQL",
+      body: "Automation pipelines, analytics workflows, and service glue. Strong focus on clean interfaces + measurable outputs.",
+      meta: "engineering • data"
+    },
+    "FOCUS": {
+      title: "GenAI · NLP",
+      body: "Transformers + diffusion + evaluation harnesses; emphasis on system design, reliability, and speed.",
+      meta: "genai • systems"
     }
+  };
 
-    prev?.addEventListener("click", () => lockToIndex(getActiveIndex() - 1, true));
-    next?.addEventListener("click", () => lockToIndex(getActiveIndex() + 1, true));
+  const tip = document.createElement("div");
+  tip.className = "microtip";
+  tip.innerHTML = `
+    <div class="mt-title"></div>
+    <div class="mt-body"></div>
+    <div class="mt-meta mono"></div>
+  `;
+  document.body.appendChild(tip);
 
-    cards.forEach((card, i) => {
-      card.addEventListener("click", () => {
-        if (performance.now() - lastDragTime < 240) return;
-        lockToIndex(i, true);
-      });
+  const titleEl = tip.querySelector(".mt-title");
+  const bodyEl = tip.querySelector(".mt-body");
+  const metaEl = tip.querySelector(".mt-meta");
 
-      card.addEventListener("dblclick", () => {
-        if (performance.now() - lastDragTime < 240) return;
-        openRepoForCard(card);
-      });
+  let on = false;
 
-      card.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          openRepoForCard(card);
-        }
-      });
-    });
+  const setPos = (x, y) => {
+    const pad = 14;
+    const r = tip.getBoundingClientRect();
+    const maxX = window.innerWidth - r.width - pad;
+    const maxY = window.innerHeight - r.height - pad;
 
-    let pointerActive = false;
-    let dragging = false;
-    let startX = 0;
-    let startLeft = 0;
-    let pid = null;
-    const DRAG_THRESHOLD = 7;
+    tip.style.left = `${clamp(x + 14, pad, maxX)}px`;
+    tip.style.top  = `${clamp(y + 16, pad, maxY)}px`;
+  };
 
-    track.classList.add("grab");
+  const show = (data, x, y) => {
+    titleEl.textContent = data.title;
+    bodyEl.textContent = data.body;
+    metaEl.textContent = data.meta;
+    tip.classList.add("on");
+    on = true;
+    setPos(x, y);
+  };
 
-    const endPointer = () => {
-      if (!pointerActive) return;
-      pointerActive = false;
+  const hide = () => {
+    tip.classList.remove("on");
+    on = false;
+  };
 
-      if (dragging) {
-        dragging = false;
-        track.classList.remove("grabbing");
-        lastDragTime = performance.now();
-        updateProjectsUI();
-        scheduleResume();
-      }
-      pid = null;
-    };
+  stats.forEach((card) => {
+    const label = card.querySelector(".label")?.textContent?.trim() || "";
+    const data = MAP[label];
+    if (!data) return;
 
-    track.addEventListener("pointerdown", (e) => {
-      if (e.pointerType === "mouse" && e.button !== 0) return;
-      pointerActive = true;
-      dragging = false;
-      startX = e.clientX;
-      startLeft = track.scrollLeft;
-      pid = e.pointerId;
-    });
+    card.addEventListener("mouseenter", (e) => show(data, e.clientX, e.clientY));
+    card.addEventListener("mousemove", (e) => { if (on) setPos(e.clientX, e.clientY); });
+    card.addEventListener("mouseleave", hide);
+  });
+})();
+ // =========================
+// Projects drawer (5s auto, hover pause, progress bar)
+// =========================
+const projectsSection = document.getElementById("projects");
+const track = document.getElementById("projects-track");
+const prev = document.getElementById("projects-prev");
+const next = document.getElementById("projects-next");
+const dotsEl = document.getElementById("projects-dots");
+const currentEl = document.getElementById("projects-current");
+const totalEl = document.getElementById("projects-total");
 
-    track.addEventListener("pointermove", (e) => {
-      if (!pointerActive) return;
-      const dx = e.clientX - startX;
+const AUTO_SCROLL_MS = 5000;
+const RESUME_AFTER_MS = 900;
 
-      if (!dragging) {
-        if (Math.abs(dx) < DRAG_THRESHOLD) return;
-        dragging = true;
-        pauseAutoInternal();
-        try { track.setPointerCapture(pid); } catch (_) {}
-        track.classList.add("grabbing");
-      }
+let autoTimer = null;
+let resumeTimer = null;
+let projectsInView = false;
 
-      track.scrollLeft = startLeft - dx;
-    });
+let manualLock = false;
+let selectedIndex = 0;
+let lastDragTime = 0;
+let hoverPaused = false;
 
-    track.addEventListener("pointerup", endPointer);
-    track.addEventListener("pointercancel", endPointer);
-    track.addEventListener("lostpointercapture", endPointer);
+// progress UI (created dynamically, no HTML changes)
+let progressFill = null;
 
-    let scrollRAF = 0;
-    track.addEventListener(
-      "scroll",
-      () => {
-        if (scrollRAF) cancelAnimationFrame(scrollRAF);
-        scrollRAF = requestAnimationFrame(() => updateProjectsUI());
-      },
-      { passive: true }
-    );
+const ensureProjectsProgress = () => {
+  if (progressFill) return;
 
-    window.addEventListener("resize", () => updateProjectsUI(), { passive: true });
+  const toolbar = projectsSection?.querySelector?.(".projects-toolbar");
+  if (!toolbar) return;
 
-    const io = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        projectsInView = !!entry?.isIntersecting && entry.intersectionRatio >= 0.25;
-        if (projectsInView) startAuto();
-        else stopAuto();
-      },
-      { threshold: [0, 0.25, 0.6, 1] }
-    );
-    io.observe(projectsSection);
-
-    document.addEventListener("pointerdown", (e) => {
-      if (!manualLock) return;
-
-      const insideCard = e.target.closest(".project-card");
-      if (insideCard) return;
-
-      const insideControl = e.target.closest(".drawer-btn") || e.target.closest(".dot");
-      if (insideControl) return;
-
-      const insideProjects = e.target.closest("#projects");
-      if (!insideProjects) {
-        unlockSelection();
-        return;
-      }
-
-      unlockSelection();
-    });
-
-    updateProjectsUI();
+  if (toolbar.querySelector(".projects-progress")) {
+    progressFill = toolbar.querySelector(".projects-progress-fill");
+    return;
   }
 
+  const wrap = document.createElement("div");
+  wrap.className = "projects-progress";
+  wrap.setAttribute("aria-hidden", "true");
+
+  const fill = document.createElement("div");
+  fill.className = "projects-progress-fill";
+  wrap.appendChild(fill);
+
+  // place it nicely next to dots (end-aligned)
+  toolbar.appendChild(wrap);
+  progressFill = fill;
+};
+
+const restartProgress = () => {
+  ensureProjectsProgress();
+  if (!progressFill) return;
+
+  progressFill.style.animation = "none";
+  // force reflow
+  // eslint-disable-next-line no-unused-expressions
+  progressFill.offsetHeight;
+  progressFill.style.animation = `projectsFill ${AUTO_SCROLL_MS}ms linear forwards`;
+  progressFill.style.animationPlayState = hoverPaused || manualLock || !projectsInView ? "paused" : "running";
+};
+
+const pauseProgress = () => {
+  if (!progressFill) return;
+  progressFill.style.animationPlayState = "paused";
+};
+
+const resumeProgress = () => {
+  if (!progressFill) return;
+  progressFill.style.animationPlayState = "running";
+};
+
+let startAuto = () => {};
+let stopAuto = () => {};
+
+if (track && projectsSection) {
+  ensureProjectsProgress();
+
+  const getCards = () => Array.from(track.querySelectorAll(".project-card"));
+
+  const normIndex = (idx) => {
+    const cards = getCards();
+    if (cards.length === 0) return 0;
+    return ((idx % cards.length) + cards.length) % cards.length;
+  };
+
+  const getTrackPadLeft = () => {
+    const s = getComputedStyle(track);
+    return parseFloat(s.paddingLeft || "0") || 0;
+  };
+
+  const scrollToCard = (idx, smooth) => {
+    const cards = getCards();
+    if (cards.length === 0) return;
+
+    const i = normIndex(idx);
+    const padLeft = getTrackPadLeft();
+    const left = Math.max(0, cards[i].offsetLeft - padLeft);
+    track.scrollTo({ left, behavior: smooth ? "smooth" : "auto" });
+  };
+
+  const getScrollActiveIndex = () => {
+    const cards = getCards();
+    if (cards.length === 0) return 0;
+
+    const center = track.scrollLeft + track.clientWidth * 0.5;
+    let best = 0;
+    let bestD = Infinity;
+
+    for (let i = 0; i < cards.length; i++) {
+      const c = cards[i];
+      const cx = c.offsetLeft + c.offsetWidth * 0.5;
+      const d = Math.abs(cx - center);
+      if (d < bestD) {
+        bestD = d;
+        best = i;
+      }
+    }
+    return best;
+  };
+
+  const getActiveIndex = () => (manualLock ? normIndex(selectedIndex) : getScrollActiveIndex());
+
+  const updateProjectsUI = () => {
+    const cards = getCards();
+    if (cards.length === 0) return;
+
+    const idx = getActiveIndex();
+
+    cards.forEach((c, i) => {
+      c.classList.toggle("is-active", i === idx);
+      c.classList.toggle("is-dim", i !== idx);
+    });
+
+    const dots = Array.from(dotsEl?.querySelectorAll(".dot") || []);
+    dots.forEach((d, i) => d.classList.toggle("active", i === idx));
+
+    if (currentEl) currentEl.textContent = String(idx + 1).padStart(2, "0");
+    if (totalEl) totalEl.textContent = String(cards.length).padStart(2, "0");
+  };
+
+  const pauseAutoInternal = () => {
+    if (autoTimer) clearInterval(autoTimer);
+    autoTimer = null;
+    clearTimeout(resumeTimer);
+  };
+
+  stopAuto = () => {
+    pauseAutoInternal();
+    pauseProgress();
+  };
+
+  startAuto = () => {
+    if (!track) return;
+    if (!projectsInView) return;
+    if (document.hidden) return;
+    if (manualLock) return;
+    if (hoverPaused) return;
+    if (autoTimer) return;
+
+    restartProgress();
+
+    autoTimer = setInterval(() => {
+      if (manualLock || hoverPaused || document.hidden || !projectsInView) return;
+
+      const nxt = getScrollActiveIndex() + 1;
+      scrollToCard(nxt, true);
+      updateProjectsUI();
+      restartProgress();
+    }, AUTO_SCROLL_MS);
+  };
+
+  const scheduleResume = () => {
+    if (manualLock) return;
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(() => startAuto(), RESUME_AFTER_MS);
+  };
+
+  const lockToIndex = (idx, smooth = true) => {
+    manualLock = true;
+    selectedIndex = normIndex(idx);
+    pauseAutoInternal();
+    pauseProgress();
+    scrollToCard(selectedIndex, smooth);
+    updateProjectsUI();
+  };
+
+  const unlockSelection = () => {
+    if (!manualLock) return;
+    manualLock = false;
+    updateProjectsUI();
+    restartProgress();
+    startAuto();
+  };
+
+  const openRepoForCard = (cardEl) => {
+    const url = cardEl?.dataset?.repo;
+    if (!url) return;
+    window.open(url, "_blank", "noopener");
+  };
+
+  const cards = getCards();
+  if (totalEl) totalEl.textContent = String(cards.length).padStart(2, "0");
+
+  if (dotsEl) {
+    dotsEl.innerHTML = "";
+    cards.forEach((_, i) => {
+      const b = document.createElement("button");
+      b.className = "dot";
+      b.type = "button";
+      b.setAttribute("aria-label", `Go to project ${i + 1}`);
+      b.addEventListener("click", () => lockToIndex(i, true));
+      dotsEl.appendChild(b);
+    });
+  }
+
+  // arrows exist in HTML but we hide them in CSS now
+  prev?.addEventListener("click", () => lockToIndex(getActiveIndex() - 1, true));
+  next?.addEventListener("click", () => lockToIndex(getActiveIndex() + 1, true));
+
+  cards.forEach((card, i) => {
+    card.addEventListener("click", () => {
+      if (performance.now() - lastDragTime < 240) return;
+      lockToIndex(i, true);
+    });
+
+    card.addEventListener("dblclick", () => {
+      if (performance.now() - lastDragTime < 240) return;
+      openRepoForCard(card);
+    });
+
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        openRepoForCard(card);
+      }
+    });
+
+    // NEW: hover pause for mouse only
+    card.addEventListener("mouseenter", () => {
+      hoverPaused = true;
+      stopAuto();
+      pauseProgress();
+    });
+
+    card.addEventListener("mouseleave", () => {
+      hoverPaused = false;
+      updateProjectsUI();
+      restartProgress();
+      scheduleResume();
+    });
+  });
+
+  // drag
+  let pointerActive = false;
+  let dragging = false;
+  let startX = 0;
+  let startLeft = 0;
+  let pid = null;
+  const DRAG_THRESHOLD = 7;
+
+  track.classList.add("grab");
+
+  const endPointer = () => {
+    if (!pointerActive) return;
+    pointerActive = false;
+
+    if (dragging) {
+      dragging = false;
+      track.classList.remove("grabbing");
+      lastDragTime = performance.now();
+      updateProjectsUI();
+      restartProgress();
+      scheduleResume();
+    }
+    pid = null;
+  };
+
+  track.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    pointerActive = true;
+    dragging = false;
+    startX = e.clientX;
+    startLeft = track.scrollLeft;
+    pid = e.pointerId;
+    stopAuto();
+  });
+
+  track.addEventListener("pointermove", (e) => {
+    if (!pointerActive) return;
+    const dx = e.clientX - startX;
+
+    if (!dragging) {
+      if (Math.abs(dx) < DRAG_THRESHOLD) return;
+      dragging = true;
+      try { track.setPointerCapture(pid); } catch (_) {}
+      track.classList.add("grabbing");
+    }
+
+    track.scrollLeft = startLeft - dx;
+  });
+
+  track.addEventListener("pointerup", endPointer);
+  track.addEventListener("pointercancel", endPointer);
+  track.addEventListener("lostpointercapture", endPointer);
+
+  // scroll -> update active and keep progress synced
+  let scrollRAF = 0;
+  track.addEventListener(
+    "scroll",
+    () => {
+      if (scrollRAF) cancelAnimationFrame(scrollRAF);
+      scrollRAF = requestAnimationFrame(() => updateProjectsUI());
+    },
+    { passive: true }
+  );
+
+  window.addEventListener("resize", () => {
+    updateProjectsUI();
+    restartProgress();
+  }, { passive: true });
+
+  // in-view observer
+  const io = new IntersectionObserver(
+    (entries) => {
+      const entry = entries[0];
+      projectsInView = !!entry?.isIntersecting && entry.intersectionRatio >= 0.25;
+
+      if (projectsInView) {
+        updateProjectsUI();
+        restartProgress();
+        startAuto();
+      } else {
+        stopAuto();
+      }
+    },
+    { threshold: [0, 0.25, 0.6, 1] }
+  );
+  io.observe(projectsSection);
+
+  // click outside projects -> unlock
+  document.addEventListener("pointerdown", (e) => {
+    if (!manualLock) return;
+
+    const insideCard = e.target.closest(".project-card");
+    if (insideCard) return;
+
+    const insideControl = e.target.closest(".dot");
+    if (insideControl) return;
+
+    const insideProjects = e.target.closest("#projects");
+    if (!insideProjects) {
+      unlockSelection();
+      return;
+    }
+    unlockSelection();
+  });
+
+  updateProjectsUI();
+  restartProgress();
+}
   // =========================
   // Background animation (WebGL primary + 2D fallback)
   // =========================
@@ -837,226 +1006,341 @@
   // - Desktop: roam around viewport
   // - Mobile: roam around the name inside hero
   // =========================
-  function initRover() {
-    const el = document.getElementById("flyby");
-    if (!el) return null;
+function initRover() {
+  const el = document.getElementById("flyby");
+  if (!el) return null;
 
-    const hero = document.getElementById("intro");
-    const name = document.getElementById("name-title");
+  const hero = document.getElementById("intro");
+  const name = document.getElementById("name-title");
 
-    let rafId = null;
-    let running = false;
+  let rafId = null;
+  let running = false;
 
-    let x = 0, y = 0;
-    let vx = 0, vy = 0;
-    let targetX = 0, targetY = 0;
+  let x = 0, y = 0;
+  let vx = 0, vy = 0;
+  let targetX = 0, targetY = 0;
 
-    let last = performance.now();
-    let cruise = rand(28, 58);
+  let last = performance.now();
+  let cruise = rand(28, 58);
 
-    let nextTargetAt = 0;
-    let nextBoostAt = performance.now() + rand(14000, 26000);
-    let boostUntil = 0;
+  let nextTargetAt = 0;
+  let nextBoostAt = performance.now() + rand(14000, 26000);
+  let boostUntil = 0;
 
-    let size = { w: 110, h: 74 };
+  let size = { w: 110, h: 74 };
 
-    const isMobile = () => window.matchMedia("(max-width: 640px)").matches;
+  // NEW: override target (for section companion / inspections)
+  let override = null; // { x, y, cruise, until, sticky }
 
-    const measure = () => {
-      const r = el.getBoundingClientRect();
-      size = { w: r.width || 110, h: r.height || 74 };
+  const isMobile = () => window.matchMedia("(max-width: 640px)").matches;
+
+  const measure = () => {
+    const r = el.getBoundingClientRect();
+    size = { w: r.width || 110, h: r.height || 74 };
+  };
+
+  const boundsDesktop = () => {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const M = Math.max(10, Math.min(24, Math.round(Math.min(w, h) * 0.02)));
+
+    return {
+      minX: M,
+      maxX: Math.max(M, w - size.w - M),
+      minY: M + 6,
+      maxY: Math.max(M, h - size.h - M),
     };
+  };
 
-    const boundsDesktop = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      const M = Math.max(10, Math.min(24, Math.round(Math.min(w, h) * 0.02)));
+  const boundsMobile = () => {
+    const hr = hero?.getBoundingClientRect();
+    const nr = name?.getBoundingClientRect();
+    if (!hr || !nr) return boundsDesktop();
 
-      return {
-        minX: M,
-        maxX: Math.max(M, w - size.w - M),
-        minY: M + 6,
-        maxY: Math.max(M, h - size.h - M),
-        originX: 0,
-        originY: 0,
-      };
+    const heroW = hr.width;
+    const heroH = hr.height;
+
+    const nx = nr.left - hr.left;
+    const ny = nr.top - hr.top;
+    const nw = nr.width;
+    const nh = nr.height;
+
+    const padX = Math.max(26, Math.min(44, heroW * 0.08));
+    const padTop = 18;
+    const padBottom = 70;
+
+    const minX = clamp(nx - padX, 8, heroW - size.w - 8);
+    const maxX = clamp(nx + nw + padX - size.w, 8, heroW - size.w - 8);
+    const minY = clamp(ny - padTop, 8, heroH - size.h - 8);
+    const maxY = clamp(ny + nh + padBottom - size.h, 8, heroH - size.h - 8);
+
+    return { minX, maxX: Math.max(minX, maxX), minY, maxY: Math.max(minY, maxY) };
+  };
+
+  const getBounds = () => (isMobile() ? boundsMobile() : boundsDesktop());
+
+  const clampToBounds = () => {
+    const b = getBounds();
+    x = clamp(x, b.minX, b.maxX);
+    y = clamp(y, b.minY, b.maxY);
+  };
+
+  const pickTarget = (force = false) => {
+    if (override) return;
+    const b = getBounds();
+    targetX = rand(b.minX, b.maxX);
+    targetY = rand(b.minY, b.maxY);
+
+    if (force || Math.random() < 0.45) cruise = rand(isMobile() ? 22 : 28, isMobile() ? 46 : 58);
+    nextTargetAt = performance.now() + rand(2200, 4800);
+  };
+
+  const pickFarTarget = () => {
+    if (override) return;
+    const b = getBounds();
+    targetX = rand(b.minX, b.maxX);
+    targetY = rand(b.minY, b.maxY);
+    nextTargetAt = performance.now() + rand(1400, 2400);
+  };
+
+  // NEW: API for companion behavior
+  const setOverrideTarget = (pt, opts = {}) => {
+    if (isMobile()) return;
+
+    const b = getBounds();
+    const cx = clamp(pt.x - size.w * 0.5, b.minX, b.maxX);
+    const cy = clamp(pt.y - size.h * 0.5, b.minY, b.maxY);
+
+    override = {
+      x: cx,
+      y: cy,
+      cruise: typeof opts.cruise === "number" ? opts.cruise : 110,
+      sticky: opts.sticky !== false,
+      until: performance.now() + (typeof opts.ttl === "number" ? opts.ttl : 6000),
     };
+  };
 
-    const boundsMobile = () => {
-      const hr = hero?.getBoundingClientRect();
-      const nr = name?.getBoundingClientRect();
+  const clearOverride = () => { override = null; };
 
-      if (!hr || !nr) return boundsDesktop();
+  const tick = (now) => {
+    if (!running) return;
 
-      const heroW = hr.width;
-      const heroH = hr.height;
+    const dt = clamp((now - last) / 1000, 0.01, 0.05);
+    last = now;
 
-      const nx = nr.left - hr.left;
-      const ny = nr.top - hr.top;
-      const nw = nr.width;
-      const nh = nr.height;
+    if (!override && now > nextTargetAt) pickTarget(false);
 
-      const padX = Math.max(26, Math.min(44, heroW * 0.08));
-      const padTop = 18;
-      const padBottom = 70;
+    // override expiry (if not sticky)
+    if (override && !override.sticky && now > override.until) override = null;
 
-      const minX = clamp(nx - padX, 8, heroW - size.w - 8);
-      const maxX = clamp(nx + nw + padX - size.w, 8, heroW - size.w - 8);
-      const minY = clamp(ny - padTop, 8, heroH - size.h - 8);
-      const maxY = clamp(ny + nh + padBottom - size.h, 8, heroH - size.h - 8);
+    // boost only if no override
+    if (!isMobile() && !override && now > nextBoostAt) {
+      boostUntil = now + rand(1600, 3200);
+      nextBoostAt = now + rand(16000, 30000);
+      cruise = rand(86, 140);
+      pickFarTarget();
+    }
 
-      return {
-        minX,
-        maxX: Math.max(minX, maxX),
-        minY,
-        maxY: Math.max(minY, maxY),
-        originX: hr.left,
-        originY: hr.top,
-      };
-    };
+    const boosting = !isMobile() && !override && now < boostUntil;
+    el.classList.toggle("boost", boosting);
 
-    const getBounds = () => (isMobile() ? boundsMobile() : boundsDesktop());
+    if (override) {
+      targetX = override.x;
+      targetY = override.y;
+      cruise = override.cruise;
+    }
 
-    const pickTarget = (force = false) => {
-      const b = getBounds();
+    const dx = targetX - x;
+    const dy = targetY - y;
+    const dist = Math.hypot(dx, dy) || 0.0001;
 
-      targetX = rand(b.minX, b.maxX);
-      targetY = rand(b.minY, b.maxY);
+    const desiredVX = (dx / dist) * cruise;
+    const desiredVY = (dy / dist) * cruise;
 
-      if (force || Math.random() < 0.45) cruise = rand(isMobile() ? 22 : 28, isMobile() ? 46 : 58);
-      nextTargetAt = performance.now() + rand(2200, 4800);
-    };
+    const steer = boosting ? 0.10 : 0.08;
+    vx += (desiredVX - vx) * steer;
+    vy += (desiredVY - vy) * steer;
 
-    const pickFarTarget = () => {
-      const b = getBounds();
-      targetX = rand(b.minX, b.maxX);
-      targetY = rand(b.minY, b.maxY);
-      nextTargetAt = performance.now() + rand(1400, 2400);
-    };
+    const maxSpeed = boosting ? 165 : (isMobile() ? 58 : 96);
+    const sp = Math.hypot(vx, vy) || 0.0001;
+    if (sp > maxSpeed) {
+      vx = (vx / sp) * maxSpeed;
+      vy = (vy / sp) * maxSpeed;
+    }
 
-    const clampToBounds = () => {
-      const b = getBounds();
-      if (x < b.minX) { x = b.minX; vx = Math.abs(vx) * 0.7; }
-      if (x > b.maxX) { x = b.maxX; vx = -Math.abs(vx) * 0.7; }
-      if (y < b.minY) { y = b.minY; vy = Math.abs(vy) * 0.7; }
-      if (y > b.maxY) { y = b.maxY; vy = -Math.abs(vy) * 0.7; }
-    };
+    x += vx * dt;
+    y += vy * dt;
 
-    const tick = (now) => {
-      if (!running) return;
+    clampToBounds();
 
-      const dt = clamp((now - last) / 1000, 0.01, 0.05);
-      last = now;
+    const dir = vx >= 0 ? 1 : -1;
+    const bob = Math.sin(now * 0.003 + 1.7) * (boosting ? 2.2 : 3.0);
 
-      if (now > nextTargetAt) pickTarget(false);
+    const trail = clamp((sp - 14) / 110, 0, 1);
+    el.style.setProperty("--trail", trail.toFixed(3));
 
-      if (!isMobile() && now > nextBoostAt) {
-        boostUntil = now + rand(1600, 3200);
-        nextBoostAt = now + rand(16000, 30000);
-        cruise = rand(86, 140);
-        pickFarTarget();
-      }
+    const op = clamp((isMobile() ? 0.58 : 0.50) + trail * 0.14, 0.48, 0.70);
+    el.style.opacity = String(op);
 
-      const boosting = !isMobile() && now < boostUntil;
-      el.classList.toggle("boost", boosting);
+    el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y + bob)}px, 0) scaleX(${dir})`;
 
-      const dx = targetX - x;
-      const dy = targetY - y;
-      const dist = Math.hypot(dx, dy) || 0.0001;
+    rafId = requestAnimationFrame(tick);
+  };
 
-      const desiredVX = (dx / dist) * cruise;
-      const desiredVY = (dy / dist) * cruise;
+  let heroVisible = true;
+  let heroIO = null;
 
-      const steer = boosting ? 0.10 : 0.08;
-      vx += (desiredVX - vx) * steer;
-      vy += (desiredVY - vy) * steer;
+  const setupHeroObserver = () => {
+    if (!hero || !("IntersectionObserver" in window)) return;
 
-      const maxSpeed = boosting ? 165 : (isMobile() ? 58 : 82);
-      const sp = Math.hypot(vx, vy) || 0.0001;
-      if (sp > maxSpeed) {
-        vx = (vx / sp) * maxSpeed;
-        vy = (vy / sp) * maxSpeed;
-      }
+    if (heroIO) heroIO.disconnect();
 
-      x += vx * dt;
-      y += vy * dt;
+    heroIO = new IntersectionObserver(
+      ([entry]) => {
+        heroVisible = !!entry?.isIntersecting;
+        if (isMobile()) {
+          if (heroVisible) start();
+          else stop();
+        }
+      },
+      { threshold: 0.08 }
+    );
 
-      clampToBounds();
+    heroIO.observe(hero);
+  };
 
-      const dir = vx >= 0 ? 1 : -1;
-      const bob = Math.sin(now * 0.003 + 1.7) * (boosting ? 2.2 : 3.0);
+  const start = () => {
+    if (prefersReducedMotion) return;
+    if (running) return;
+    if (isMobile() && !heroVisible) return;
 
-      const trail = clamp((sp - 14) / 110, 0, 1);
-      el.style.setProperty("--trail", trail.toFixed(3));
+    running = true;
+    measure();
 
-      const op = clamp((isMobile() ? 0.58 : 0.50) + trail * 0.14, 0.48, 0.68);
-      el.style.opacity = String(op);
+    const b = getBounds();
+    x = rand(b.minX, b.maxX);
+    y = rand(b.minY, b.maxY);
+    vx = rand(-10, 10);
+    vy = rand(-8, 8);
 
-      el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y + bob)}px, 0) scaleX(${dir})`;
+    override = null;
+    pickTarget(true);
+    last = performance.now();
+    rafId = requestAnimationFrame(tick);
+  };
 
-      rafId = requestAnimationFrame(tick);
-    };
+  const stop = () => {
+    running = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null;
+    el.style.opacity = "0";
+  };
 
-    let heroVisible = true;
-    let heroIO = null;
+  const resize = () => {
+    measure();
+    clampToBounds();
+    if (!override) pickTarget(true);
+  };
 
-    const setupHeroObserver = () => {
-      if (!hero || !("IntersectionObserver" in window)) return;
+  setupHeroObserver();
 
-      if (heroIO) heroIO.disconnect();
-
-      heroIO = new IntersectionObserver(
-        ([entry]) => {
-          heroVisible = !!entry?.isIntersecting;
-          if (isMobile()) {
-            if (heroVisible) start();
-            else stop();
-          }
-        },
-        { threshold: 0.08 }
-      );
-
-      heroIO.observe(hero);
-    };
-
-    const start = () => {
-      if (prefersReducedMotion) return;
-      if (running) return;
-      if (isMobile() && !heroVisible) return;
-
-      running = true;
-      measure();
-
-      const b = getBounds();
-      x = rand(b.minX, b.maxX);
-      y = rand(b.minY, b.maxY);
-      vx = rand(-10, 10);
-      vy = rand(-8, 8);
-
-      pickTarget(true);
-      last = performance.now();
-      rafId = requestAnimationFrame(tick);
-    };
-
-    const stop = () => {
-      running = false;
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = null;
-      el.style.opacity = "0";
-    };
-
-    const resize = () => {
-      measure();
-      clampToBounds();
-      pickTarget(true);
-    };
-
-    setupHeroObserver();
-    return { start, stop, resize };
-  }
+  // NEW: return companion API too
+  return { start, stop, resize, setOverrideTarget, clearOverride, isMobile, getSize: () => ({...size}) };
+}
 
   const rover = initRover();
   if (rover && !document.hidden) rover.start();
+  // =========================
+// Section Companion Rover (NEW)
+// =========================
+(() => {
+  if (!rover) return;
+  if (rover.isMobile && rover.isMobile()) return;
+
+  const sections = Array.from(document.querySelectorAll("main section[id]"));
+  if (!sections.length) return;
+
+  let current = null;
+  let seq = 0;
+
+  const ruleScan = (ruleEl) => {
+    if (!ruleEl) return;
+    ruleEl.classList.remove("companion-scan");
+    // force reflow so animation can restart
+    // eslint-disable-next-line no-unused-expressions
+    ruleEl.offsetHeight;
+    ruleEl.classList.add("companion-scan");
+    window.setTimeout(() => ruleEl.classList.remove("companion-scan"), 1100);
+  };
+
+  const moveToHeaderScan = (section) => {
+    const header = section.querySelector(".os-header");
+    const rule = header?.querySelector(".os-rule");
+    if (!header || !rule) return;
+
+    const r = rule.getBoundingClientRect();
+
+    // Points along the rule line (rover uses center coords in setOverrideTarget)
+    const y = r.top - 6;                 // align near the rule
+    const left  = { x: r.left + 18,  y };
+    const right = { x: r.right - 18, y };
+
+    const id = ++seq;
+
+    // go left
+    rover.setOverrideTarget(left,  { cruise: 118, ttl: 5200, sticky: true });
+
+    // scan + sweep to right
+    window.setTimeout(() => {
+      if (id !== seq) return;
+      ruleScan(rule);
+      rover.setOverrideTarget(right, { cruise: 110, ttl: 5200, sticky: true });
+    }, 520);
+
+    // settle slightly above/right after sweep
+    window.setTimeout(() => {
+      if (id !== seq) return;
+      rover.setOverrideTarget({ x: r.right - 40, y: r.top - 22 }, { cruise: 90, ttl: 6200, sticky: true });
+    }, 1400);
+  };
+
+  // pick the most visible section to avoid jitter
+  const io = new IntersectionObserver((entries) => {
+    const visible = entries
+      .filter(e => e.isIntersecting && e.intersectionRatio > 0.22)
+      .sort((a,b) => b.intersectionRatio - a.intersectionRatio);
+
+    if (!visible.length) return;
+
+    const best = visible[0].target;
+    if (best === current) return;
+
+    current = best;
+    moveToHeaderScan(best);
+  }, { threshold: [0.18, 0.26, 0.35, 0.5, 0.7] });
+
+  sections.forEach(s => io.observe(s));
+
+  // Project hover inspection (thumb)
+  const cards = Array.from(document.querySelectorAll("#projects .project-card"));
+  cards.forEach((card) => {
+    const thumb = card.querySelector(".project-thumb");
+    if (!thumb) return;
+
+    card.addEventListener("mouseenter", () => {
+      const tr = thumb.getBoundingClientRect();
+      rover.setOverrideTarget(
+        { x: tr.left + tr.width * 0.65, y: tr.top + tr.height * 0.15 },
+        { cruise: 128, ttl: 2600, sticky: true }
+      );
+    });
+
+    card.addEventListener("mouseleave", () => {
+      if (current) moveToHeaderScan(current);
+      else rover.clearOverride && rover.clearOverride();
+    });
+  });
+})();
   window.addEventListener("resize", () => rover?.resize(), { passive: true });
 
   startBgIfVisible();
