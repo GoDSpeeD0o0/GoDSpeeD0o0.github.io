@@ -30,7 +30,7 @@
   // Reduced motion preference
   const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // Keep background animated (you wanted it always on)
+  // Keep background animated
   const FORCE_ANIMATION = true;
   const prefersReducedMotion = !FORCE_ANIMATION && reduceMotionPref;
 
@@ -51,11 +51,8 @@
         wheelMultiplier: 1.0,
         touchMultiplier: 1.35,
       });
-
-      // Avoid double-smoothing from CSS
       document.documentElement.style.scrollBehavior = "auto";
 
-      // RAF loop
       const raf = (time) => {
         lenis.raf(time);
         requestAnimationFrame(raf);
@@ -69,13 +66,11 @@
   if (hasGSAP) {
     window.gsap.registerPlugin(window.ScrollTrigger);
 
-    // Keep ScrollTrigger updated with Lenis
     if (lenis) {
       lenis.on("scroll", () => window.ScrollTrigger.update());
       window.ScrollTrigger.addEventListener("refresh", () => lenis.resize());
     }
 
-    // HERO → NEXT SECTION transition (pinned + scrubbed)
     if (!reduceMotionPref) {
       const hero = document.getElementById("intro");
       const heroInner = hero?.querySelector(".hero-inner");
@@ -123,9 +118,7 @@
     });
   });
 
-  // =========================
   // Mobile menu
-  // =========================
   const btn = document.getElementById("menu-btn");
   const menu = document.getElementById("mobile-menu");
   if (btn && menu) {
@@ -140,18 +133,14 @@
       if (isHidden) {
         menu.classList.remove("hidden");
         btn.setAttribute("aria-expanded", "true");
-      } else {
-        closeMenu();
-      }
+      } else closeMenu();
       setHeaderHeight();
     });
 
     menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeMenu));
   }
 
-  // =========================
-  // Scroll progress (hide when at top)
-  // =========================
+  // Scroll progress
   const progressWrap = document.getElementById("scroll-progress");
   const progressBar = document.getElementById("scroll-progress-bar");
   if (progressWrap && progressBar) {
@@ -178,11 +167,8 @@
     update();
   }
 
-  // =========================
-  // Scroll reveal + glint + chip cascade
-  // =========================
+  // Reveal + glint + skill pill cascade
   const revealTargets = Array.from(document.querySelectorAll("main .os-header, main .glass"));
-
   if (revealTargets.length) {
     if (reduceMotionPref) {
       revealTargets.forEach((el) => el.classList.add("reveal", "is-visible"));
@@ -222,116 +208,71 @@
       revealTargets.forEach((el) => io.observe(el));
     }
   }
-// =========================
-// GLASS FOCUS + REFLECTION TRACKING (NEW)
-// =========================
-(() => {
-  const focusables = Array.from(document.querySelectorAll(".glass.card-hover"));
-  if (!focusables.length) return;
-
-  let active = null;
-  let raf = 0;
-
-  const setActive = (el) => {
-    if (active === el) return;
-
-    if (active) active.classList.remove("is-focused");
-    active = el;
-
-    if (active) {
-      document.body.classList.add("focus-mode");
-      active.classList.add("is-focused");
-    } else {
-      document.body.classList.remove("focus-mode");
-    }
-  };
-
-  const updateVars = (ev) => {
-    if (!active) return;
-
-    const r = active.getBoundingClientRect();
-    const px = clamp((ev.clientX - r.left) / Math.max(1, r.width), 0, 1);
-    const py = clamp((ev.clientY - r.top) / Math.max(1, r.height), 0, 1);
-
-    // reflection hotspot position
-    active.style.setProperty("--mx", `${(px * 100).toFixed(2)}%`);
-    active.style.setProperty("--my", `${(py * 100).toFixed(2)}%`);
-
-    // subtle tilt (keep small or it looks gimmicky)
-    const tiltY = (px - 0.5) * 6;     // deg
-    const tiltX = (0.5 - py) * 5;     // deg
-    active.style.setProperty("--tiltX", `${tiltX.toFixed(2)}deg`);
-    active.style.setProperty("--tiltY", `${tiltY.toFixed(2)}deg`);
-  };
-
- // =========================
-// Glass focus + reflections (ROBUST)
-// - works on all desktops (mouseenter/mousemove)
-// - CSS :has handles dimming even if JS fails
-// =========================
-(() => {
-  if (reduceMotionPref) return;
-
-  const cards = Array.from(document.querySelectorAll(".glass.card-hover"));
-  if (!cards.length) return;
-
-  let active = null;
-
-  const setActive = (el) => {
-    if (active === el) return;
-
-    if (active) active.classList.remove("is-focused");
-    active = el;
-
-    if (active) {
-      document.body.classList.add("focus-mode");
-      active.classList.add("is-focused");
-    } else {
-      document.body.classList.remove("focus-mode");
-    }
-  };
-
-  const updateVars = (el, clientX, clientY) => {
-    const r = el.getBoundingClientRect();
-    const px = clamp((clientX - r.left) / Math.max(1, r.width), 0, 1);
-    const py = clamp((clientY - r.top) / Math.max(1, r.height), 0, 1);
-
-    el.style.setProperty("--mx", `${(px * 100).toFixed(2)}%`);
-    el.style.setProperty("--my", `${(py * 100).toFixed(2)}%`);
-
-    const tiltY = (px - 0.5) * 6;     // deg
-    const tiltX = (0.5 - py) * 5;     // deg
-    el.style.setProperty("--tiltX", `${tiltX.toFixed(2)}deg`);
-    el.style.setProperty("--tiltY", `${tiltY.toFixed(2)}deg`);
-  };
-
-  cards.forEach((el) => {
-    el.addEventListener("mouseenter", (ev) => {
-      setActive(el);
-      updateVars(el, ev.clientX, ev.clientY);
-    });
-
-    el.addEventListener("mousemove", (ev) => {
-      if (active !== el) return;
-      updateVars(el, ev.clientX, ev.clientY);
-    });
-
-    el.addEventListener("mouseleave", (ev) => {
-      const next = ev.relatedTarget && ev.relatedTarget.closest?.(".glass.card-hover");
-      if (next) return; // moving between cards
-      setActive(null);
-    });
-  });
-
-  // click outside clears focus-mode (optional, feels clean)
-  document.addEventListener("mousedown", (ev) => {
-    if (ev.target.closest(".glass.card-hover")) return;
-    setActive(null);
-  });
-})();
 
   // =========================
-  // Projects drawer (pin = click, open repo = double click)
+  // Glass focus + reflections (CRYSTAL CLEAR)
+  // =========================
+  (() => {
+    if (reduceMotionPref) return;
+
+    const cards = Array.from(document.querySelectorAll(".glass.card-hover"));
+    if (!cards.length) return;
+
+    let active = null;
+
+    const setActive = (el) => {
+      if (active === el) return;
+      if (active) active.classList.remove("is-focused");
+      active = el;
+      if (active) {
+        document.body.classList.add("focus-mode");
+        active.classList.add("is-focused");
+      } else {
+        document.body.classList.remove("focus-mode");
+      }
+    };
+
+    const updateVars = (el, clientX, clientY) => {
+      const r = el.getBoundingClientRect();
+      const px = clamp((clientX - r.left) / Math.max(1, r.width), 0, 1);
+      const py = clamp((clientY - r.top) / Math.max(1, r.height), 0, 1);
+
+      el.style.setProperty("--mx", `${(px * 100).toFixed(2)}%`);
+      el.style.setProperty("--my", `${(py * 100).toFixed(2)}%`);
+
+      // Small tilt applied to overlay only (CSS)
+      const tiltY = (px - 0.5) * 6;
+      const tiltX = (0.5 - py) * 5;
+      el.style.setProperty("--tiltX", `${tiltX.toFixed(2)}deg`);
+      el.style.setProperty("--tiltY", `${tiltY.toFixed(2)}deg`);
+    };
+
+    cards.forEach((el) => {
+      el.addEventListener("mouseenter", (ev) => {
+        setActive(el);
+        updateVars(el, ev.clientX, ev.clientY);
+      });
+
+      el.addEventListener("mousemove", (ev) => {
+        if (active !== el) return;
+        updateVars(el, ev.clientX, ev.clientY);
+      });
+
+      el.addEventListener("mouseleave", (ev) => {
+        const next = ev.relatedTarget && ev.relatedTarget.closest?.(".glass.card-hover");
+        if (next) return;
+        setActive(null);
+      });
+    });
+
+    document.addEventListener("mousedown", (ev) => {
+      if (ev.target.closest(".glass.card-hover")) return;
+      setActive(null);
+    });
+  })();
+
+  // =========================
+  // Projects drawer
   // =========================
   const projectsSection = document.getElementById("projects");
   const track = document.getElementById("projects-track");
@@ -731,7 +672,6 @@
     };
   }
 
-  // Shader init
   function initShaderBackground() {
     const gl =
       canvas.getContext("webgl", {
@@ -938,7 +878,7 @@
   const stopBg = () => bg && bg.stop();
 
   // =========================
-  // Rover movement (RESTORED: random roam on desktop)
+  // Rover movement (random smooth roam on desktop)
   // =========================
   function initRover() {
     const el = document.getElementById("flyby");
@@ -961,15 +901,13 @@
     let nextBoostAt = performance.now() + rand(12000, 22000);
     let boostUntil = 0;
 
-    let dirState = 1; // stable flip direction
+    let dirState = 1;
 
     const isMobile = () => window.matchMedia("(max-width: 640px)").matches;
 
     const getHeroAnchor = () => {
       const r = (name || hero).getBoundingClientRect();
-      const baseX = r.left + r.width * 0.5;
-      const baseY = r.top + r.height * 0.35;
-      return { baseX, baseY };
+      return { baseX: r.left + r.width * 0.5, baseY: r.top + r.height * 0.35 };
     };
 
     const pickTargetDesktop = () => {
@@ -981,17 +919,13 @@
     };
 
     const pickTargetMobile = () => {
-      // orbit around name inside hero
       const hr = hero.getBoundingClientRect();
       const { baseX, baseY } = getHeroAnchor();
       const a = rand(0, Math.PI * 2);
       const rx = 64;
       const ry = 26;
-
-      // convert to hero-local coords (because #flyby is absolute on mobile)
       tx = (baseX - hr.left) + Math.cos(a) * rx;
       ty = (baseY - hr.top) + Math.sin(a) * ry;
-
       nextTargetAt = performance.now() + rand(1500, 3200);
       cruise = rand(34, 52);
     };
@@ -1004,10 +938,8 @@
 
     const clampMobile = () => {
       const hr = hero.getBoundingClientRect();
-      const w = hr.width;
-      const h = hr.height;
-      x = clamp(x, 8, w - 90);
-      y = clamp(y, 8, h - 70);
+      x = clamp(x, 8, hr.width - 90);
+      y = clamp(y, 8, hr.height - 70);
     };
 
     const tick = (now) => {
@@ -1016,12 +948,8 @@
       const dt = clamp((now - last) / 1000, 0.01, 0.05);
       last = now;
 
-      if (now > nextTargetAt) {
-        if (isMobile()) pickTargetMobile();
-        else pickTargetDesktop();
-      }
+      if (now > nextTargetAt) (isMobile() ? pickTargetMobile() : pickTargetDesktop());
 
-      // boost only on desktop, occasionally
       const boosting = !isMobile() && now < boostUntil;
       if (!isMobile() && now > nextBoostAt) {
         boostUntil = now + rand(900, 1600);
@@ -1035,7 +963,6 @@
       const dy = ty - y;
       const dist = Math.hypot(dx, dy) || 0.0001;
 
-      // damping near target stops oscillation/jitter
       const arrive = dist < 18 ? 0.80 : 1.0;
 
       const desiredVX = (dx / dist) * speed;
@@ -1051,10 +978,8 @@
       x += vx * dt;
       y += vy * dt;
 
-      if (isMobile()) clampMobile();
-      else clampDesktop();
+      isMobile() ? clampMobile() : clampDesktop();
 
-      // stable direction flip (prevents rapid left/right jitter)
       if (Math.abs(vx) > 6) dirState = vx >= 0 ? 1 : -1;
 
       const bob = Math.sin(now * 0.003 + 1.7) * (boosting ? 2.0 : 2.6);
@@ -1066,9 +991,7 @@
       const op = clamp((isMobile() ? 0.58 : 0.50) + trail * 0.12, 0.48, 0.70);
       el.style.opacity = String(op);
 
-      // subpixel transform (removes “stepping”)
-      el.style.transform =
-        `translate3d(${x.toFixed(2)}px, ${(y + bob).toFixed(2)}px, 0) scaleX(${dirState})`;
+      el.style.transform = `translate3d(${x.toFixed(2)}px, ${(y + bob).toFixed(2)}px, 0) scaleX(${dirState})`;
 
       rafId = requestAnimationFrame(tick);
     };
@@ -1078,8 +1001,8 @@
 
     const setupHeroObserver = () => {
       if (!hero || !("IntersectionObserver" in window)) return;
-
       if (heroIO) heroIO.disconnect();
+
       heroIO = new IntersectionObserver(
         ([entry]) => {
           heroVisible = !!entry?.isIntersecting;
@@ -1125,8 +1048,7 @@
 
     const resize = () => {
       if (!running) return;
-      if (isMobile()) clampMobile();
-      else clampDesktop();
+      isMobile() ? clampMobile() : clampDesktop();
     };
 
     setupHeroObserver();
