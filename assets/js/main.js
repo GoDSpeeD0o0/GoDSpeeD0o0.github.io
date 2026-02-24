@@ -30,7 +30,7 @@
   // Reduced motion preference
   const reduceMotionPref = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // Keep background animated (you wanted it always on)
+  // Keep background animated
   const FORCE_ANIMATION = true;
   const prefersReducedMotion = !FORCE_ANIMATION && reduceMotionPref;
 
@@ -51,11 +51,8 @@
         wheelMultiplier: 1.0,
         touchMultiplier: 1.35,
       });
-
-      // Avoid double-smoothing from CSS
       document.documentElement.style.scrollBehavior = "auto";
 
-      // RAF loop
       const raf = (time) => {
         lenis.raf(time);
         requestAnimationFrame(raf);
@@ -69,13 +66,11 @@
   if (hasGSAP) {
     window.gsap.registerPlugin(window.ScrollTrigger);
 
-    // Keep ScrollTrigger updated with Lenis
     if (lenis) {
       lenis.on("scroll", () => window.ScrollTrigger.update());
       window.ScrollTrigger.addEventListener("refresh", () => lenis.resize());
     }
 
-    // HERO → NEXT SECTION transition (pinned + scrubbed)
     if (!reduceMotionPref) {
       const hero = document.getElementById("intro");
       const heroInner = hero?.querySelector(".hero-inner");
@@ -104,7 +99,7 @@
     }
   }
 
-  // Smooth anchor scrolling with Lenis (nav pills feel premium)
+  // Smooth anchor scrolling with Lenis
   const headerOffset = () => (headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0);
   document.querySelectorAll('a[href^="#"]').forEach((a) => {
     const href = a.getAttribute("href") || "";
@@ -112,8 +107,6 @@
     a.addEventListener("click", (e) => {
       const target = document.querySelector(href);
       if (!target) return;
-
-      // allow default if no Lenis
       if (!lenis) return;
 
       e.preventDefault();
@@ -125,9 +118,7 @@
     });
   });
 
-  // =========================
   // Mobile menu
-  // =========================
   const btn = document.getElementById("menu-btn");
   const menu = document.getElementById("mobile-menu");
   if (btn && menu) {
@@ -142,18 +133,14 @@
       if (isHidden) {
         menu.classList.remove("hidden");
         btn.setAttribute("aria-expanded", "true");
-      } else {
-        closeMenu();
-      }
+      } else closeMenu();
       setHeaderHeight();
     });
 
     menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeMenu));
   }
 
-  // =========================
-  // Scroll progress (FIX: hide when at top)
-  // =========================
+  // Scroll progress
   const progressWrap = document.getElementById("scroll-progress");
   const progressBar = document.getElementById("scroll-progress-bar");
   if (progressWrap && progressBar) {
@@ -180,11 +167,8 @@
     update();
   }
 
-  // =========================
-  // Scroll reveal + glint + chip cascade
-  // =========================
+  // Reveal + glint + skill pill cascade
   const revealTargets = Array.from(document.querySelectorAll("main .os-header, main .glass"));
-
   if (revealTargets.length) {
     if (reduceMotionPref) {
       revealTargets.forEach((el) => el.classList.add("reveal", "is-visible"));
@@ -224,88 +208,71 @@
       revealTargets.forEach((el) => io.observe(el));
     }
   }
-// =========================
-// GLASS FOCUS + REFLECTION TRACKING (NEW)
-// =========================
-(() => {
-  const focusables = Array.from(document.querySelectorAll(".glass.card-hover"));
-  if (!focusables.length) return;
 
-  let active = null;
-  let raf = 0;
-
-  const setActive = (el) => {
-    if (active === el) return;
-
-    if (active) active.classList.remove("is-focused");
-    active = el;
-
-    if (active) {
-      document.body.classList.add("focus-mode");
-      active.classList.add("is-focused");
-    } else {
-      document.body.classList.remove("focus-mode");
-    }
-  };
-
-  const updateVars = (ev) => {
-    if (!active) return;
-
-    const r = active.getBoundingClientRect();
-    const px = clamp((ev.clientX - r.left) / Math.max(1, r.width), 0, 1);
-    const py = clamp((ev.clientY - r.top) / Math.max(1, r.height), 0, 1);
-
-    // reflection hotspot position
-    active.style.setProperty("--mx", `${(px * 100).toFixed(2)}%`);
-    active.style.setProperty("--my", `${(py * 100).toFixed(2)}%`);
-
-    // subtle tilt (keep small or it looks gimmicky)
-    const tiltY = (px - 0.5) * 6;     // deg
-    const tiltX = (0.5 - py) * 5;     // deg
-    active.style.setProperty("--tiltX", `${tiltX.toFixed(2)}deg`);
-    active.style.setProperty("--tiltY", `${tiltY.toFixed(2)}deg`);
-  };
-
-  const onMove = (ev) => {
-    if (!active) return;
-    if (raf) return;
-
-    raf = requestAnimationFrame(() => {
-      raf = 0;
-      updateVars(ev);
-    });
-  };
-
-  focusables.forEach((el) => {
-    el.addEventListener("pointerenter", (ev) => {
-      if (ev.pointerType !== "mouse") return;
-      setActive(el);
-      updateVars(ev);
-      window.addEventListener("pointermove", onMove, { passive: true });
-    });
-
-    el.addEventListener("pointerleave", (ev) => {
-      if (ev.pointerType !== "mouse") return;
-
-      // if moving directly into another card, don't flicker off
-      const next = ev.relatedTarget && ev.relatedTarget.closest?.(".glass.card-hover");
-      if (next) return;
-
-      setActive(null);
-      window.removeEventListener("pointermove", onMove);
-    });
-  });
-
-  // click outside clears focus (nice UX)
-  document.addEventListener("pointerdown", (ev) => {
-    if (ev.pointerType !== "mouse") return;
-    if (ev.target.closest(".glass.card-hover")) return;
-    setActive(null);
-    window.removeEventListener("pointermove", onMove);
-  });
-})();
   // =========================
-  // Projects drawer (pin = click, open repo = double click)
+  // Glass focus + reflections (CRYSTAL CLEAR)
+  // =========================
+  (() => {
+    if (reduceMotionPref) return;
+
+    const cards = Array.from(document.querySelectorAll(".glass.card-hover"));
+    if (!cards.length) return;
+
+    let active = null;
+
+    const setActive = (el) => {
+      if (active === el) return;
+      if (active) active.classList.remove("is-focused");
+      active = el;
+      if (active) {
+        document.body.classList.add("focus-mode");
+        active.classList.add("is-focused");
+      } else {
+        document.body.classList.remove("focus-mode");
+      }
+    };
+
+    const updateVars = (el, clientX, clientY) => {
+      const r = el.getBoundingClientRect();
+      const px = clamp((clientX - r.left) / Math.max(1, r.width), 0, 1);
+      const py = clamp((clientY - r.top) / Math.max(1, r.height), 0, 1);
+
+      el.style.setProperty("--mx", `${(px * 100).toFixed(2)}%`);
+      el.style.setProperty("--my", `${(py * 100).toFixed(2)}%`);
+
+      // Small tilt applied to overlay only (CSS)
+      const tiltY = (px - 0.5) * 6;
+      const tiltX = (0.5 - py) * 5;
+      el.style.setProperty("--tiltX", `${tiltX.toFixed(2)}deg`);
+      el.style.setProperty("--tiltY", `${tiltY.toFixed(2)}deg`);
+    };
+
+    cards.forEach((el) => {
+      el.addEventListener("mouseenter", (ev) => {
+        setActive(el);
+        updateVars(el, ev.clientX, ev.clientY);
+      });
+
+      el.addEventListener("mousemove", (ev) => {
+        if (active !== el) return;
+        updateVars(el, ev.clientX, ev.clientY);
+      });
+
+      el.addEventListener("mouseleave", (ev) => {
+        const next = ev.relatedTarget && ev.relatedTarget.closest?.(".glass.card-hover");
+        if (next) return;
+        setActive(null);
+      });
+    });
+
+    document.addEventListener("mousedown", (ev) => {
+      if (ev.target.closest(".glass.card-hover")) return;
+      setActive(null);
+    });
+  })();
+
+  // =========================
+  // Projects drawer
   // =========================
   const projectsSection = document.getElementById("projects");
   const track = document.getElementById("projects-track");
@@ -705,7 +672,6 @@
     };
   }
 
-  // Shader init
   function initShaderBackground() {
     const gl =
       canvas.getContext("webgl", {
@@ -912,9 +878,7 @@
   const stopBg = () => bg && bg.stop();
 
   // =========================
-  // Rover movement:
-  // - Desktop: roam around viewport
-  // - Mobile: roam around the name inside hero
+  // Rover movement (random smooth roam on desktop)
   // =========================
   function initRover() {
     const el = document.getElementById("flyby");
@@ -926,99 +890,56 @@
     let rafId = null;
     let running = false;
 
-    let x = 0, y = 0;
+    let x = 24, y = 120;
     let vx = 0, vy = 0;
-    let targetX = 0, targetY = 0;
+    let tx = 220, ty = 160;
 
     let last = performance.now();
-    let cruise = rand(28, 58);
+    let cruise = rand(70, 96);
 
     let nextTargetAt = 0;
-    let nextBoostAt = performance.now() + rand(14000, 26000);
+    let nextBoostAt = performance.now() + rand(12000, 22000);
     let boostUntil = 0;
 
-    let size = { w: 110, h: 74 };
+    let dirState = 1;
 
     const isMobile = () => window.matchMedia("(max-width: 640px)").matches;
 
-    const measure = () => {
-      const r = el.getBoundingClientRect();
-      size = { w: r.width || 110, h: r.height || 74 };
+    const getHeroAnchor = () => {
+      const r = (name || hero).getBoundingClientRect();
+      return { baseX: r.left + r.width * 0.5, baseY: r.top + r.height * 0.35 };
     };
 
-    const boundsDesktop = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      const M = Math.max(10, Math.min(24, Math.round(Math.min(w, h) * 0.02)));
-
-      return {
-        minX: M,
-        maxX: Math.max(M, w - size.w - M),
-        minY: M + 6,
-        maxY: Math.max(M, h - size.h - M),
-        originX: 0,
-        originY: 0,
-      };
+    const pickTargetDesktop = () => {
+      const pad = 24;
+      tx = rand(pad, window.innerWidth - pad - 120);
+      ty = rand(90, window.innerHeight - pad - 120);
+      nextTargetAt = performance.now() + rand(1800, 4200);
+      cruise = rand(72, 98);
     };
 
-    const boundsMobile = () => {
-      const hr = hero?.getBoundingClientRect();
-      const nr = name?.getBoundingClientRect();
-
-      if (!hr || !nr) return boundsDesktop();
-
-      const heroW = hr.width;
-      const heroH = hr.height;
-
-      const nx = nr.left - hr.left;
-      const ny = nr.top - hr.top;
-      const nw = nr.width;
-      const nh = nr.height;
-
-      const padX = Math.max(26, Math.min(44, heroW * 0.08));
-      const padTop = 18;
-      const padBottom = 70;
-
-      const minX = clamp(nx - padX, 8, heroW - size.w - 8);
-      const maxX = clamp(nx + nw + padX - size.w, 8, heroW - size.w - 8);
-      const minY = clamp(ny - padTop, 8, heroH - size.h - 8);
-      const maxY = clamp(ny + nh + padBottom - size.h, 8, heroH - size.h - 8);
-
-      return {
-        minX,
-        maxX: Math.max(minX, maxX),
-        minY,
-        maxY: Math.max(minY, maxY),
-        originX: hr.left,
-        originY: hr.top,
-      };
+    const pickTargetMobile = () => {
+      const hr = hero.getBoundingClientRect();
+      const { baseX, baseY } = getHeroAnchor();
+      const a = rand(0, Math.PI * 2);
+      const rx = 64;
+      const ry = 26;
+      tx = (baseX - hr.left) + Math.cos(a) * rx;
+      ty = (baseY - hr.top) + Math.sin(a) * ry;
+      nextTargetAt = performance.now() + rand(1500, 3200);
+      cruise = rand(34, 52);
     };
 
-    const getBounds = () => (isMobile() ? boundsMobile() : boundsDesktop());
-
-    const pickTarget = (force = false) => {
-      const b = getBounds();
-
-      targetX = rand(b.minX, b.maxX);
-      targetY = rand(b.minY, b.maxY);
-
-      if (force || Math.random() < 0.45) cruise = rand(isMobile() ? 22 : 28, isMobile() ? 46 : 58);
-      nextTargetAt = performance.now() + rand(2200, 4800);
+    const clampDesktop = () => {
+      const pad = 24;
+      x = clamp(x, pad, window.innerWidth - pad - 120);
+      y = clamp(y, 70, window.innerHeight - pad - 120);
     };
 
-    const pickFarTarget = () => {
-      const b = getBounds();
-      targetX = rand(b.minX, b.maxX);
-      targetY = rand(b.minY, b.maxY);
-      nextTargetAt = performance.now() + rand(1400, 2400);
-    };
-
-    const clampToBounds = () => {
-      const b = getBounds();
-      if (x < b.minX) { x = b.minX; vx = Math.abs(vx) * 0.7; }
-      if (x > b.maxX) { x = b.maxX; vx = -Math.abs(vx) * 0.7; }
-      if (y < b.minY) { y = b.minY; vy = Math.abs(vy) * 0.7; }
-      if (y > b.maxY) { y = b.maxY; vy = -Math.abs(vy) * 0.7; }
+    const clampMobile = () => {
+      const hr = hero.getBoundingClientRect();
+      x = clamp(x, 8, hr.width - 90);
+      y = clamp(y, 8, hr.height - 70);
     };
 
     const tick = (now) => {
@@ -1027,51 +948,50 @@
       const dt = clamp((now - last) / 1000, 0.01, 0.05);
       last = now;
 
-      if (now > nextTargetAt) pickTarget(false);
-
-      if (!isMobile() && now > nextBoostAt) {
-        boostUntil = now + rand(1600, 3200);
-        nextBoostAt = now + rand(16000, 30000);
-        cruise = rand(86, 140);
-        pickFarTarget();
-      }
+      if (now > nextTargetAt) (isMobile() ? pickTargetMobile() : pickTargetDesktop());
 
       const boosting = !isMobile() && now < boostUntil;
+      if (!isMobile() && now > nextBoostAt) {
+        boostUntil = now + rand(900, 1600);
+        nextBoostAt = now + rand(14000, 26000);
+      }
       el.classList.toggle("boost", boosting);
 
-      const dx = targetX - x;
-      const dy = targetY - y;
+      const speed = boosting ? cruise * 1.6 : cruise;
+
+      const dx = tx - x;
+      const dy = ty - y;
       const dist = Math.hypot(dx, dy) || 0.0001;
 
-      const desiredVX = (dx / dist) * cruise;
-      const desiredVY = (dy / dist) * cruise;
+      const arrive = dist < 18 ? 0.80 : 1.0;
 
-      const steer = boosting ? 0.10 : 0.08;
+      const desiredVX = (dx / dist) * speed;
+      const desiredVY = (dy / dist) * speed;
+
+      const steer = boosting ? 0.12 : 0.085;
       vx += (desiredVX - vx) * steer;
       vy += (desiredVY - vy) * steer;
 
-      const maxSpeed = boosting ? 165 : (isMobile() ? 58 : 82);
-      const sp = Math.hypot(vx, vy) || 0.0001;
-      if (sp > maxSpeed) {
-        vx = (vx / sp) * maxSpeed;
-        vy = (vy / sp) * maxSpeed;
-      }
+      vx *= arrive;
+      vy *= arrive;
 
       x += vx * dt;
       y += vy * dt;
 
-      clampToBounds();
+      isMobile() ? clampMobile() : clampDesktop();
 
-      const dir = vx >= 0 ? 1 : -1;
-      const bob = Math.sin(now * 0.003 + 1.7) * (boosting ? 2.2 : 3.0);
+      if (Math.abs(vx) > 6) dirState = vx >= 0 ? 1 : -1;
 
-      const trail = clamp((sp - 14) / 110, 0, 1);
+      const bob = Math.sin(now * 0.003 + 1.7) * (boosting ? 2.0 : 2.6);
+
+      const sp = Math.hypot(vx, vy);
+      const trail = clamp((sp - 10) / 120, 0, 1);
       el.style.setProperty("--trail", trail.toFixed(3));
 
-      const op = clamp((isMobile() ? 0.58 : 0.50) + trail * 0.14, 0.48, 0.68);
+      const op = clamp((isMobile() ? 0.58 : 0.50) + trail * 0.12, 0.48, 0.70);
       el.style.opacity = String(op);
 
-      el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y + bob)}px, 0) scaleX(${dir})`;
+      el.style.transform = `translate3d(${x.toFixed(2)}px, ${(y + bob).toFixed(2)}px, 0) scaleX(${dirState})`;
 
       rafId = requestAnimationFrame(tick);
     };
@@ -1081,7 +1001,6 @@
 
     const setupHeroObserver = () => {
       if (!hero || !("IntersectionObserver" in window)) return;
-
       if (heroIO) heroIO.disconnect();
 
       heroIO = new IntersectionObserver(
@@ -1094,7 +1013,6 @@
         },
         { threshold: 0.08 }
       );
-
       heroIO.observe(hero);
     };
 
@@ -1104,16 +1022,20 @@
       if (isMobile() && !heroVisible) return;
 
       running = true;
-      measure();
-
-      const b = getBounds();
-      x = rand(b.minX, b.maxX);
-      y = rand(b.minY, b.maxY);
-      vx = rand(-10, 10);
-      vy = rand(-8, 8);
-
-      pickTarget(true);
       last = performance.now();
+      vx = rand(-12, 12);
+      vy = rand(-10, 10);
+
+      if (isMobile()) {
+        x = rand(14, 90);
+        y = rand(18, 80);
+        pickTargetMobile();
+      } else {
+        x = rand(24, window.innerWidth - 160);
+        y = rand(120, window.innerHeight - 160);
+        pickTargetDesktop();
+      }
+
       rafId = requestAnimationFrame(tick);
     };
 
@@ -1125,9 +1047,8 @@
     };
 
     const resize = () => {
-      measure();
-      clampToBounds();
-      pickTarget(true);
+      if (!running) return;
+      isMobile() ? clampMobile() : clampDesktop();
     };
 
     setupHeroObserver();
