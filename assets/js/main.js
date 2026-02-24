@@ -891,13 +891,17 @@
     let running = false;
 
     let x = 24, y = 120;
+    let x = 24, y = 120;
     let vx = 0, vy = 0;
+    let tx = 220, ty = 160;
     let tx = 220, ty = 160;
 
     let last = performance.now();
     let cruise = rand(70, 96);
+    let cruise = rand(70, 96);
 
     let nextTargetAt = 0;
+    let nextBoostAt = performance.now() + rand(12000, 22000);
     let nextBoostAt = performance.now() + rand(12000, 22000);
     let boostUntil = 0;
 
@@ -910,6 +914,12 @@
       return { baseX: r.left + r.width * 0.5, baseY: r.top + r.height * 0.35 };
     };
 
+    const pickTargetDesktop = () => {
+      const pad = 24;
+      tx = rand(pad, window.innerWidth - pad - 120);
+      ty = rand(90, window.innerHeight - pad - 120);
+      nextTargetAt = performance.now() + rand(1800, 4200);
+      cruise = rand(72, 98);
     const pickTargetDesktop = () => {
       const pad = 24;
       tx = rand(pad, window.innerWidth - pad - 120);
@@ -930,6 +940,10 @@
       cruise = rand(34, 52);
     };
 
+    const clampDesktop = () => {
+      const pad = 24;
+      x = clamp(x, pad, window.innerWidth - pad - 120);
+      y = clamp(y, 70, window.innerHeight - pad - 120);
     const clampDesktop = () => {
       const pad = 24;
       x = clamp(x, pad, window.innerWidth - pad - 120);
@@ -961,6 +975,10 @@
 
       const dx = tx - x;
       const dy = ty - y;
+      const speed = boosting ? cruise * 1.6 : cruise;
+
+      const dx = tx - x;
+      const dy = ty - y;
       const dist = Math.hypot(dx, dy) || 0.0001;
 
       const arrive = dist < 18 ? 0.80 : 1.0;
@@ -969,9 +987,15 @@
       const desiredVY = (dy / dist) * speed;
 
       const steer = boosting ? 0.12 : 0.085;
+      const desiredVX = (dx / dist) * speed;
+      const desiredVY = (dy / dist) * speed;
+
+      const steer = boosting ? 0.12 : 0.085;
       vx += (desiredVX - vx) * steer;
       vy += (desiredVY - vy) * steer;
 
+      vx *= arrive;
+      vy *= arrive;
       vx *= arrive;
       vy *= arrive;
 
@@ -986,8 +1010,13 @@
 
       const sp = Math.hypot(vx, vy);
       const trail = clamp((sp - 10) / 120, 0, 1);
+      const bob = Math.sin(now * 0.003 + 1.7) * (boosting ? 2.0 : 2.6);
+
+      const sp = Math.hypot(vx, vy);
+      const trail = clamp((sp - 10) / 120, 0, 1);
       el.style.setProperty("--trail", trail.toFixed(3));
 
+      const op = clamp((isMobile() ? 0.58 : 0.50) + trail * 0.12, 0.48, 0.70);
       const op = clamp((isMobile() ? 0.58 : 0.50) + trail * 0.12, 0.48, 0.70);
       el.style.opacity = String(op);
 
@@ -1002,7 +1031,6 @@
     const setupHeroObserver = () => {
       if (!hero || !("IntersectionObserver" in window)) return;
       if (heroIO) heroIO.disconnect();
-
       heroIO = new IntersectionObserver(
         ([entry]) => {
           heroVisible = !!entry?.isIntersecting;
@@ -1022,6 +1050,20 @@
       if (isMobile() && !heroVisible) return;
 
       running = true;
+      last = performance.now();
+      vx = rand(-12, 12);
+      vy = rand(-10, 10);
+
+      if (isMobile()) {
+        x = rand(14, 90);
+        y = rand(18, 80);
+        pickTargetMobile();
+      } else {
+        x = rand(24, window.innerWidth - 160);
+        y = rand(120, window.innerHeight - 160);
+        pickTargetDesktop();
+      }
+
       last = performance.now();
       vx = rand(-12, 12);
       vy = rand(-10, 10);
