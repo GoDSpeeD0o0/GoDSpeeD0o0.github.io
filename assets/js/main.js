@@ -222,6 +222,47 @@
       revealTargets.forEach((el) => io.observe(el));
     }
   }
+// =========================
+// GLASS FOCUS + REFLECTION TRACKING (NEW)
+// =========================
+(() => {
+  const focusables = Array.from(document.querySelectorAll(".glass.card-hover"));
+  if (!focusables.length) return;
+
+  let active = null;
+  let raf = 0;
+
+  const setActive = (el) => {
+    if (active === el) return;
+
+    if (active) active.classList.remove("is-focused");
+    active = el;
+
+    if (active) {
+      document.body.classList.add("focus-mode");
+      active.classList.add("is-focused");
+    } else {
+      document.body.classList.remove("focus-mode");
+    }
+  };
+
+  const updateVars = (ev) => {
+    if (!active) return;
+
+    const r = active.getBoundingClientRect();
+    const px = clamp((ev.clientX - r.left) / Math.max(1, r.width), 0, 1);
+    const py = clamp((ev.clientY - r.top) / Math.max(1, r.height), 0, 1);
+
+    // reflection hotspot position
+    active.style.setProperty("--mx", `${(px * 100).toFixed(2)}%`);
+    active.style.setProperty("--my", `${(py * 100).toFixed(2)}%`);
+
+    // subtle tilt (keep small or it looks gimmicky)
+    const tiltY = (px - 0.5) * 6;     // deg
+    const tiltX = (0.5 - py) * 5;     // deg
+    active.style.setProperty("--tiltX", `${tiltX.toFixed(2)}deg`);
+    active.style.setProperty("--tiltY", `${tiltY.toFixed(2)}deg`);
+  };
 
  // =========================
 // Glass focus + reflections (ROBUST)
