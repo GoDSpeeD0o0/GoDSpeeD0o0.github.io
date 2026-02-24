@@ -46,7 +46,7 @@ button:focus-visible {
   border-radius: 12px;
 }
 
-/* ===== Scroll progress (FIX: hide the track at top so no random line) ===== */
+/* ===== Scroll progress (hide the track at top so no random line) ===== */
 #scroll-progress {
   position: fixed;
   left: 0;
@@ -130,14 +130,14 @@ button:focus-visible {
     0 10px 24px rgba(0,0,0,0.18);
 }
 
-/* ===== Rover ===== */
+/* ===== Rover (smaller, smoother) ===== */
 #flyby {
   position: fixed;
   left: 0;
   top: 0;
 
-  width: 110px;
-  height: 74px;
+  width: 96px;
+  height: 64px;
 
   pointer-events: none;
   z-index: 0;
@@ -162,7 +162,7 @@ button:focus-visible {
   top: 52%;
   transform: translateY(-50%);
   height: 6px;
-  width: calc(18px + (var(--trail, 0) * 46px));
+  width: calc(18px + (var(--trail, 0) * 44px));
   border-radius: 999px;
   background: linear-gradient(
     90deg,
@@ -195,8 +195,8 @@ button:focus-visible {
 @media (max-width: 640px) {
   #flyby {
     position: absolute; /* relative to #intro */
-    width: 86px;
-    height: 58px;
+    width: 78px;
+    height: 52px;
     opacity: 0.58;
     z-index: 0;
   }
@@ -292,6 +292,8 @@ button:focus-visible {
   position: relative;
   overflow: hidden;
 }
+
+/* existing glint sweep */
 .glass::after {
   content: "";
   position: absolute;
@@ -338,7 +340,7 @@ button:focus-visible {
   font-size: 0.85rem;
 }
 
-/* ===== HERO scrollytelling variables ===== */
+/* ===== HERO ===== */
 .hero-screen {
   --hero-vig: 0.55;
   --hero-warp: 0;
@@ -354,7 +356,7 @@ button:focus-visible {
   overflow: hidden;
 }
 
-/* “Warp” layer that ramps up during hero→next section scroll */
+/* “Warp” layer */
 .hero-screen::before{
   content:"";
   position:absolute;
@@ -562,15 +564,14 @@ button:focus-visible {
   height:100%;
   object-fit:cover;
   display:block;
-  transform: none;           /* FIX: remove upscaling blur */
-  opacity: 1;                /* FIX: stop dulling */
+  transform: none;
+  opacity: 1;
   filter: saturate(1.08) contrast(1.05);
 }
 .project-thumb::after {
   content:"";
   position:absolute;
   inset:0;
-  /* FIX: less dark overlay so thumbs stay crisp */
   background: linear-gradient(180deg, rgba(0,0,0,0.02), rgba(0,0,0,0.40));
 }
 
@@ -585,13 +586,12 @@ button:focus-visible {
 
 /* Mobile: projects fit 1 per screen */
 @media (max-width: 640px) {
-  .drawer-btn { display:none; }
   .projects-drawer::before, .projects-drawer::after { display:none; }
   .drawer-track { padding-left:0; padding-right:0; scroll-padding-left:0; scroll-padding-right:0; }
   .project-card { width: 100%; }
 }
 
-/* ===== CONTACT (more spacing + smoother hover) ===== */
+/* ===== CONTACT ===== */
 .contact-wrap {
   display: flex;
   justify-content: flex-start;
@@ -603,7 +603,7 @@ button:focus-visible {
 .contact-bar {
   display: inline-flex;
   align-items: center;
-  gap: 26px;                 /* FIX: more spacing between icons */
+  gap: 26px;
   padding: 14px 18px;
   border-radius: 20px;
 
@@ -625,7 +625,7 @@ button:focus-visible {
 
 .contact-icon {
   position: relative;
-  width: 64px;              /* FIX: slightly bigger */
+  width: 64px;
   height: 64px;
 
   display: inline-flex;
@@ -713,67 +713,50 @@ button:focus-visible {
 
 @media (hover: none) { .contact-icon::after { display: none; } }
 
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .card-hover, .drawer-btn, .nav-pill, .cert-row, .contact-icon { transition: none; }
-  .scroll-indicator { animation: none; }
-  #flyby .thruster { animation: none; }
-  .reveal { opacity: 1; transform: none; filter: none; transition: none; }
-  .os-rule { transform: scaleX(1); transition: none; }
-  .glass::after { display: none; }
-  .skill-card .pill { opacity: 1; transform: none; transition: none; }
-  #scroll-progress-bar { animation: none; }
-  .timeline::after { animation: none; display: none; }
-}
 /* =========================
-   GLASS FOCUS + REFLECTIONS (NEW)
+   FIXED: Glass focus hover with reflections
    ========================= */
-
-/* only focus real "boxes" */
 .glass.card-hover{
   --mx: 50%;
   --my: 30%;
   --tiltX: 0deg;
   --tiltY: 0deg;
   transform-style: preserve-3d;
-  will-change: transform, filter, opacity, background;
+  will-change: transform, filter, opacity;
 }
 
-/* Hover already exists, but we upgrade it with reflection layers */
-.glass.card-hover:hover,
-.glass.card-hover.is-focused{
-  backdrop-filter: blur(14px) saturate(1.10);
-  -webkit-backdrop-filter: blur(14px) saturate(1.10);
-
-  /* reflection / refraction lighting */
+/* reflection layer (separate from glint ::after) */
+.glass.card-hover::before{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  border-radius: 18px;
+  pointer-events:none;
+  opacity: 0;
+  transition: opacity 160ms ease;
   background:
     radial-gradient(900px 420px at var(--mx) var(--my),
-      rgba(255,255,255,0.16),
+      rgba(255,255,255,0.18),
       rgba(255,255,255,0.00) 62%),
     radial-gradient(720px 360px at calc(var(--mx) + 18%) calc(var(--my) + 10%),
-      rgba(34,211,238,0.12),
-      rgba(34,211,238,0.00) 60%),
+      rgba(34,211,238,0.10),
+      rgba(34,211,238,0.00) 62%),
     radial-gradient(720px 360px at calc(var(--mx) - 18%) calc(var(--my) + 10%),
-      rgba(168,85,247,0.10),
-      rgba(168,85,247,0.00) 60%),
-    linear-gradient(180deg, rgba(255,255,255,0.075), rgba(255,255,255,0.03));
-
-  border-color: rgba(255,255,255,0.22);
-
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.08) inset,
-    0 26px 72px rgba(0,0,0,0.42),
-    0 0 34px rgba(34,211,238,0.10),
-    0 0 30px rgba(168,85,247,0.08);
+      rgba(168,85,247,0.09),
+      rgba(168,85,247,0.00) 62%);
+  mix-blend-mode: screen;
 }
 
-/* Ensure hovered card sits above neighbors even without focus-mode */
-.glass.card-hover:hover { position: relative; z-index: 4; }
+/* show reflections on hover and on focused */
+.glass.card-hover:hover::before,
+.glass.card-hover.is-focused::before{
+  opacity: 1;
+}
 
-/* Focus mode dims everything except the active card */
+/* Focus mode dims others */
 body.focus-mode .glass.card-hover{
-  opacity: 0.50;
-  filter: saturate(0.92) brightness(0.98) blur(0.2px);
+  opacity: 0.52;
+  filter: saturate(0.92) brightness(0.98);
   transform: translateY(0) scale(0.995);
   transition: opacity 180ms ease, filter 180ms ease, transform 180ms ease;
 }
@@ -781,8 +764,17 @@ body.focus-mode .glass.card-hover{
 body.focus-mode .glass.card-hover.is-focused{
   opacity: 1;
   filter: saturate(1.08) brightness(1.03);
+  border-color: rgba(255,255,255,0.22);
 
-  /* subtle “glass tilt” */
+  backdrop-filter: blur(14px) saturate(1.10);
+  -webkit-backdrop-filter: blur(14px) saturate(1.10);
+
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.08) inset,
+    0 26px 72px rgba(0,0,0,0.42),
+    -1px 0 0 rgba(34,211,238,0.14),
+     1px 0 0 rgba(168,85,247,0.12);
+
   transform:
     translateY(-3px)
     perspective(900px)
@@ -793,18 +785,7 @@ body.focus-mode .glass.card-hover.is-focused{
   z-index: 6;
 }
 
-/* faint chromatic edge split (very subtle) */
-body.focus-mode .glass.card-hover.is-focused{
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.10) inset,
-    0 26px 72px rgba(0,0,0,0.44),
-    -1px 0 0 rgba(34,211,238,0.12),
-     1px 0 0 rgba(168,85,247,0.10),
-    0 0 34px rgba(34,211,238,0.10),
-    0 0 30px rgba(168,85,247,0.08);
-}
-
-/* Touch devices: don't force focus mode (no hover) */
+/* Touch devices: no forced focus-mode */
 @media (hover: none) {
   body.focus-mode .glass.card-hover{
     opacity: 1;
@@ -816,10 +797,155 @@ body.focus-mode .glass.card-hover.is-focused{
   }
 }
 
-/* Reduced motion: disable tilting */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  body.focus-mode .glass.card-hover,
-  body.focus-mode .glass.card-hover.is-focused{
-    transform: none !important;
+  .card-hover, .drawer-btn, .nav-pill, .cert-row, .contact-icon { transition: none; }
+  .scroll-indicator { animation: none; }
+  #flyby .thruster { animation: none; }
+  .reveal { opacity: 1; transform: none; filter: none; transition: none; }
+  .os-rule { transform: scaleX(1); transition: none; }
+  .glass::after { display: none; }
+  .glass.card-hover::before { display:none; }
+  .skill-card .pill { opacity: 1; transform: none; transition: none; }
+  #scroll-progress-bar { animation: none; }
+  .timeline::after { animation: none; display: none; }
+}
+/* =========================================================
+   GLASS FOCUS MODE - HARD FIX (CSS + stacking)
+   Works even without JS (via :has), JS adds moving hotspot.
+   ========================================================= */
+
+/* Ensure pseudo layers render correctly */
+.glass.card-hover { position: relative; isolation: isolate; }
+.glass.card-hover::before { z-index: 1; }
+.glass.card-hover::after  { z-index: 1; }
+.glass.card-hover > *     { position: relative; z-index: 2; }
+
+/* Focus ring + premium lift */
+.glass.card-hover.is-focused,
+.glass.card-hover:hover{
+  border-color: rgba(255,255,255,0.22);
+}
+
+/* -------- CSS-only focus mode (no JS needed) -------- */
+@supports selector(body:has(.glass.card-hover:hover)) {
+  body:has(.glass.card-hover:hover) .glass.card-hover{
+    opacity: 0.52;
+    filter: saturate(0.92) brightness(0.98);
+    transform: translateY(0) scale(0.995);
+    transition: opacity 180ms ease, filter 180ms ease, transform 180ms ease;
+  }
+
+  body:has(.glass.card-hover:hover) .glass.card-hover:hover{
+    opacity: 1;
+    filter: saturate(1.08) brightness(1.03);
+    backdrop-filter: blur(14px) saturate(1.10);
+    -webkit-backdrop-filter: blur(14px) saturate(1.10);
+
+    transform:
+      translateY(-3px)
+      perspective(900px)
+      rotateX(var(--tiltX, 0deg))
+      rotateY(var(--tiltY, 0deg))
+      scale(1.01);
+
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.08) inset,
+      0 26px 72px rgba(0,0,0,0.42),
+      -1px 0 0 rgba(34,211,238,0.14),
+       1px 0 0 rgba(168,85,247,0.12);
+
+    z-index: 6;
   }
 }
+
+/* -------- JS focus-mode fallback (body.focus-mode) -------- */
+body.focus-mode .glass.card-hover{
+  opacity: 0.52;
+  filter: saturate(0.92) brightness(0.98);
+  transform: translateY(0) scale(0.995);
+  transition: opacity 180ms ease, filter 180ms ease, transform 180ms ease;
+}
+
+body.focus-mode .glass.card-hover.is-focused{
+  opacity: 1;
+  filter: saturate(1.08) brightness(1.03);
+
+  backdrop-filter: blur(14px) saturate(1.10);
+  -webkit-backdrop-filter: blur(14px) saturate(1.10);
+
+  transform:
+    translateY(-3px)
+    perspective(900px)
+    rotateX(var(--tiltX, 0deg))
+    rotateY(var(--tiltY, 0deg))
+    scale(1.01);
+
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.08) inset,
+    0 26px 72px rgba(0,0,0,0.42),
+    -1px 0 0 rgba(34,211,238,0.14),
+     1px 0 0 rgba(168,85,247,0.12);
+
+  z-index: 6;
+}
+
+/* Touch devices: no dimming */
+@media (hover: none) {
+  body.focus-mode .glass.card-hover { opacity: 1; filter: none; transform: none; }
+  body.focus-mode .glass.card-hover.is-focused { transform: none; }
+}
+/* =========================================================
+   CRYSTAL CLEAR FOCUS MODE (override)
+   - No 3D transform on the card (text stays sharp)
+   - Tilt only on the reflection overlay (::before)
+   - No blur/filter on siblings
+   ========================================================= */
+
+/* siblings: dim only, no filters (keeps them crisp) */
+body.focus-mode .glass.card-hover{
+  opacity: 0.58 !important;
+  filter: none !important;
+  transform: none !important;
+}
+body.focus-mode .glass.card-hover.is-focused{
+  opacity: 1 !important;
+  filter: none !important;
+  /* keep it 2D */
+  transform: translateY(-3px) scale(1.01) !important;
+}
+
+/* CSS-only focus mode (works even if JS dies) */
+@supports selector(body:has(.glass.card-hover:hover)) {
+  body:has(.glass.card-hover:hover) .glass.card-hover{
+    opacity: 0.58 !important;
+    filter: none !important;
+    transform: none !important;
+  }
+  body:has(.glass.card-hover:hover) .glass.card-hover:hover{
+    opacity: 1 !important;
+    filter: none !important;
+    /* keep it 2D */
+    transform: translateY(-3px) scale(1.01) !important;
+  }
+}
+
+/* Put the tilt ONLY on the reflection layer so text never blurs */
+.glass.card-hover::before{
+  transform: none;
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+/* when focused/hovered: tilt the reflection overlay, not the card */
+body.focus-mode .glass.card-hover.is-focused::before,
+.glass.card-hover:hover::before{
+  transform: perspective(900px) rotateX(var(--tiltX, 0deg)) rotateY(var(--tiltY, 0deg));
+}
+
+/* optional: if even scale causes softness on your machine, use this instead:
+body.focus-mode .glass.card-hover.is-focused,
+@supports selector(body:has(.glass.card-hover:hover)) { body:has(.glass.card-hover:hover) .glass.card-hover:hover }
+-> transform: translateY(-3px) !important;
+*/
