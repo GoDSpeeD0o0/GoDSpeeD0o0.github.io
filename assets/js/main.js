@@ -272,6 +272,63 @@
   })();
 
   // =========================
+  // Magnetic Buttons
+  // =========================
+  (() => {
+    if (reduceMotionPref) return;
+    const magneticBtns = document.querySelectorAll(".contact-icon");
+    
+    magneticBtns.forEach((btn) => {
+      const svg = btn.querySelector("svg");
+      
+      btn.addEventListener("mousemove", (e) => {
+        const rect = btn.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        
+        // Distance from center
+        const distanceX = e.clientX - centerX;
+        const distanceY = e.clientY - centerY;
+        
+        // Magnetic pull factor
+        const pullBtn = 0.35;
+        const pullSvg = 0.45;
+        
+        btn.classList.add('is-magnetic');
+        btn.style.transform = `translate3d(${distanceX * pullBtn}px, ${distanceY * pullBtn}px, 0) scale(1.07)`;
+        if (svg) svg.style.transform = `translate3d(${distanceX * pullSvg}px, ${distanceY * pullSvg}px, 0) scale(1.15)`;
+      });
+      
+      btn.addEventListener("mouseleave", () => {
+        btn.classList.remove('is-magnetic');
+        btn.style.transform = "";
+        if (svg) svg.style.transform = "";
+      });
+    });
+  })();
+
+  // =========================
+  // Scroll-tied Timeline (Experience)
+  // =========================
+  (() => {
+    if (reduceMotionPref || !hasGSAP) return;
+    const timelineSection = document.getElementById("experience");
+    if (!timelineSection) return;
+    
+    // We add an active class to timeline items as we scroll past them
+    const items = timelineSection.querySelectorAll(".timeline-item");
+    items.forEach((item) => {
+      window.gsap.to(item, {
+        scrollTrigger: {
+          trigger: item,
+          start: "top 65%",
+          toggleClass: "is-active"
+        }
+      });
+    });
+  })();
+
+  // =========================
   // Projects drawer
   // =========================
   const projectsSection = document.getElementById("projects");

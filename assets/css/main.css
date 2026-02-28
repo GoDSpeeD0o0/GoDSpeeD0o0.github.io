@@ -31,7 +31,7 @@ main { position: relative; z-index: 1; }
 section[id] { scroll-margin-top: calc(var(--header-h) + 18px); }
 
 .mono {
-  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
 }
 
@@ -101,6 +101,18 @@ button:focus-visible {
       rgba(0,0,0,0.22) 58%,
       rgba(0,0,0,0.70) 100%);
   opacity: 0.14;
+}
+
+/* Global Noise overlay */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 50; /* Above most things, but with pointer-events: none */
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.025; /* Very subtle */
+  mix-blend-mode: overlay;
 }
 
 /* Education GPA row */
@@ -209,10 +221,10 @@ button:focus-visible {
 .os-header.is-visible .os-rule::before{ animation: bootPing 700ms ease-out 1; }
 @keyframes bootPing{ 0%{opacity:0;transform:scale(.65)} 30%{opacity:1;transform:scale(1.15)} 100%{opacity:.25;transform:scale(1)} }
 .section-title {
-  font-family: "Space Grotesk", Poppins, system-ui, sans-serif;
+  font-family: "Poppins", system-ui, sans-serif;
   font-size: 1.72rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 /* Nav pills */
@@ -221,22 +233,45 @@ button:focus-visible {
   align-items:center;
   justify-content:center;
   padding:8px 12px;
+  position: relative;
   border-radius:999px;
-  border:1px solid rgba(255,255,255,0.14);
-  background: rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
   color: rgba(255,255,255,0.84);
   font-size:0.85rem;
-  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+  transition: color 220ms ease, background 220ms ease, border-color 220ms ease;
   text-decoration:none;
+  overflow: hidden;
+}
+.nav-pill::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(34,211,238,0.8), rgba(168,85,247,0.8));
+  transition: width 260ms ease, left 260ms ease;
 }
 .nav-pill:hover{
-  background: rgba(255,255,255,0.09);
-  border-color: rgba(255,255,255,0.22);
-  transform: translateY(-1px);
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.98);
+}
+.nav-pill:hover::after {
+  width: 60%;
+  left: 20%;
 }
 .nav-pill-strong{
-  background: linear-gradient(90deg, rgba(34,211,238,0.18), rgba(168,85,247,0.16));
-  border-color: rgba(255,255,255,0.20);
+  background: linear-gradient(90deg, rgba(34,211,238,0.12), rgba(168,85,247,0.12));
+  border-color: rgba(255,255,255,0.15);
+}
+.nav-pill-strong::after {
+  display: none;
+}
+.nav-pill-strong:hover {
+  background: linear-gradient(90deg, rgba(34,211,238,0.22), rgba(168,85,247,0.20));
+  border-color: rgba(255,255,255,0.30);
 }
 
 .gradient-text{
@@ -354,7 +389,8 @@ button:focus-visible {
   max-width:54rem;
   margin-left:auto;
   margin-right:auto;
-  font-family:"JetBrains Mono", ui-monospace, monospace;
+  font-family: "Poppins", system-ui, sans-serif;
+  font-weight: 500;
   color: rgba(255,255,255,0.78);
   font-size: clamp(0.98rem, 1.6vw, 1.14rem);
   line-height:1.55;
@@ -383,7 +419,7 @@ button:focus-visible {
 @media (min-width:640px){ .stat{ grid-column: span 6; } }
 @media (min-width:1024px){ .stat{ grid-column: span 3; } }
 .stat .label{ font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase; color: rgba(255,255,255,0.58); }
-.stat .value{ margin-top:6px; font-family:"Space Grotesk", Poppins, system-ui, sans-serif; font-size:1.55rem; font-weight:900; color: rgba(255,255,255,0.92); }
+.stat .value{ margin-top:6px; font-family:"Poppins", system-ui, sans-serif; font-size:1.55rem; font-weight:800; color: rgba(255,255,255,0.92); }
 .stat .note{ margin-top:4px; color: rgba(255,255,255,0.70); font-size:0.9rem; }
 
 /* Skills */
@@ -398,6 +434,15 @@ button:focus-visible {
 .skill-emerald{ --accent: rgba(16,185,129,0.92); --accent-glow: rgba(16,185,129,0.09); --pill-bg: rgba(16,185,129,0.085); --pill-border: rgba(16,185,129,0.16); }
 .skill-amber{ --accent: rgba(245,158,11,0.92); --accent-glow: rgba(245,158,11,0.08); --pill-bg: rgba(245,158,11,0.085); --pill-border: rgba(245,158,11,0.16); }
 .skill-cert::after{ content:""; position:absolute; left:0; right:0; top:0; height:3px; opacity:0.95; background: linear-gradient(90deg, rgba(34,211,238,0.95), rgba(168,85,247,0.95)); }
+
+/* Add slow pulse to pills inside skill cards so it feels 'alive' */
+@keyframes pillPulse {
+  0%, 100% { box-shadow: 0 0 0px transparent; }
+  50% { box-shadow: 0 0 12px var(--accent-glow); }
+}
+.skill-card:hover .pill {
+  animation: pillPulse 3s infinite alternate;
+}
 
 /* Cert list */
 .cert-list{ margin-top:14px; display:grid; gap:10px; }
@@ -503,9 +548,14 @@ button:focus-visible {
   height:100%;
   object-fit:cover;
   display:block;
-  transform:none;
+  transform: scale(1.0);
   opacity:1;
   filter: saturate(1.08) contrast(1.05);
+  transition: transform 12s ease-out; /* Slow cinematic pan/zoom initially setup */
+}
+/* Trigger the cinematic zoom when the card is active */
+.project-card.is-active .project-thumb img {
+  transform: scale(1.07);
 }
 .project-thumb::after{
   content:"";
@@ -560,20 +610,26 @@ button:focus-visible {
   text-decoration:none;
   will-change: transform;
   transform: translateZ(0);
-  transition: transform 170ms cubic-bezier(.2,.9,.2,1), border-color 160ms ease, box-shadow 180ms ease, filter 160ms ease, background 160ms ease;
+  /* The transition handles the snapping back when mouse leaves. Magnetic effect uses JS */
+  transition: transform 300ms cubic-bezier(0.25, 1, 0.5, 1), border-color 160ms ease, box-shadow 180ms ease, filter 160ms ease, background 160ms ease;
 }
 .contact-icon:hover,
 .contact-icon:focus-visible{
-  transform: translateY(-2px) scale(1.07);
+  /* Standard hover fallback if JS is disabled */
   border-color: rgba(255,255,255,0.26);
-  filter: brightness(1.06);
+  filter: brightness(1.10);
   box-shadow:
     0 0 0 1px rgba(255,255,255,0.07) inset,
-    0 18px 46px rgba(0,0,0,0.34),
-    0 0 22px rgba(34,211,238,0.10),
-    0 0 20px rgba(168,85,247,0.08);
+    0 22px 50px rgba(0,0,0,0.38),
+    0 0 22px rgba(34,211,238,0.12),
+    0 0 20px rgba(168,85,247,0.10);
 }
-.contact-icon:active{ transform: translateY(-1px) scale(1.03); }
+/* JS applies a .is-magnetic class removing the transition temporarily so it tracks 1:1 */
+.contact-icon.is-magnetic {
+  transition: border-color 160ms ease, box-shadow 180ms ease, filter 160ms ease, background 160ms ease;
+}
+
+.contact-icon:active{ transform: scale(0.96) !important; }
 .contact-icon svg{
   width:26px; height:26px;
   stroke: rgba(255,255,255,0.92);
@@ -581,10 +637,11 @@ button:focus-visible {
   fill:none;
   stroke-linecap:round;
   stroke-linejoin:round;
-  transition: transform 160ms ease, opacity 160ms ease;
+  transition: transform 400ms cubic-bezier(0.25, 1, 0.5, 1), opacity 160ms ease;
 }
+/* The JS handles the position of SVG, this is just scaling */
 .contact-icon:hover svg,
-.contact-icon:focus-visible svg{ transform: scale(1.08); }
+.contact-icon:focus-visible svg{ transform: scale(1.15) !important; }
 
 .contact-icon::after{
   content: attr(data-label);
