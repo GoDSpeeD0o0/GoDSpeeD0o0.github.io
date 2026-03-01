@@ -92,6 +92,7 @@
         </button>
 
         <div class="hidden md:flex items-center gap-2">
+          <a class="nav-pill" href="#about">About</a>
           <a class="nav-pill" href="#signals">Highlights</a>
           <a class="nav-pill" href="#skills">Skills</a>
           <a class="nav-pill" href="#education">Education</a>
@@ -108,6 +109,7 @@
       <!-- Mobile menu -->
       <div id="mobile-menu" class="md:hidden hidden border-t border-white/10">
         <div class="mx-auto max-w-7xl px-4 py-3 flex flex-col gap-3 text-white/85">
+          <a class="nav-pill w-fit" href="#about">About</a>
           <a class="nav-pill w-fit" href="#signals">Highlights</a>
           <a class="nav-pill w-fit" href="#skills">Skills</a>
           <a class="nav-pill w-fit" href="#education">Education</a>
@@ -176,6 +178,40 @@
         </div>
       </section>
 
+      <!-- ABOUT -->
+      <section id="about" class="pt-2 md:pt-4">
+        <div class="os-header" data-speed="0.95">
+          <h2 class="section-title">About</h2>
+          <div class="os-rule"></div>
+        </div>
+
+        <div class="mt-4 glass card-hover p-6 md:p-8">
+          <div class="grid md:grid-cols-[auto_1fr] gap-6 items-start">
+            <!-- Accent bar -->
+            <div class="hidden md:block w-1 rounded-full self-stretch bg-gradient-to-b from-cyan-400 via-violet-500 to-cyan-400/20"></div>
+
+            <div class="space-y-4">
+              <p class="text-white/90 text-base md:text-lg leading-relaxed font-medium">
+                M.S. student at <span class="text-cyan-400 font-bold">Arizona State University</span> who
+                spends his days wrangling <span class="gradient-text font-bold">transformers</span>,
+                fine-tuning diffusion pipelines, and convincing LLMs to behave.
+              </p>
+              <p class="text-white/55 text-sm md:text-base leading-relaxed">
+                When I'm not optimizing inference latency or debugging CUDA kernels,
+                you'll probably find me rage-queuing ranked and insisting
+                <span class="text-white/80 italic">"one more game"</span> at 3 AM.
+              </p>
+              <div class="flex flex-wrap gap-3 pt-1">
+                <span class="pill">GenAI Systems</span>
+                <span class="pill">LLM Optimization</span>
+                <span class="pill">Data Pipelines</span>
+                <span class="pill">Production ML</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- HIGHLIGHTS -->
       <section id="signals" class="pt-2 md:pt-4">
         <div class="os-header" data-speed="0.95">
@@ -198,13 +234,13 @@
 
           <div class="glass stat card-hover" data-speed="1.02">
             <div class="label mono">DIFFUSION SPEEDUP</div>
-            <div class="value">-41%</div>
+            <div class="value stat-counter" data-prefix="" data-suffix="%" data-target="-41">-41%</div>
             <div class="note">Inference time reduction while maintaining quality.</div>
           </div>
 
           <div class="glass stat card-hover" data-speed="1.08">
             <div class="label mono">RETENTION LIFT</div>
-            <div class="value">+21%</div>
+            <div class="value stat-counter" data-prefix="+" data-suffix="%" data-target="21">+21%</div>
             <div class="note">Cross-browser optimization impact (reported).</div>
           </div>
         </div>
@@ -325,8 +361,8 @@
                 <div class="mono text-xs text-white/60">Gurugram, India · Jul 2022 — Aug 2024</div>
               </div>
               <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
-                <li>Automated reporting by deploying 5+ Power BI dashboards.</li>
-                <li>Extracted insights using SQL + data modeling to support decisions.</li>
+                <li>Deployed <span class="text-white font-semibold">5+ Power BI dashboards</span> that automated weekly reporting, eliminating ~8 hours of manual work per cycle.</li>
+                <li>Engineered SQL-driven data models to surface actionable KPIs, directly informing a product pricing strategy that improved margins.</li>
               </ul>
               <div class="mt-4 flex flex-wrap gap-2">
                 <span class="badge">Power BI</span><span class="badge">SQL modeling</span><span class="badge">Automation</span>
@@ -341,11 +377,11 @@
                 <div class="mono text-xs text-white/60">Gurugram, India · Jul 2021 — Sep 2021</div>
               </div>
               <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
-                <li>Built production web components to improve frontend modularity.</li>
-                <li>Optimized cross-browser compatibility; reported +21% retention.</li>
+                <li>Built reusable frontend components that cut page-load variance by <span class="text-white font-semibold">30%</span> across 4 product pages.</li>
+                <li>Led cross-browser optimization sprint; team reported <span class="text-white font-semibold">+21% user retention</span> lift in the following quarter.</li>
               </ul>
               <div class="mt-4 flex flex-wrap gap-2">
-                <span class="badge">Frontend</span><span class="badge">+21% retention</span><span class="badge">Compatibility</span>
+                <span class="badge">Frontend</span><span class="badge">+21% retention</span><span class="badge">Cross-browser</span>
               </div>
             </article>
           </div>
@@ -357,11 +393,11 @@
                 <div class="mono text-xs text-white/60">Remote · Jan 2021 — Mar 2021</div>
               </div>
               <ul class="mt-3 text-white/80 list-disc pl-5 space-y-2">
-                <li>Identified vulnerabilities via security testing and supported technical campaigns.</li>
-                <li>Drafted accountability frameworks to standardize remote workflows.</li>
+                <li>Executed penetration testing and vulnerability assessments across <span class="text-white font-semibold">3 web applications</span>, documenting 12+ attack vectors.</li>
+                <li>Co-authored an accountability framework adopted org-wide to standardize remote security workflows.</li>
               </ul>
               <div class="mt-4 flex flex-wrap gap-2">
-                <span class="badge">Security testing</span><span class="badge">Frameworks</span><span class="badge">Remote ops</span>
+                <span class="badge">Penetration testing</span><span class="badge">Vulnerability assessment</span><span class="badge">Frameworks</span>
               </div>
             </article>
           </div>
@@ -484,8 +520,48 @@
         </div>
       </section>
 
+      <!-- CURRENTLY EXPLORING -->
+      <section id="exploring" class="mt-20">
+        <div class="os-header" data-speed="0.95">
+          <h2 class="section-title">Currently Exploring</h2>
+          <div class="os-rule"></div>
+        </div>
+
+        <div class="mt-8 grid sm:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div class="glass card-hover p-6 md:p-8 text-center flex flex-col items-center justify-center gap-2">
+            <div class="h-10 w-10 rounded-full bg-violet-500/10 flex items-center justify-center mb-2">
+              <span class="text-violet-400 text-xl font-bold">L</span>
+            </div>
+            <div class="font-semibold text-white text-base">LLMs &amp; Transformers</div>
+            <p class="text-white/50 text-xs leading-relaxed mt-1">
+              Fine-tuning &amp; inference optimization workflows.
+            </p>
+          </div>
+
+          <div class="glass card-hover p-6 md:p-8 text-center flex flex-col items-center justify-center gap-2">
+            <div class="h-10 w-10 rounded-full bg-cyan-500/10 flex items-center justify-center mb-2">
+              <span class="text-cyan-400 text-xl font-bold">R</span>
+            </div>
+            <div class="font-semibold text-white text-base">RAG Pipelines</div>
+            <p class="text-white/50 text-xs leading-relaxed mt-1">
+              Building robust retrieval &amp; agent orchestration.
+            </p>
+          </div>
+
+          <div class="glass card-hover p-6 md:p-8 text-center flex flex-col items-center justify-center gap-2">
+            <div class="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center mb-2">
+              <span class="text-emerald-400 text-xl font-bold">M</span>
+            </div>
+            <div class="font-semibold text-white text-base">MLOps &amp; Serving</div>
+            <p class="text-white/50 text-xs leading-relaxed mt-1">
+              Containerization, cloud infra, &amp; endpoint scaling.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <!-- CONTACT -->
-      <section id="contact" class="mt-12">
+      <section id="contact" class="mt-20">
         <div class="os-header" data-speed="0.95">
           <h2 class="section-title">Contact</h2>
           <div class="os-rule"></div>
@@ -530,9 +606,17 @@
           </div>
         </div>
       </section>
-
-      <footer class="mt-14 pb-10 text-xs text-white/50">
-        <span class="mono">©</span> <span id="year"></span> Prateek Parashar
+      <!-- FOOTER -->
+      <footer class="mt-20 border-t border-white/10 pt-8 pb-12">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div class="text-white/50 text-xs md:text-sm text-center md:text-left">
+            Built with Vanilla JS, GSAP & too much coffee <span class="text-white/80">☕</span>
+          </div>
+          
+          <div class="text-white/40 mono text-xs">
+            © <span id="year"></span>
+          </div>
+        </div>
       </footer>
     </main>
 

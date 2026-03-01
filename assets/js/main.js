@@ -161,6 +161,95 @@
 
   }
 
+  // =========================
+  // Scroll-Triggered Reveals
+  // =========================
+  if (hasGSAP && !reduceMotionPref) {
+    // Tag everything we want to reveal
+    const revealSelectors = [
+      '#about .glass',
+      '.stat',
+      '.skill-card',
+      '.cert-card',
+      '.timeline-item',
+      '#education .glass',
+      '.contact-card',
+      '#exploring .glass',
+      '.os-header'
+    ];
+    
+    document.querySelectorAll(revealSelectors.join(',')).forEach(el => {
+      el.classList.add('reveal');
+    });
+
+    // Use ScrollTrigger.batch for stagger-grouped reveals
+    window.ScrollTrigger.batch('.reveal', {
+      onEnter: (batch) => {
+        window.gsap.to(batch, {
+          opacity: 1,
+          y: 0,
+          duration: 0.7,
+          ease: 'power2.out',
+          stagger: 0.12,
+          overwrite: true,
+          onComplete: function() {
+            // Add class so CSS can take over
+            batch.forEach(el => el.classList.add('is-visible'));
+          }
+        });
+      },
+      start: 'top 88%',
+      once: true  // Only animate in once, don't re-hide
+    });
+  }
+
+  // =========================
+  // Flashlight Glow on Glass Cards
+  // =========================
+  const glassCards = document.querySelectorAll('.glass.card-hover');
+  if (glassCards.length > 0 && !('ontouchstart' in window)) {
+    glassCards.forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+      });
+    });
+  }
+
+  // =========================
+  // Animated Stats Counter
+  // =========================
+  const statCounters = document.querySelectorAll('.stat-counter');
+  if (statCounters.length > 0 && hasGSAP && !reduceMotionPref) {
+    statCounters.forEach(counter => {
+      const target = parseFloat(counter.getAttribute('data-target'));
+      const prefix = counter.getAttribute('data-prefix') || '';
+      const suffix = counter.getAttribute('data-suffix') || '';
+      
+      window.ScrollTrigger.create({
+        trigger: counter,
+        start: 'top 90%',
+        once: true,
+        onEnter: () => {
+          const obj = { val: 0 };
+          window.gsap.to(obj, {
+            val: target,
+            duration: 1.5,
+            ease: "power2.out",
+            onUpdate: () => {
+              const current = Math.round(obj.val);
+              const sign = (prefix === '+' && current > 0) ? '+' : '';
+              counter.innerText = `${sign}${current}${suffix}`;
+            }
+          });
+        }
+      });
+    });
+  }
+
   // Smooth anchor scrolling with Lenis
   const headerOffset = () => (headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0);
   document.querySelectorAll('a[href^="#"]').forEach((a) => {
