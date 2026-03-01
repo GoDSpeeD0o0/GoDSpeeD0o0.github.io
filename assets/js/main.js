@@ -1,5 +1,21 @@
 (() => {
   // =========================
+  // Minimal Boot sequence handoff
+  // =========================
+  const bootScreen = document.getElementById("boot-screen");
+  if (bootScreen) {
+    // Disable scrolling during the quick boot
+    document.body.style.overflow = "hidden";
+    
+    // The CSS animation takes 2.6s. We trigger the handoff right as it fades out completely.
+    setTimeout(() => {
+      bootScreen.remove();
+      document.body.style.overflow = ""; // Re-enable scrolling
+      document.documentElement.style.overflow = "";
+    }, 2550); // Just 50ms before the full 2.6s CSS animation finishes
+  }
+
+  // =========================
   // Utilities
   // =========================
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -97,6 +113,52 @@
           .to(heroEnter, { autoAlpha: 0, y: 18, ease: "none" }, 0.05);
       }
     }
+    // Global Parallax Layers
+    if (!reduceMotionPref && window.ScrollTrigger) {
+      
+      // 1. Atmosphere Orbs (Fixed behind content)
+      window.gsap.utils.toArray('.parallax-orb').forEach(orb => {
+        const speed = parseFloat(orb.getAttribute('data-speed')) || 0;
+        // Move them up or down by their speed fraction relative to the total scroll height
+        window.gsap.to(orb, {
+          y: () => window.ScrollTrigger.maxScroll("window") * speed,
+          ease: "none",
+          scrollTrigger: {
+            start: 0,
+            end: "max",
+            scrub: true,
+            invalidateOnRefresh: true
+          }
+        });
+      });
+
+      // 2. High-Performance DOM Parallax (Headers and Cards)
+      window.gsap.utils.toArray('[data-speed]:not(.parallax-orb)').forEach(el => {
+        const speed = parseFloat(el.getAttribute('data-speed'));
+        if(speed === 1 || isNaN(speed)) return;
+        
+        // 1.0 is normal speed (no parallax). 
+        // 0.95 means it should move 5% SLOWER than the scroll (so it slides UP visually an extra 5% of viewport)
+        // 1.05 means it should move 5% FASTER than the scroll (so it slides DOWN visually)
+        
+        const yOffset = (1 - speed) * 100; // e.g. (1 - 0.95) * 100 = 5vh 
+        
+        window.gsap.fromTo(el, 
+          { y: `${-yOffset}vh` }, // Start slightly offset in one direction
+          { 
+            y: `${yOffset}vh`, // End slightly offset in the other
+            ease: "none",
+            scrollTrigger: {
+              trigger: el,
+              start: "top bottom", // Start when top of element hits bottom of screen
+              end: "bottom top",   // End when bottom of element hits top of screen
+              scrub: true
+            }
+          }
+        );
+      });
+    }
+
   }
 
   // Smooth anchor scrolling with Lenis
@@ -1130,4 +1192,109 @@
       rover?.resize();
     }
   });
+
+  // =========================
+  // Neural Network Cursor
+  // =========================
+  const cursorCanvas = document.getElementById("neural-cursor");
+  if (cursorCanvas && !('ontouchstart' in window)) { // Only on non-touch devices
+    const ctx = cursorCanvas.getContext("2d");
+    
+    // Resize canvas to match window
+    const resizeCanvas = () => {
+      cursorCanvas.width = window.innerWidth;
+      cursorCanvas.height = window.innerHeight;
+    };
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    // Mouse coordinates (target)
+    let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    let isHovering = false; // Flag for when over a button/link
+
+    // Listen for mouse moves
+    window.addEventListener("mousemove", (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+      
+      // Check if hovering over interactive elements to expand the cursor
+      const target = e.target;
+      isHovering = !!(target.closest('a') || target.closest('button') || target.closest('.card-hover') || target.closest('.is-magnetic'));
+    });
+
+    // The trailing nodes configuration
+    const numNodes = 6;
+    const nodes = [];
+    for (let i = 0; i < numNodes; i++) {
+        nodes.push({ x: mouse.x, y: mouse.y, radius: i === 0 ? 3 : 1.5 });
+    }
+
+    // Animation Loop
+    const drawCursor = () => {
+      // Clear previous frame
+      ctx.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+      
+      // Update positions (physics)
+      // Node[0] follows the mouse closely (spring physics)
+      // The rest follow the node ahead of them
+      let targetX = mouse.x;
+      let targetY = mouse.y;
+      
+      nodes.forEach((node, index) => {
+        // Friction/Easing based on depth
+        const easing = index === 0 ? 0.35 : 0.45;
+        
+        // Move towards target
+        node.x += (targetX - node.x) * easing;
+        node.y += (targetY - node.y) * easing;
+        
+        // Next node's target is THIS node's position
+        targetX = node.x;
+        targetY = node.y;
+      });
+
+      // Draw Connections (Lines)
+      ctx.beginPath();
+      ctx.moveTo(nodes[0].x, nodes[0].y);
+      for (let i = 1; i < numNodes; i++) {
+        ctx.lineTo(nodes[i].x, nodes[i].y);
+      }
+      ctx.strokeStyle = `rgba(34, 211, 238, ${isHovering ? 0 : 0.4})`; // Hide lines when hovering
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Draw Nodes (Dots)
+      nodes.forEach((node, index) => {
+        ctx.beginPath();
+        // The first node (lead) expands if hovering an interactive element
+        const targetRadius = index === 0 && isHovering ? 24 : node.radius;
+        // Smooth radius transition
+        node.currentRadius = node.currentRadius || node.radius;
+        node.currentRadius += (targetRadius - node.currentRadius) * 0.2;
+        
+        ctx.arc(node.x, node.y, node.currentRadius, 0, Math.PI * 2);
+        
+        if (index === 0) {
+           // Lead dot (Cyan or hollow ring when hovering)
+           ctx.fillStyle = isHovering ? "rgba(34, 211, 238, 0.1)" : "rgba(34, 211, 238, 1)";
+           if (isHovering) {
+               ctx.strokeStyle = "rgba(168, 85, 247, 0.8)";
+               ctx.lineWidth = 1.5;
+               ctx.stroke();
+           }
+        } else {
+           // Trail dots (Violet fading out)
+           ctx.fillStyle = `rgba(168, 85, 247, ${1 - (index / numNodes)})`;
+           if (isHovering) ctx.fillStyle = "transparent"; // Hide trail when hovering
+        }
+        ctx.fill();
+      });
+
+      requestAnimationFrame(drawCursor);
+    };
+
+    // Start loop
+    drawCursor();
+  }
+
 })();
