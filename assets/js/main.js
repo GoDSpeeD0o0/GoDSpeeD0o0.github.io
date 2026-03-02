@@ -250,6 +250,30 @@
     });
   }
 
+  // =========================
+  // Back to Top Button
+  // =========================
+  const backToTopBtn = document.getElementById('back-to-top');
+  if (backToTopBtn && hasGSAP) {
+    // Show/hide based on scroll position using GSAP
+    window.ScrollTrigger.create({
+      start: 'top -800px', // Show after scrolling 800px down
+      end: 99999,
+      toggleClass: {targets: backToTopBtn, className: "is-visible"},
+      onEnter: () => window.gsap.to(backToTopBtn, {opacity: 1, pointerEvents: 'auto', duration: 0.3}),
+      onLeaveBack: () => window.gsap.to(backToTopBtn, {opacity: 0, pointerEvents: 'none', duration: 0.3}),
+    });
+
+    // Scroll to top on click
+    backToTopBtn.addEventListener('click', () => {
+      if (lenis) {
+        lenis.scrollTo(0, { duration: 1.2, easing: (t) => 1 - Math.pow(1 - t, 4) });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+  }
+
   // Smooth anchor scrolling with Lenis
   const headerOffset = () => (headerEl ? Math.ceil(headerEl.getBoundingClientRect().height) : 0);
   document.querySelectorAll('a[href^="#"]').forEach((a) => {
@@ -1384,6 +1408,80 @@
 
     // Start loop
     drawCursor();
+  }
+
+  // =========================
+  // Scroll-Linked Twinkling Stars
+  // =========================
+  const bgCanvas = document.getElementById("ai-bg");
+  if (bgCanvas && !reduceMotionPref) {
+    const ctx = bgCanvas.getContext("2d");
+    let width, height;
+    
+    // Star properties
+    const numStars = window.innerWidth < 768 ? 80 : 200;
+    const stars = [];
+    
+    const resizeBg = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      bgCanvas.width = width;
+      bgCanvas.height = height;
+    };
+    window.addEventListener("resize", resizeBg);
+    resizeBg();
+
+    for (let i = 0; i < numStars; i++) {
+      stars.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        baseRadius: Math.random() * 1.2 + 0.2, // 0.2 to 1.4px
+        life: Math.random(),
+        speed: Math.random() * 0.05 + 0.01,
+        parallaxSpeed: Math.random() * 0.4 + 0.1 // For scroll
+      });
+    }
+
+    let scrollY = window.scrollY;
+    window.addEventListener('scroll', () => {
+      scrollY = window.scrollY;
+    }, {passive: true});
+
+    const drawStars = () => {
+      ctx.clearRect(0, 0, width, height);
+      
+      stars.forEach(star => {
+        // Twinkle
+        star.life += star.speed;
+        const opacity = Math.abs(Math.sin(star.life)) * 0.8 + 0.2; // 0.2 to 1.0
+        const radius = star.baseRadius + (Math.sin(star.life) * 0.4);
+
+        // Parallax scroll position
+        let currentY = star.y - (scrollY * star.parallaxSpeed);
+        
+        // Wrap around
+        if (currentY < 0) {
+          currentY = height - (Math.abs(currentY) % height);
+        } else if (currentY > height) {
+          currentY = currentY % height;
+        }
+
+        ctx.beginPath();
+        ctx.arc(star.x, currentY, Math.max(0.1, radius), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+        ctx.fill();
+        
+        // Add subtle cyan/violet glow to larger stars
+        if (star.baseRadius > 1.0) {
+           ctx.shadowBlur = 4;
+           ctx.shadowColor = (star.life % 2 < 1) ? 'rgba(34, 211, 238, 0.4)' : 'rgba(168, 85, 247, 0.4)';
+           ctx.fill();
+           ctx.shadowBlur = 0; // Reset
+        }
+      });
+      requestAnimationFrame(drawStars);
+    };
+    drawStars();
   }
 
 })();
