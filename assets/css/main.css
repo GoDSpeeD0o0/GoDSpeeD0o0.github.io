@@ -278,6 +278,29 @@ body::after {
   font-weight: 800;
   letter-spacing: -0.01em;
 }
+/* 3D Holographic Card */
+.card-hover {
+  transform-style: preserve-3d;
+  transition: transform 0.1s ease-out, border-color 0.3s ease;
+  will-change: transform;
+  position: relative;
+}
+
+.card-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 50;
+  mix-blend-mode: soft-light;
+  background: radial-gradient(
+    circle 800px at var(--glare-x, 50%) var(--glare-y, 50%),
+    rgba(255, 255, 255, 0.4),
+    rgba(255, 255, 255, 0) 40%
+  );
+}
 
 /* Nav pills */
 .nav-pill{
@@ -399,6 +422,15 @@ body::after {
   border:1px solid rgba(255,255,255,0.09);
   color: rgba(255,255,255,0.84);
   font-size:0.85rem;
+  transition: all 0.3s ease;
+}
+.pill:hover {
+  background: rgba(34,211,238,0.1);
+  border-color: rgba(34,211,238,0.4);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(34,211,238,0.2);
+  text-shadow: 0 0 8px rgba(34,211,238,0.6);
+  transform: translateY(-1px);
 }
 
 /* HERO */

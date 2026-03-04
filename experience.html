@@ -45,7 +45,8 @@
   <body class="min-h-screen text-white">
     <canvas id="neural-cursor" class="fixed inset-0 z-[9999] pointer-events-none w-screen h-screen"></canvas>
 
-
+    <!-- Page Entry Overlay (prevents flicker before JS loads) -->
+    <div id="page-entry-overlay" class="fixed inset-0 z-[100] pointer-events-none bg-[#071023] transition-opacity duration-700 ease-out"></div>
 
     <canvas id="ai-bg" aria-hidden="true" style="position:fixed; inset:0; z-index:-3; width:100vw; height:100vh; pointer-events:none;"></canvas>
 
@@ -205,7 +206,7 @@
 
       <!-- Certifications -->
       <div class="mt-24 mb-12 max-w-5xl mx-auto">
-        <h2 class="section-title text-3xl font-bold mb-8 text-center">Certifications</h2>
+        <h2 class="section-title text-3xl font-bold mb-8 text-center decipher-text">Certifications</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <a class="glass card-hover p-6 rounded-xl hover:border-cyan-500/20 transition-colors group" href="https://www.coursera.org/account/accomplishments/certificate/44QVAZ7MNHXM" target="_blank" rel="noopener">
             <h4 class="font-bold text-white text-sm group-hover:text-cyan-400 transition-colors">Machine Learning</h4>

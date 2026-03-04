@@ -3,19 +3,20 @@
   // Page Transition Logic
   // =========================
   const bootScreen = document.getElementById("boot-screen");
+  const entryOverlay = document.getElementById("page-entry-overlay");
 
   if (bootScreen) {
     // HOMEPAGE: Full SVG boot sequence (CSS-driven, 2.6s)
     if (sessionStorage.getItem('boot_played')) {
-      // Skip boot sequence if already played in this session
-      bootScreen.style.display = 'none';
-      bootScreen.remove();
+      // Skip full boot sequence, just fade out the black screen smoothly
+      bootScreen.innerHTML = ''; // Hide the SVG tracer
+      bootScreen.style.transition = 'opacity 0.7s ease-out';
       
-      // Basic fade in since we skipped the boot
-      document.body.style.opacity = '0';
       requestAnimationFrame(() => {
-        document.body.style.transition = 'opacity 0.5s ease-out';
-        document.body.style.opacity = '1';
+        requestAnimationFrame(() => {
+          bootScreen.style.opacity = '0';
+          setTimeout(() => bootScreen.remove(), 700);
+        });
       });
     } else {
       // Play full sequence
@@ -27,17 +28,12 @@
         sessionStorage.setItem('boot_played', 'true');
       }, 2550);
     }
-  } else {
+  } else if (entryOverlay) {
     // SUB-PAGES: Smooth Fade-in from dark overlay
-    const fadeOverlay = document.createElement('div');
-    fadeOverlay.className = 'fixed inset-0 z-[100] pointer-events-none bg-[#071023] transition-opacity duration-700 ease-out';
-    document.body.appendChild(fadeOverlay);
-    
-    // Trigger fade out
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        fadeOverlay.style.opacity = '0';
-        setTimeout(() => fadeOverlay.remove(), 700);
+        entryOverlay.style.opacity = '0';
+        setTimeout(() => entryOverlay.remove(), 700);
       });
     });
   }
@@ -297,6 +293,55 @@
       },
       start: 'top 88%',
       once: true  // Only animate in once, don't re-hide
+    });
+
+    // =========================
+    // Terminal Decipher Text Reveal
+    // =========================
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;':,./<>?";
+    const decipherElements = document.querySelectorAll('.decipher-text');
+
+    decipherElements.forEach(el => {
+      // Safely store true text content (innerText is empty if element is hidden by CSS/GSAP initially)
+      if (!el.dataset.originalText) {
+        el.dataset.originalText = el.textContent.trim();
+      }
+      const originalText = el.dataset.originalText;
+      
+      // Preserve whitespace layout during scrambling
+      el.style.whiteSpace = "pre-wrap";
+      
+      window.ScrollTrigger.create({
+        trigger: el,
+        start: 'top 92%', // Trigger when it enters
+        once: true,
+        onEnter: () => {
+          let iteration = 0;
+          let interval = setInterval(() => {
+            el.textContent = originalText
+              .split("")
+              .map((letter, index) => {
+                // Keep spaces as spaces
+                if(letter === " ") return " ";
+                // Resolve correct letters progressively
+                if(index < iteration) {
+                  return originalText[index];
+                }
+                // Scramble the rest
+                return chars[Math.floor(Math.random() * chars.length)];
+              })
+              .join("");
+            
+            // Adjust speed (increase denominator for slower reveal)
+            if(iteration >= originalText.length){ 
+              clearInterval(interval);
+              // Ensure perfect reset at the end
+              el.textContent = originalText;
+            }
+            iteration += 1 / 3; // Controls speed (smaller delta = slower)
+          }, 40); // 40ms per frame
+        }
+      });
     });
   }
 
@@ -1579,6 +1624,76 @@
       requestAnimationFrame(drawStars);
     };
     drawStars();
+  }
+
+  // =========================
+  // 3D Holographic Card Hover
+  // =========================
+  if (!reduceMotionPref && !('ontouchstart' in window)) {
+    const cards = document.querySelectorAll('.card-hover');
+    
+    cards.forEach(card => {
+      // Inject glare element into the card
+      const glare = document.createElement('div');
+      glare.className = 'card-glare';
+      card.appendChild(glare);
+
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left; // x position within the element
+        const y = e.clientY - rect.top;  // y position within the element
+
+        // Calculate rotation (center is 0, edges max out at +/- 5 degrees)
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const rotateX = ((y - centerY) / centerY) * -5;
+        const rotateY = ((x - centerX) / centerX) * 5;
+
+        // Apply 3D transform
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+        
+        // Move the glare
+        card.style.setProperty('--glare-x', `${(x / rect.width) * 100}%`);
+        card.style.setProperty('--glare-y', `${(y / rect.height) * 100}%`);
+        glare.style.opacity = '1';
+      });
+
+      card.addEventListener('mouseleave', () => {
+        // Reset transform smoothly
+        card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+        glare.style.opacity = '0';
+      });
+    });
+  }
+
+  // =========================
+  // Magnetic Buttons
+  // =========================
+  if (hasGSAP && !reduceMotionPref && !('ontouchstart' in window)) {
+    const magneticElements = document.querySelectorAll('.is-magnetic');
+    
+    magneticElements.forEach(el => {
+      // Create quick setters for performance
+      const xTo = window.gsap.quickTo(el, "x", {duration: 0.6, ease: "power3", duration: 0.4});
+      const yTo = window.gsap.quickTo(el, "y", {duration: 0.6, ease: "power3", duration: 0.4});
+      
+      el.addEventListener('mousemove', (e) => {
+        const rect = el.getBoundingClientRect();
+        // Calculate distance from center of element (range roughly -1 to 1)
+        const relX = (e.clientX - rect.left) - (rect.width / 2);
+        const relY = (e.clientY - rect.top) - (rect.height / 2);
+        
+        // Move element slightly towards cursor (magnetic pull strength = 0.3)
+        xTo(relX * 0.3);
+        yTo(relY * 0.3);
+      });
+      
+      el.addEventListener('mouseleave', () => {
+        // Snap back to origin
+        xTo(0);
+        yTo(0);
+      });
+    });
   }
 
 })();

@@ -16,7 +16,8 @@
   <body class="min-h-screen text-white">
     <canvas id="neural-cursor" class="fixed inset-0 z-[9999] pointer-events-none w-screen h-screen"></canvas>
 
-
+    <!-- Page Entry Overlay (prevents flicker before JS loads) -->
+    <div id="page-entry-overlay" class="fixed inset-0 z-[100] pointer-events-none bg-[#071023] transition-opacity duration-700 ease-out"></div>
 
     <canvas id="ai-bg" aria-hidden="true" style="position:fixed; inset:0; z-index:-3; width:100vw; height:100vh; pointer-events:none;"></canvas>
 
