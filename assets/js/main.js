@@ -2,198 +2,90 @@
   // =========================
   // Page Transition Logic
   // =========================
-  const pageTransition = document.getElementById("page-transition");
-  const burstCanvas = document.getElementById("burst-canvas");
+  const bootScreen = document.getElementById("boot-screen");
 
-  if (burstCanvas && pageTransition) {
-    // ALL PAGES: Particle burst transition (~900ms)
-    document.body.style.overflow = "hidden";
-    const ctx = burstCanvas.getContext("2d");
-    const dpr = window.devicePixelRatio || 1;
-    const W = window.innerWidth;
-    const H = window.innerHeight;
-    burstCanvas.width = W * dpr;
-    burstCanvas.height = H * dpr;
-    ctx.scale(dpr, dpr);
-
-    const PARTICLE_COUNT = 80;
-    const colors = [
-      "rgba(34,211,238,",  // cyan
-      "rgba(168,85,247,",  // violet
-      "rgba(255,255,255,", // white
-    ];
-
-    const particles = [];
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 4 + Math.random() * 12;
-      const size = 1.5 + Math.random() * 3;
-      particles.push({
-        x: W / 2,
-        y: H / 2,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        size,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        life: 1,
-        decay: 0.012 + Math.random() * 0.018,
-        trail: [],
+  if (bootScreen) {
+    // HOMEPAGE: Full SVG boot sequence (CSS-driven, 2.6s)
+    if (sessionStorage.getItem('boot_played')) {
+      // Skip boot sequence if already played in this session
+      bootScreen.style.display = 'none';
+      bootScreen.remove();
+      
+      // Basic fade in since we skipped the boot
+      document.body.style.opacity = '0';
+      requestAnimationFrame(() => {
+        document.body.style.transition = 'opacity 0.5s ease-out';
+        document.body.style.opacity = '1';
       });
+    } else {
+      // Play full sequence
+      document.body.style.overflow = "hidden";
+      setTimeout(() => {
+        bootScreen.remove();
+        document.body.style.overflow = "";
+        document.documentElement.style.overflow = "";
+        sessionStorage.setItem('boot_played', 'true');
+      }, 2550);
     }
-
-    let frame = 0;
-    const MAX_FRAMES = 55; // ~900ms at 60fps
-
-    function animateBurst() {
-      // Free motion blur trails by not clearing the canvas completely
-      ctx.fillStyle = `rgba(7, 16, 35, 0.3)`;
-      ctx.fillRect(0, 0, W, H);
-
-      let alive = 0;
-      for (const p of particles) {
-        if (p.life <= 0) continue;
-        alive++;
-
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vx *= 0.95;
-        p.vy *= 0.95;
-        p.life -= p.decay;
-
-        ctx.beginPath();
-        // Inner core
-        ctx.arc(p.x, p.y, p.size * Math.max(0, p.life), 0, Math.PI * 2);
-        ctx.fillStyle = p.color + p.life + ")";
-        ctx.fill();
-        
-        // Outer glow (cheap shadow alternative)
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * 2 * Math.max(0, p.life), 0, Math.PI * 2);
-        ctx.fillStyle = p.color + (p.life * 0.3) + ")";
-        ctx.fill();
-      }
-
-      frame++;
-      if (alive > 0 && frame < MAX_FRAMES) {
-        requestAnimationFrame(animateBurst);
-      } else {
-        // Fade out the transition overlay
-        pageTransition.style.transition = "opacity 200ms ease-out";
-        pageTransition.style.opacity = "0";
-        setTimeout(() => {
-          pageTransition.remove();
-          document.body.style.overflow = "";
-          document.documentElement.style.overflow = "";
-        }, 220);
-      }
-    }
-
-    requestAnimationFrame(animateBurst);
+  } else {
+    // SUB-PAGES: Smooth Fade-in from dark overlay
+    const fadeOverlay = document.createElement('div');
+    fadeOverlay.className = 'fixed inset-0 z-[100] pointer-events-none bg-[#071023] transition-opacity duration-700 ease-out';
+    document.body.appendChild(fadeOverlay);
+    
+    // Trigger fade out
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        fadeOverlay.style.opacity = '0';
+        setTimeout(() => fadeOverlay.remove(), 700);
+      });
+    });
   }
 
   // =========================
-  // Page Exit / Implosion Animation
+  // Iris Portal Exit Animation
   // =========================
-  const localLinks = document.querySelectorAll('a[href$=".html"]');
+  const localLinks = document.querySelectorAll('a[href$=".html"], a[href^="/"], a[href="index.html"]');
   localLinks.forEach(link => {
     link.addEventListener('click', (e) => {
-      // Don't intercept target="_blank" or modifier keys
-      if (link.target === '_blank' || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      // Don't intercept target="_blank", anchors within page, or modifier keys
+      if (link.target === '_blank' || link.getAttribute('href').startsWith('#') || e.ctrlKey || e.metaKey || e.shiftKey) return;
       
       e.preventDefault();
       const targetUrl = link.href;
       
       // Check if we are already transitioning
-      if (document.getElementById('implosion-overlay')) return;
+      if (document.getElementById('iris-overlay')) return;
       
-      // Create implosion overlay
+      // Create iris overlay matching the background color
       const overlay = document.createElement('div');
-      overlay.id = 'implosion-overlay';
-      overlay.className = 'fixed inset-0 z-[100] pointer-events-none opacity-0 transition-opacity duration-300';
-      overlay.style.background = 'rgba(7, 16, 35, 0)'; // Starts transparent 
+      overlay.id = 'iris-overlay';
+      overlay.className = 'fixed inset-0 z-[9999] pointer-events-none tracking-tight';
+      overlay.style.background = '#071023';
       
-      const canvas = document.createElement('canvas');
-      canvas.className = 'w-full h-full';
-      overlay.appendChild(canvas);
+      // Start as a tiny circle exactly at the click coordinates
+      overlay.style.clipPath = `circle(0px at ${e.clientX}px ${e.clientY}px)`;
+      // Smooth easing that resembles an iris snapping open
+      overlay.style.transition = 'clip-path 0.55s cubic-bezier(0.7, 0, 0.2, 1)';
+      
       document.body.appendChild(overlay);
       
-      // Basic implosion animation
-      const ctx = canvas.getContext("2d");
-      const dpr = window.devicePixelRatio || 1;
-      const W = window.innerWidth;
-      const H = window.innerHeight;
-      canvas.width = W * dpr;
-      canvas.height = H * dpr;
-      ctx.scale(dpr, dpr);
+      // Calculate max distance to completely cover screen from click point
+      const maxDist = Math.hypot(
+        Math.max(e.clientX, window.innerWidth - e.clientX),
+        Math.max(e.clientY, window.innerHeight - e.clientY)
+      );
       
-      const PARTICLE_COUNT = 80;
-      const colors = ["rgba(34,211,238,", "rgba(168,85,247,", "rgba(255,255,255,"];
-      const particles = [];
-      
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const distance = Math.max(W, H) * (0.6 + Math.random() * 0.4);
-        particles.push({
-          x: W / 2 + Math.cos(angle) * distance,
-          y: H / 2 + Math.sin(angle) * distance,
-          tx: W / 2,
-          ty: H / 2,
-          size: 1.5 + Math.random() * 2.5,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          speed: 0.04 + Math.random() * 0.08, // Different speeds
-          life: 0 // Will fade in
-        });
-      }
-      
-      // Fade in overlay to dark background
       requestAnimationFrame(() => {
-        overlay.style.opacity = '1';
-        overlay.style.background = 'rgba(7, 16, 35, 1)';
+        requestAnimationFrame(() => {
+          overlay.style.clipPath = `circle(${maxDist + 50}px at ${e.clientX}px ${e.clientY}px)`;
+        });
       });
       
-      let frame = 0;
-      const MAX_FRAMES = 45; // ~750ms at 60fps
-      
-      function animateImplosion() {
-        ctx.fillStyle = `rgba(7, 16, 35, 0.4)`; // Motion blur trail
-        ctx.fillRect(0, 0, W, H);
-        
-        let alive = 0;
-        for (const p of particles) {
-          alive++;
-          
-          // Interpolate with ease out
-          p.x += (p.tx - p.x) * p.speed;
-          p.y += (p.ty - p.y) * p.speed;
-          p.life = Math.min(1, p.life + 0.05);
-          
-          // Stop drawing if very close to center
-          const distToCenter = Math.hypot(p.tx - p.x, p.ty - p.y);
-          if (distToCenter < 10) p.life = 0;
-          if (p.life <= 0) continue;
-          
-          // Inner core
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fillStyle = p.color + p.life + ")";
-          ctx.fill();
-          
-          // Outer glow
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
-          ctx.fillStyle = p.color + (p.life * 0.3) + ")";
-          ctx.fill();
-        }
-        
-        frame++;
-        if (frame < MAX_FRAMES) {
-          requestAnimationFrame(animateImplosion);
-        } else {
-          window.location.href = targetUrl;
-        }
-      }
-      
-      animateImplosion();
+      // Navigate after animation finishes
+      setTimeout(() => {
+        window.location.href = targetUrl;
+      }, 550);
     });
   });
 

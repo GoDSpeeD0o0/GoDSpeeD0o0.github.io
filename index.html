@@ -28,9 +28,23 @@
     <!-- Custom Neural Cursor Canvas -->
     <canvas id="neural-cursor" class="fixed inset-0 z-[9999] pointer-events-none w-screen h-screen"></canvas>
 
-    <!-- Particle Burst Transition -->
-    <div id="page-transition" class="fixed inset-0 z-[100] bg-[#071023] pointer-events-none">
-      <canvas id="burst-canvas" class="w-full h-full"></canvas>
+    <!-- Boot Sequence (SVG Tracer) -->
+    <div id="boot-screen" class="fixed inset-0 z-[100] bg-[#071023] flex flex-col items-center justify-center pointer-events-none">
+      <div class="relative flex flex-col items-center justify-center gap-6">
+        <svg class="boot-tracer" width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="50,5 93,27.5 93,72.5 50,95 7,72.5 7,27.5" stroke="rgba(255,255,255,0.05)" stroke-width="2" stroke-linejoin="round"/>
+          <polygon class="trace-path" points="50,5 93,27.5 93,72.5 50,95 7,72.5 7,27.5" stroke="url(#traceGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="traceGrad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#22d3ee" />
+              <stop offset="1" stop-color="#a855f7" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="boot-text font-mono text-[9px] tracking-[0.3em] text-white/40 uppercase">
+          Initializing GenAI Workspace
+        </div>
+      </div>
     </div>
 
     <!-- Background -->

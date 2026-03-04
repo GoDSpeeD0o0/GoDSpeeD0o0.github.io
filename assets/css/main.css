@@ -126,7 +126,46 @@ body::after {
   mix-blend-mode: overlay;
 }
 
+/* Minimal SVG Boot Preloader */
+#boot-screen {
+  animation: bootFade 2.6s cubic-bezier(0.8, 0, 0.2, 1) forwards;
+}
 
+.boot-tracer {
+  filter: drop-shadow(0 0 14px rgba(34,211,238,0.3));
+  margin-bottom: 8px; /* Offset the gap */
+}
+
+.trace-path {
+  /* The total perimeter of the hexagon is roughly 285 */
+  stroke-dasharray: 285;
+  stroke-dashoffset: 285;
+  animation: traceDraw 1.8s cubic-bezier(0.6, 0.05, 0.2, 1) forwards;
+}
+
+.boot-text {
+  opacity: 0;
+  animation: traceText 1.6s ease 0.4s forwards;
+}
+
+@keyframes traceDraw {
+  0% { stroke-dashoffset: 285; opacity: 0; }
+  10% { opacity: 1; }
+  85% { stroke-dashoffset: 0; opacity: 1; filter: drop-shadow(0 0 24px rgba(34,211,238,0.7)); }
+  100% { stroke-dashoffset: 0; opacity: 0; filter: blur(4px); transform: scale(1.05); }
+}
+
+@keyframes traceText {
+  0% { opacity: 0; transform: translateY(6px); filter: blur(2px); }
+  35% { opacity: 1; transform: translateY(0); filter: blur(0); }
+  85% { opacity: 1; transform: translateY(0); filter: blur(0); }
+  100% { opacity: 0; filter: blur(4px); }
+}
+
+@keyframes bootFade {
+  0%, 80% { opacity: 1; background: #071023; }
+  100% { opacity: 0; visibility: hidden; }
+}
 
 /* Education GPA row */
 .edu-row{
