@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Projects - Prateek Parashar</title>
+    <meta name="description" content="Featured projects by Prateek Parashar — GenAI, NLP, Data Engineering, and Automation." />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="icon" href="favicon.ico" />
+    <link rel="stylesheet" href="assets/css/main.css?v=45" />
+  </head>
+
+  <body class="min-h-screen text-white">
+    <canvas id="neural-cursor" class="fixed inset-0 z-[9999] pointer-events-none w-screen h-screen"></canvas>
+
+    <!-- Particle Burst Transition (sub-page) -->
+    <div id="page-transition" class="fixed inset-0 z-[100] bg-[#071023] pointer-events-none">
+      <canvas id="burst-canvas" class="w-full h-full"></canvas>
+    </div>
+
+    <canvas id="ai-bg" aria-hidden="true" style="position:fixed; inset:0; z-index:-3; width:100vw; height:100vh; pointer-events:none;"></canvas>
+
+    <!-- Parallax Atmosphere -->
+    <div id="atmosphere" class="fixed inset-0 z-[0] pointer-events-none overflow-hidden">
+      <div class="parallax-orb absolute -top-[10%] -left-[10%] w-[40vw] h-[40vw] rounded-full bg-cyan-500/10 blur-[120px]" data-speed="0.05"></div>
+      <div class="parallax-orb absolute top-[40%] -right-[20%] w-[50vw] h-[50vw] rounded-full bg-violet-600/10 blur-[140px]" data-speed="-0.08"></div>
+    </div>
+
+    <div class="bg-overlay" aria-hidden="true" style="position:fixed; inset:0; z-index:-1; pointer-events:none;"></div>
+
+    <!-- NAV -->
+    <header class="sticky top-0 z-20 border-b border-white/10 backdrop-blur">
+      <nav class="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between gap-3">
+        <a href="index.html" class="flex items-center gap-3">
+          <span class="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.8)]"></span>
+          <span class="font-extrabold tracking-tight">Prateek</span>
+        </a>
+        <button id="menu-btn" class="md:hidden px-3 py-2 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10" aria-label="Open menu" aria-expanded="false">
+          <span class="mono text-sm">MENU</span>
+        </button>
+        <div class="hidden md:flex items-center gap-2">
+          <a class="nav-pill" href="index.html">Home</a>
+          <a class="nav-pill" href="experience.html">Experience</a>
+          <a class="nav-pill nav-pill-active" href="projects.html">Projects</a>
+          <a class="nav-pill nav-pill-strong" href="resume/resume.pdf" target="_blank" rel="noopener">Resume PDF</a>
+        </div>
+      </nav>
+      <div id="mobile-menu" class="md:hidden hidden border-t border-white/10">
+        <div class="mx-auto max-w-7xl px-4 py-3 flex flex-col gap-3 text-white/85">
+          <a class="nav-pill w-fit" href="index.html">Home</a>
+          <a class="nav-pill w-fit" href="experience.html">Experience</a>
+          <a class="nav-pill w-fit" href="projects.html">Projects</a>
+          <a class="nav-pill nav-pill-strong w-fit" href="resume/resume.pdf" target="_blank" rel="noopener">Resume PDF</a>
+        </div>
+      </div>
+    </header>
+
+    <div id="scroll-progress" aria-hidden="true"><div id="scroll-progress-bar"></div></div>
+
+    <main class="pt-32 pb-20 px-4 mx-auto max-w-7xl relative z-10">
+      <!-- Rover -->
+      <div id="flyby" aria-hidden="true">
+        <svg viewBox="0 0 48 32" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+          <rect x="18" y="5" width="12" height="10" fill="#0B1020" opacity="0.55"/>
+          <rect x="14" y="9" width="20" height="18" fill="#0B1020" opacity="0.55"/>
+          <rect x="8" y="13" width="6" height="10" fill="#0B1020" opacity="0.50"/>
+          <rect x="34" y="13" width="6" height="10" fill="#0B1020" opacity="0.50"/>
+          <rect x="19" y="6" width="10" height="8" fill="#F7FBFF" opacity="0.92"/>
+          <rect x="20" y="7" width="8" height="6" fill="#EAF6FF" opacity="0.92"/>
+          <rect x="15" y="10" width="18" height="16" fill="#F7FBFF" opacity="0.88"/>
+          <rect x="16" y="11" width="16" height="14" fill="#EAF6FF" opacity="0.90"/>
+          <rect x="9" y="14" width="5" height="8" fill="#CFEAFF" opacity="0.60"/>
+          <rect x="34" y="14" width="5" height="8" fill="#CFEAFF" opacity="0.60"/>
+          <rect x="20" y="8" width="8" height="4" fill="#0B1020" opacity="0.25"/>
+          <rect x="21" y="9" width="2" height="2" fill="#22D3EE" opacity="0.85"/>
+          <rect x="25" y="9" width="2" height="2" fill="#A855F7" opacity="0.75"/>
+          <rect x="22" y="10" width="1" height="1" fill="#FFFFFF" opacity="0.65"/>
+          <rect x="26" y="10" width="1" height="1" fill="#FFFFFF" opacity="0.55"/>
+          <rect x="23" y="3" width="2" height="2" fill="#0B1020" opacity="0.45"/>
+          <rect x="23" y="2" width="2" height="1" fill="#22D3EE" opacity="0.70"/>
+          <rect class="thruster" x="17" y="26" width="3" height="3" fill="#22D3EE" opacity="0.70"/>
+          <rect class="thruster" x="28" y="26" width="3" height="3" fill="#A855F7" opacity="0.60"/>
+          <rect class="thruster" x="18" y="29" width="1" height="1" fill="#FFFFFF" opacity="0.55"/>
+          <rect class="thruster" x="29" y="29" width="1" height="1" fill="#FFFFFF" opacity="0.45"/>
+        </svg>
+      </div>
+
+      <!-- Hero -->
+      <div class="mb-16">
+        <h1 class="name-display text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white to-white/50 !leading-tight">Featured Projects</h1>
+        <p class="text-white/40 text-lg max-w-2xl">A collection of work ranging from GenAI pipelines and NLP to data engineering and automation workflows.</p>
+      </div>
+
+      <!-- Project Cards (3-column grid) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+        <!-- Project 1: Slack Bot -->
+        <article class="glass rounded-2xl overflow-hidden group hover:-translate-y-1 transition-all duration-300 hover:border-cyan-500/30 flex flex-col h-full reveal-el">
+          <div class="relative h-48 overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#0B1020] to-transparent z-10 opacity-60"></div>
+            <img alt="Slack Python QnA Bot" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" src="assets/img/1.png" />
+            <div class="absolute top-4 right-4 z-20">
+              <span class="px-3 py-1 text-xs font-semibold bg-black/60 backdrop-blur-sm rounded-full border border-white/10 text-cyan-400 mono">Nov 2025</span>
+            </div>
+          </div>
+          <div class="p-6 flex flex-col flex-grow">
+            <h3 class="text-xl font-bold text-white group-hover:text-cyan-400 transition-colors mb-3">Slack Python QnA Bot</h3>
+            <p class="text-white/40 text-sm mb-6 line-clamp-3 flex-grow">Instant Python help inside Slack — fast answers, fewer context switches. Streamlined QnA flow using Python + Slack API. Automated debugging workflows for multi-step queries.</p>
+            <div class="flex flex-wrap gap-2 mb-6">
+              <span class="pill">Python</span><span class="pill">Slack API</span><span class="pill">Automation</span>
+            </div>
+            <div class="flex gap-3 mt-auto">
+              <a class="flex-1 text-center py-2 text-sm font-medium bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg transition-colors" href="https://github.com/AII-projects/slackbot" target="_blank" rel="noopener">View Project →</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Project 2: Faster Diffusion -->
+        <article class="glass rounded-2xl overflow-hidden group hover:-translate-y-1 transition-all duration-300 hover:border-violet-500/30 flex flex-col h-full reveal-el">
+          <div class="relative h-48 overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#0B1020] to-transparent z-10 opacity-60"></div>
+            <img alt="Faster Diffusion" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" src="assets/img/2.png" />
+            <div class="absolute top-4 right-4 z-20">
+              <span class="px-3 py-1 text-xs font-semibold bg-black/60 backdrop-blur-sm rounded-full border border-white/10 text-violet-400 mono">Spring 2025</span>
+            </div>
+          </div>
+          <div class="p-6 flex flex-col flex-grow">
+            <h3 class="text-xl font-bold text-white group-hover:text-violet-400 transition-colors mb-3">Faster Diffusion</h3>
+            <p class="text-white/40 text-sm mb-6 line-clamp-3 flex-grow">Faster diffusion inference without sacrificing visual quality. -41% inference time reduction (team of three). Profiled bottlenecks and improved the inference path.</p>
+            <div class="flex flex-wrap gap-2 mb-6">
+              <span class="pill">Diffusion</span><span class="pill">Optimization</span><span class="pill">Python</span>
+            </div>
+            <div class="flex gap-3 mt-auto">
+              <a class="flex-1 text-center py-2 text-sm font-medium bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/30 rounded-lg transition-colors" href="https://github.com/GoDSpeeD0o0/GenAIProject" target="_blank" rel="noopener">View Project →</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Project 3: Particle Pollution -->
+        <article class="glass rounded-2xl overflow-hidden group hover:-translate-y-1 transition-all duration-300 hover:border-emerald-500/30 flex flex-col h-full reveal-el">
+          <div class="relative h-48 overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#0B1020] to-transparent z-10 opacity-60"></div>
+            <img alt="Particle Pollution Research" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" src="assets/img/3.png" />
+            <div class="absolute top-4 right-4 z-20">
+              <span class="px-3 py-1 text-xs font-semibold bg-black/60 backdrop-blur-sm rounded-full border border-white/10 text-emerald-400 mono">May 2022</span>
+            </div>
+          </div>
+          <div class="p-6 flex flex-col flex-grow">
+            <h3 class="text-xl font-bold text-white group-hover:text-emerald-400 transition-colors mb-3">Particle Pollution Analysis</h3>
+            <p class="text-white/40 text-sm mb-6 line-clamp-3 flex-grow">ML analysis to model PM2.5 trends and forecast air-quality signals. Applied ML algorithms to analyze pollutant datasets and built a prediction framework.</p>
+            <div class="flex flex-wrap gap-2 mb-6">
+              <span class="pill">Machine Learning</span><span class="pill">Data Analysis</span><span class="pill">Research</span>
+            </div>
+            <div class="flex gap-3 mt-auto">
+              <a class="flex-1 text-center py-2 text-sm font-medium bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg transition-colors" href="https://github.com/GoDSpeeD0o0/Research-Paper/tree/main/MachineLearningAnalysis_Particle_Pollution" target="_blank" rel="noopener">View Research →</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Project 4: Tweet Sentiment -->
+        <article class="glass rounded-2xl overflow-hidden group hover:-translate-y-1 transition-all duration-300 hover:border-cyan-500/30 flex flex-col h-full reveal-el">
+          <div class="relative h-48 overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#0B1020] to-transparent z-10 opacity-60"></div>
+            <img alt="Tweet Sentiment Analysis" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" src="assets/img/4.png" />
+            <div class="absolute top-4 right-4 z-20">
+              <span class="px-3 py-1 text-xs font-semibold bg-black/60 backdrop-blur-sm rounded-full border border-white/10 text-cyan-400 mono">Apr 2024</span>
+            </div>
+          </div>
+          <div class="p-6 flex flex-col flex-grow">
+            <h3 class="text-xl font-bold text-white group-hover:text-cyan-400 transition-colors mb-3">Tweet Sentiment Analysis</h3>
+            <p class="text-white/40 text-sm mb-6 line-clamp-3 flex-grow">Transformer-based sentiment classification for large-scale tweet streams. Used ALBERT + Python for high-accuracy processing and categorization.</p>
+            <div class="flex flex-wrap gap-2 mb-6">
+              <span class="pill">NLP</span><span class="pill">Transformers</span><span class="pill">ALBERT</span>
+            </div>
+            <div class="flex gap-3 mt-auto">
+              <a class="flex-1 text-center py-2 text-sm font-medium bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg transition-colors" href="https://github.com/GoDSpeeD0o0/TextSentimentAnalysis" target="_blank" rel="noopener">View Project →</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Project 5: Digital Assets Pipeline -->
+        <article class="glass rounded-2xl overflow-hidden group hover:-translate-y-1 transition-all duration-300 hover:border-violet-500/30 flex flex-col h-full reveal-el">
+          <div class="relative h-48 overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#0B1020] to-transparent z-10 opacity-60"></div>
+            <img alt="Digital Assets Analytics Pipeline" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" src="assets/img/5.webp" />
+            <div class="absolute top-4 right-4 z-20">
+              <span class="px-3 py-1 text-xs font-semibold bg-black/60 backdrop-blur-sm rounded-full border border-white/10 text-violet-400 mono">2024</span>
+            </div>
+          </div>
+          <div class="p-6 flex flex-col flex-grow">
+            <h3 class="text-xl font-bold text-white group-hover:text-violet-400 transition-colors mb-3">Digital Assets Analytics Pipeline</h3>
+            <p class="text-white/40 text-sm mb-6 line-clamp-3 flex-grow">End-to-end pipeline for ingesting, validating, and analyzing digital asset data. Modular ETL + analytics layers for reproducible reporting.</p>
+            <div class="flex flex-wrap gap-2 mb-6">
+              <span class="pill">ETL</span><span class="pill">Python</span><span class="pill">Analytics</span>
+            </div>
+            <div class="flex gap-3 mt-auto">
+              <a class="flex-1 text-center py-2 text-sm font-medium bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/30 rounded-lg transition-colors" href="https://github.com/AII-projects/DigitalAssetsAnalyticsPipeline" target="_blank" rel="noopener">View Project →</a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Project 6: Stock Prediction & Trading Pipeline -->
+        <article class="glass rounded-2xl overflow-hidden group hover:-translate-y-1 transition-all duration-300 hover:border-emerald-500/30 flex flex-col h-full reveal-el">
+          <div class="relative h-48 overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#0B1020] to-transparent z-10 opacity-60"></div>
+            <img alt="Stock Prediction & Trading Pipeline" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" src="assets/img/6.webp" />
+            <div class="absolute top-4 right-4 z-20 flex gap-2">
+              <span class="px-3 py-1 text-xs font-semibold bg-emerald-500/20 backdrop-blur-sm rounded-full border border-emerald-400/40 text-emerald-400 mono animate-pulse">Ongoing</span>
+            </div>
+          </div>
+          <div class="p-6 flex flex-col flex-grow">
+            <h3 class="text-xl font-bold text-white group-hover:text-emerald-400 transition-colors mb-3">Stock Prediction & Trading Pipeline</h3>
+            <p class="text-white/40 text-sm mb-6 line-clamp-3 flex-grow">End-to-end local research pipeline for U.S. stock prediction using a reproducible ETL pipeline, Temporal Fusion Transformer (TFT) forecasting, and a systematic backtesting harness.</p>
+            <div class="flex flex-wrap gap-2 mb-6">
+              <span class="pill">PyTorch</span><span class="pill">TFT</span><span class="pill">ETL</span><span class="pill">DuckDB</span><span class="pill">pandas</span>
+            </div>
+            <div class="flex gap-3 mt-auto">
+              <span class="flex-1 text-center py-2 text-sm font-medium bg-emerald-500/10 text-emerald-400/60 border border-emerald-500/20 rounded-lg cursor-default">In Development 🚧</span>
+            </div>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- Footer -->
+      <footer class="border-t border-white/10 pt-8 pb-12 mt-20">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div class="text-white/50 text-xs md:text-sm">Built with Vanilla JS, GSAP & too much coffee <span class="text-white/80">☕</span></div>
+          <div class="flex space-x-6">
+            <a class="text-white/40 hover:text-cyan-400 transition-colors" href="https://github.com/GoDSpeeD0o0" target="_blank" rel="noopener">GitHub</a>
+            <a class="text-white/40 hover:text-cyan-400 transition-colors" href="https://linkedin.com/in/prateekp7" target="_blank" rel="noopener">LinkedIn</a>
+            <a class="text-white/40 hover:text-cyan-400 transition-colors" href="mailto:pparash7@asu.edu">Email</a>
+          </div>
+        </div>
+        <div class="mt-4 text-center text-xs text-white/30 mono">© <span id="year"></span></div>
+      </footer>
+    </main>
+
+    <button id="back-to-top" class="fixed bottom-6 right-6 z-50 p-3 rounded-xl bg-violet-600/20 border border-violet-400/30 text-violet-400 backdrop-blur-md shadow-[0_0_16px_rgba(168,85,247,0.15)] opacity-0 pointer-events-none hover:bg-violet-600/30 hover:border-violet-400/50 hover:scale-110 hover:-translate-y-1 transition-all duration-300 ease-out" aria-label="Back to top">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+    </button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+    <script src="assets/js/main.js?v=45"></script>
+  </body>
+</html>

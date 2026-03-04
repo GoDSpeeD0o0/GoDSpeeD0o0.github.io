@@ -1,18 +1,222 @@
 (() => {
   // =========================
-  // Minimal Boot sequence handoff
+  // Page Transition Logic
   // =========================
-  const bootScreen = document.getElementById("boot-screen");
-  if (bootScreen) {
-    // Disable scrolling during the quick boot
+  const pageTransition = document.getElementById("page-transition");
+  const burstCanvas = document.getElementById("burst-canvas");
+
+  if (burstCanvas && pageTransition) {
+    // ALL PAGES: Particle burst transition (~900ms)
     document.body.style.overflow = "hidden";
+    const ctx = burstCanvas.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    burstCanvas.width = W * dpr;
+    burstCanvas.height = H * dpr;
+    ctx.scale(dpr, dpr);
+
+    const PARTICLE_COUNT = 80;
+    const colors = [
+      "rgba(34,211,238,",  // cyan
+      "rgba(168,85,247,",  // violet
+      "rgba(255,255,255,", // white
+    ];
+
+    const particles = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 4 + Math.random() * 12;
+      const size = 1.5 + Math.random() * 3;
+      particles.push({
+        x: W / 2,
+        y: H / 2,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        life: 1,
+        decay: 0.012 + Math.random() * 0.018,
+        trail: [],
+      });
+    }
+
+    let frame = 0;
+    const MAX_FRAMES = 55; // ~900ms at 60fps
+
+    function animateBurst() {
+      // Free motion blur trails by not clearing the canvas completely
+      ctx.fillStyle = `rgba(7, 16, 35, 0.3)`;
+      ctx.fillRect(0, 0, W, H);
+
+      let alive = 0;
+      for (const p of particles) {
+        if (p.life <= 0) continue;
+        alive++;
+
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vx *= 0.95;
+        p.vy *= 0.95;
+        p.life -= p.decay;
+
+        ctx.beginPath();
+        // Inner core
+        ctx.arc(p.x, p.y, p.size * Math.max(0, p.life), 0, Math.PI * 2);
+        ctx.fillStyle = p.color + p.life + ")";
+        ctx.fill();
+        
+        // Outer glow (cheap shadow alternative)
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * 2 * Math.max(0, p.life), 0, Math.PI * 2);
+        ctx.fillStyle = p.color + (p.life * 0.3) + ")";
+        ctx.fill();
+      }
+
+      frame++;
+      if (alive > 0 && frame < MAX_FRAMES) {
+        requestAnimationFrame(animateBurst);
+      } else {
+        // Fade out the transition overlay
+        pageTransition.style.transition = "opacity 200ms ease-out";
+        pageTransition.style.opacity = "0";
+        setTimeout(() => {
+          pageTransition.remove();
+          document.body.style.overflow = "";
+          document.documentElement.style.overflow = "";
+        }, 220);
+      }
+    }
+
+    requestAnimationFrame(animateBurst);
+  }
+
+  // =========================
+  // Page Exit / Implosion Animation
+  // =========================
+  const localLinks = document.querySelectorAll('a[href$=".html"]');
+  localLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      // Don't intercept target="_blank" or modifier keys
+      if (link.target === '_blank' || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      
+      e.preventDefault();
+      const targetUrl = link.href;
+      
+      // Check if we are already transitioning
+      if (document.getElementById('implosion-overlay')) return;
+      
+      // Create implosion overlay
+      const overlay = document.createElement('div');
+      overlay.id = 'implosion-overlay';
+      overlay.className = 'fixed inset-0 z-[100] pointer-events-none opacity-0 transition-opacity duration-300';
+      overlay.style.background = 'rgba(7, 16, 35, 0)'; // Starts transparent 
+      
+      const canvas = document.createElement('canvas');
+      canvas.className = 'w-full h-full';
+      overlay.appendChild(canvas);
+      document.body.appendChild(overlay);
+      
+      // Basic implosion animation
+      const ctx = canvas.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      ctx.scale(dpr, dpr);
+      
+      const PARTICLE_COUNT = 80;
+      const colors = ["rgba(34,211,238,", "rgba(168,85,247,", "rgba(255,255,255,"];
+      const particles = [];
+      
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.max(W, H) * (0.6 + Math.random() * 0.4);
+        particles.push({
+          x: W / 2 + Math.cos(angle) * distance,
+          y: H / 2 + Math.sin(angle) * distance,
+          tx: W / 2,
+          ty: H / 2,
+          size: 1.5 + Math.random() * 2.5,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          speed: 0.04 + Math.random() * 0.08, // Different speeds
+          life: 0 // Will fade in
+        });
+      }
+      
+      // Fade in overlay to dark background
+      requestAnimationFrame(() => {
+        overlay.style.opacity = '1';
+        overlay.style.background = 'rgba(7, 16, 35, 1)';
+      });
+      
+      let frame = 0;
+      const MAX_FRAMES = 45; // ~750ms at 60fps
+      
+      function animateImplosion() {
+        ctx.fillStyle = `rgba(7, 16, 35, 0.4)`; // Motion blur trail
+        ctx.fillRect(0, 0, W, H);
+        
+        let alive = 0;
+        for (const p of particles) {
+          alive++;
+          
+          // Interpolate with ease out
+          p.x += (p.tx - p.x) * p.speed;
+          p.y += (p.ty - p.y) * p.speed;
+          p.life = Math.min(1, p.life + 0.05);
+          
+          // Stop drawing if very close to center
+          const distToCenter = Math.hypot(p.tx - p.x, p.ty - p.y);
+          if (distToCenter < 10) p.life = 0;
+          if (p.life <= 0) continue;
+          
+          // Inner core
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = p.color + p.life + ")";
+          ctx.fill();
+          
+          // Outer glow
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
+          ctx.fillStyle = p.color + (p.life * 0.3) + ")";
+          ctx.fill();
+        }
+        
+        frame++;
+        if (frame < MAX_FRAMES) {
+          requestAnimationFrame(animateImplosion);
+        } else {
+          window.location.href = targetUrl;
+        }
+      }
+      
+      animateImplosion();
+    });
+  });
+
+  // =========================
+  // Mobile Menu Toggle
+  // =========================
+  const menuBtn = document.getElementById("menu-btn");
+  const mobileMenu = document.getElementById("mobile-menu");
+  
+  if (menuBtn && mobileMenu) {
+    menuBtn.addEventListener("click", () => {
+      mobileMenu.classList.toggle("hidden");
+      const isExpanded = menuBtn.getAttribute("aria-expanded") === "true";
+      menuBtn.setAttribute("aria-expanded", !isExpanded);
+    });
     
-    // The CSS animation takes 2.6s. We trigger the handoff right as it fades out completely.
-    setTimeout(() => {
-      bootScreen.remove();
-      document.body.style.overflow = ""; // Re-enable scrolling
-      document.documentElement.style.overflow = "";
-    }, 2550); // Just 50ms before the full 2.6s CSS animation finishes
+    // Close mobile menu on link click
+    mobileMenu.querySelectorAll("a").forEach(link => {
+      link.addEventListener("click", () => {
+        mobileMenu.classList.add("hidden");
+        menuBtn.setAttribute("aria-expanded", "false");
+      });
+    });
   }
 
   // =========================
@@ -168,14 +372,15 @@
     // Tag everything we want to reveal
     const revealSelectors = [
       '#about .glass',
-      '.stat',
-      '.skill-card',
-      '.cert-card',
-      '.timeline-item',
-      '#education .glass',
-      '.contact-card',
+      '#highlights .glass',
+      '#skills .glass',
+      '#experience .glass',
+      '#projects .glass',
       '#exploring .glass',
-      '.os-header'
+      '.os-header',
+      '.timeline-item',
+      '.cert-row',
+      '.contact-card'
     ];
     
     document.querySelectorAll(revealSelectors.join(',')).forEach(el => {

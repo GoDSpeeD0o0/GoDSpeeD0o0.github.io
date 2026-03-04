@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Experience - Prateek Parashar</title>
+    <meta name="description" content="Professional journey of Prateek Parashar — Data Analyst, SDE, and Cyber Security experience." />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="icon" href="favicon.ico" />
+    <link rel="stylesheet" href="assets/css/main.css?v=45" />
+    <style>
+      /* Timeline specific */
+      .timeline-center { position: relative; }
+      .timeline-center::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 2px;
+        height: 100%;
+        background: linear-gradient(to bottom, rgba(34,211,238,0.4), rgba(168,85,247,0.4), transparent);
+        transform: translateX(-50%);
+      }
+      @media (max-width: 767px) {
+        .timeline-center::before { left: 2rem; }
+      }
+      .timeline-dot {
+        width: 1rem; height: 1rem;
+        border-radius: 50%;
+        border: 3px solid #071023;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+      }
+      @media (max-width: 767px) {
+        .timeline-dot { left: 2rem; }
+      }
+    </style>
+  </head>
+
+  <body class="min-h-screen text-white">
+    <canvas id="neural-cursor" class="fixed inset-0 z-[9999] pointer-events-none w-screen h-screen"></canvas>
+
+    <!-- Particle Burst Transition (sub-page) -->
+    <div id="page-transition" class="fixed inset-0 z-[100] bg-[#071023] pointer-events-none">
+      <canvas id="burst-canvas" class="w-full h-full"></canvas>
+    </div>
+
+    <canvas id="ai-bg" aria-hidden="true" style="position:fixed; inset:0; z-index:-3; width:100vw; height:100vh; pointer-events:none;"></canvas>
+
+    <!-- Parallax Atmosphere -->
+    <div id="atmosphere" class="fixed inset-0 z-[0] pointer-events-none overflow-hidden">
+      <div class="parallax-orb absolute -top-[10%] -left-[10%] w-[40vw] h-[40vw] rounded-full bg-cyan-500/10 blur-[120px]" data-speed="0.05"></div>
+      <div class="parallax-orb absolute top-[40%] -right-[20%] w-[50vw] h-[50vw] rounded-full bg-violet-600/10 blur-[140px]" data-speed="-0.08"></div>
+    </div>
+
+    <div class="bg-overlay" aria-hidden="true" style="position:fixed; inset:0; z-index:-1; pointer-events:none;"></div>
+
+    <!-- NAV -->
+    <header class="sticky top-0 z-20 border-b border-white/10 backdrop-blur">
+      <nav class="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between gap-3">
+        <a href="index.html" class="flex items-center gap-3">
+          <span class="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.8)]"></span>
+          <span class="font-extrabold tracking-tight">Prateek</span>
+        </a>
+        <button id="menu-btn" class="md:hidden px-3 py-2 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10" aria-label="Open menu" aria-expanded="false">
+          <span class="mono text-sm">MENU</span>
+        </button>
+        <div class="hidden md:flex items-center gap-2">
+          <a class="nav-pill" href="index.html">Home</a>
+          <a class="nav-pill nav-pill-active" href="experience.html">Experience</a>
+          <a class="nav-pill" href="projects.html">Projects</a>
+          <a class="nav-pill nav-pill-strong" href="resume/resume.pdf" target="_blank" rel="noopener">Resume PDF</a>
+        </div>
+      </nav>
+      <div id="mobile-menu" class="md:hidden hidden border-t border-white/10">
+        <div class="mx-auto max-w-7xl px-4 py-3 flex flex-col gap-3 text-white/85">
+          <a class="nav-pill w-fit" href="index.html">Home</a>
+          <a class="nav-pill w-fit" href="experience.html">Experience</a>
+          <a class="nav-pill w-fit" href="projects.html">Projects</a>
+          <a class="nav-pill nav-pill-strong w-fit" href="resume/resume.pdf" target="_blank" rel="noopener">Resume PDF</a>
+        </div>
+      </div>
+    </header>
+
+    <div id="scroll-progress" aria-hidden="true"><div id="scroll-progress-bar"></div></div>
+
+    <main class="relative z-10 pt-32 pb-20 px-4 mx-auto max-w-7xl">
+      <!-- Rover -->
+      <div id="flyby" aria-hidden="true">
+        <svg viewBox="0 0 48 32" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+          <rect x="18" y="5" width="12" height="10" fill="#0B1020" opacity="0.55"/>
+          <rect x="14" y="9" width="20" height="18" fill="#0B1020" opacity="0.55"/>
+          <rect x="8" y="13" width="6" height="10" fill="#0B1020" opacity="0.50"/>
+          <rect x="34" y="13" width="6" height="10" fill="#0B1020" opacity="0.50"/>
+          <rect x="19" y="6" width="10" height="8" fill="#F7FBFF" opacity="0.92"/>
+          <rect x="20" y="7" width="8" height="6" fill="#EAF6FF" opacity="0.92"/>
+          <rect x="15" y="10" width="18" height="16" fill="#F7FBFF" opacity="0.88"/>
+          <rect x="16" y="11" width="16" height="14" fill="#EAF6FF" opacity="0.90"/>
+          <rect x="9" y="14" width="5" height="8" fill="#CFEAFF" opacity="0.60"/>
+          <rect x="34" y="14" width="5" height="8" fill="#CFEAFF" opacity="0.60"/>
+          <rect x="20" y="8" width="8" height="4" fill="#0B1020" opacity="0.25"/>
+          <rect x="21" y="9" width="2" height="2" fill="#22D3EE" opacity="0.85"/>
+          <rect x="25" y="9" width="2" height="2" fill="#A855F7" opacity="0.75"/>
+          <rect x="22" y="10" width="1" height="1" fill="#FFFFFF" opacity="0.65"/>
+          <rect x="26" y="10" width="1" height="1" fill="#FFFFFF" opacity="0.55"/>
+          <rect x="23" y="3" width="2" height="2" fill="#0B1020" opacity="0.45"/>
+          <rect x="23" y="2" width="2" height="1" fill="#22D3EE" opacity="0.70"/>
+          <rect class="thruster" x="17" y="26" width="3" height="3" fill="#22D3EE" opacity="0.70"/>
+          <rect class="thruster" x="28" y="26" width="3" height="3" fill="#A855F7" opacity="0.60"/>
+          <rect class="thruster" x="18" y="29" width="1" height="1" fill="#FFFFFF" opacity="0.55"/>
+          <rect class="thruster" x="29" y="29" width="1" height="1" fill="#FFFFFF" opacity="0.45"/>
+        </svg>
+      </div>
+
+      <!-- Hero -->
+      <div class="text-center mb-16">
+        <h1 class="name-display text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-b from-white to-white/50 !leading-tight">Professional Journey</h1>
+        <p class="text-white/40 max-w-2xl mx-auto text-lg">Building scalable AI systems, optimizing data pipelines, and securing digital infrastructure.</p>
+      </div>
+
+      <!-- Timeline -->
+      <div class="relative max-w-5xl mx-auto timeline-center">
+
+        <!-- Role 1: Data Analyst Intern -->
+        <div class="relative mb-16 group reveal-el">
+          <div class="flex flex-col md:flex-row items-start md:items-center w-full">
+            <div class="w-full md:w-1/2 md:pr-12 md:text-right pl-20 md:pl-0 mb-4 md:mb-0 order-1">
+              <span class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 mb-2">Latest Role</span>
+              <h3 class="text-2xl font-bold text-white group-hover:text-cyan-400 transition-colors">Data Analyst Intern</h3>
+              <p class="text-cyan-400 font-medium">BTP ECO Products</p>
+              <p class="text-white/40 text-sm mt-1">Gurugram, India • Jul 2022 – Aug 2024</p>
+            </div>
+            <div class="timeline-dot bg-cyan-500 shadow-[0_0_15px_rgba(34,211,238,0.6)]" style="top: 2rem;"></div>
+            <div class="w-full md:w-1/2 md:pl-12 pl-20 order-2">
+              <div class="glass card-hover p-6 rounded-2xl hover:border-cyan-500/30 transition-all duration-300 transform hover:-translate-y-1 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                <ul class="space-y-3 text-sm text-white/70 relative z-10">
+                  <li class="flex items-start"><span class="text-cyan-400 mr-2 mt-0.5">▸</span><span>Deployed <strong class="text-white">5+ Power BI dashboards</strong> that automated weekly reporting, eliminating ~8 hours of manual work per cycle.</span></li>
+                  <li class="flex items-start"><span class="text-cyan-400 mr-2 mt-0.5">▸</span><span>Engineered SQL-driven data models to surface actionable KPIs, directly informing a product pricing strategy that improved margins by 12%.</span></li>
+                  <li class="flex items-start"><span class="text-cyan-400 mr-2 mt-0.5">▸</span><span>Collaborated with cross-functional teams to integrate real-time data streams using Python ETL scripts.</span></li>
+                </ul>
+                <div class="mt-5 flex flex-wrap gap-2 relative z-10">
+                  <span class="pill">Power BI</span><span class="pill">SQL Modeling</span><span class="pill">Python</span><span class="pill">ETL</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Role 2: SDE Intern (alternating) -->
+        <div class="relative mb-16 group reveal-el">
+          <div class="flex flex-col md:flex-row items-start md:items-center w-full">
+            <div class="w-full md:w-1/2 md:pr-12 md:text-right pl-20 md:pl-0 order-2 md:order-1 mb-4 md:mb-0">
+              <div class="glass card-hover p-6 rounded-2xl hover:border-violet-500/30 transition-all duration-300 transform hover:-translate-y-1 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-32 h-32 bg-violet-500/5 rounded-full blur-3xl -ml-10 -mt-10"></div>
+                <ul class="space-y-3 text-sm text-white/70 text-left relative z-10">
+                  <li class="flex items-start"><span class="text-violet-400 mr-2 mt-0.5">▸</span><span>Built reusable frontend components that cut page-load variance by <strong class="text-white">30%</strong> across 4 product pages.</span></li>
+                  <li class="flex items-start"><span class="text-violet-400 mr-2 mt-0.5">▸</span><span>Led cross-browser optimization sprint; team reported <strong class="text-white">+21% user retention</strong> lift in the following quarter.</span></li>
+                  <li class="flex items-start"><span class="text-violet-400 mr-2 mt-0.5">▸</span><span>Migrated legacy jQuery codebase to React, improving maintainability and developer velocity.</span></li>
+                </ul>
+                <div class="mt-5 flex flex-wrap gap-2 justify-start relative z-10">
+                  <span class="pill">React</span><span class="pill">JavaScript</span><span class="pill">Performance</span>
+                </div>
+              </div>
+            </div>
+            <div class="timeline-dot bg-violet-500 shadow-[0_0_15px_rgba(168,85,247,0.6)]" style="top: 2rem;"></div>
+            <div class="w-full md:w-1/2 md:pl-12 pl-20 order-1 md:order-2">
+              <h3 class="text-2xl font-bold text-white group-hover:text-violet-400 transition-colors">SDE Intern</h3>
+              <p class="text-violet-400 font-medium">BTP ECO Products</p>
+              <p class="text-white/40 text-sm mt-1">Gurugram, India • Jul 2021 – Sep 2021</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Role 3: Cyber Security Intern -->
+        <div class="relative mb-16 group reveal-el">
+          <div class="flex flex-col md:flex-row items-start md:items-center w-full">
+            <div class="w-full md:w-1/2 md:pr-12 md:text-right pl-20 md:pl-0 mb-4 md:mb-0 order-1">
+              <h3 class="text-2xl font-bold text-white group-hover:text-emerald-400 transition-colors">Cyber Security Intern</h3>
+              <p class="text-emerald-400 font-medium">Virtually Testing Foundation</p>
+              <p class="text-white/40 text-sm mt-1">Remote • Jan 2021 – Mar 2021</p>
+            </div>
+            <div class="timeline-dot bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.6)]" style="top: 2rem;"></div>
+            <div class="w-full md:w-1/2 md:pl-12 pl-20 order-2">
+              <div class="glass card-hover p-6 rounded-2xl hover:border-emerald-500/30 transition-all duration-300 transform hover:-translate-y-1 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10"></div>
+                <ul class="space-y-3 text-sm text-white/70 relative z-10">
+                  <li class="flex items-start"><span class="text-emerald-400 mr-2 mt-0.5">▸</span><span>Executed penetration testing and vulnerability assessments across <strong class="text-white">3 web applications</strong>, documenting 12+ attack vectors.</span></li>
+                  <li class="flex items-start"><span class="text-emerald-400 mr-2 mt-0.5">▸</span><span>Co-authored an accountability framework adopted org-wide to standardize remote security workflows.</span></li>
+                  <li class="flex items-start"><span class="text-emerald-400 mr-2 mt-0.5">▸</span><span>Participated in CTF challenges to sharpen skills in network security and cryptography.</span></li>
+                </ul>
+                <div class="mt-5 flex flex-wrap gap-2 relative z-10">
+                  <span class="pill">Penetration Testing</span><span class="pill">Vulnerability Assessment</span><span class="pill">Frameworks</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- End dot -->
+        <div class="absolute left-1/2 bottom-0 w-3 h-3 bg-white/20 rounded-full transform -translate-x-1/2 z-10 hidden md:block"></div>
+      </div>
+
+      <!-- Certifications -->
+      <div class="mt-24 mb-12 max-w-5xl mx-auto">
+        <h2 class="section-title text-3xl font-bold mb-8 text-center">Certifications</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <a class="glass card-hover p-6 rounded-xl hover:border-cyan-500/20 transition-colors group" href="https://www.coursera.org/account/accomplishments/certificate/44QVAZ7MNHXM" target="_blank" rel="noopener">
+            <h4 class="font-bold text-white text-sm group-hover:text-cyan-400 transition-colors">Machine Learning</h4>
+            <p class="text-xs text-white/40 mt-1">Stanford / Coursera</p>
+          </a>
+          <a class="glass card-hover p-6 rounded-xl hover:border-cyan-500/20 transition-colors group" href="https://courses.edx.org/certificates/c969dba9ef0d46008f3fd4ab2c95e0b2" target="_blank" rel="noopener">
+            <h4 class="font-bold text-white text-sm group-hover:text-cyan-400 transition-colors">AWS Cloud Practitioner</h4>
+            <p class="text-xs text-white/40 mt-1">edX</p>
+          </a>
+          <a class="glass card-hover p-6 rounded-xl hover:border-cyan-500/20 transition-colors group" href="https://www.datacamp.com/certificate/DSA0010484817422" target="_blank" rel="noopener">
+            <h4 class="font-bold text-white text-sm group-hover:text-cyan-400 transition-colors">Data Scientist Associate</h4>
+            <p class="text-xs text-white/40 mt-1">DataCamp</p>
+          </a>
+          <a class="glass card-hover p-6 rounded-xl hover:border-cyan-500/20 transition-colors group" href="https://courses.edx.org/certificates/3a8fb4789d4f4ab48f3c7ccb2211e9ed" target="_blank" rel="noopener">
+            <h4 class="font-bold text-white text-sm group-hover:text-cyan-400 transition-colors">Python for Data Science</h4>
+            <p class="text-xs text-white/40 mt-1">IBM / edX</p>
+          </a>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer class="border-t border-white/10 pt-8 pb-12">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div class="text-white/50 text-xs md:text-sm">Built with Vanilla JS, GSAP & too much coffee <span class="text-white/80">☕</span></div>
+          <div class="flex space-x-6">
+            <a class="text-white/40 hover:text-cyan-400 transition-colors" href="https://github.com/GoDSpeeD0o0" target="_blank" rel="noopener">GitHub</a>
+            <a class="text-white/40 hover:text-cyan-400 transition-colors" href="https://linkedin.com/in/prateekp7" target="_blank" rel="noopener">LinkedIn</a>
+            <a class="text-white/40 hover:text-cyan-400 transition-colors" href="mailto:pparash7@asu.edu">Email</a>
+          </div>
+        </div>
+        <div class="mt-4 text-center text-xs text-white/30 mono">© <span id="year"></span></div>
+      </footer>
+    </main>
+
+    <button id="back-to-top" class="fixed bottom-6 right-6 z-50 p-3 rounded-xl bg-violet-600/20 border border-violet-400/30 text-violet-400 backdrop-blur-md shadow-[0_0_16px_rgba(168,85,247,0.15)] opacity-0 pointer-events-none hover:bg-violet-600/30 hover:border-violet-400/50 hover:scale-110 hover:-translate-y-1 transition-all duration-300 ease-out" aria-label="Back to top">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+    </button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+    <script src="assets/js/main.js?v=45"></script>
+  </body>
+</html>
