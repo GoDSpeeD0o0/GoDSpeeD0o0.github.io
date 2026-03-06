@@ -6,6 +6,8 @@ We built this for maximum visual impact, using modern web technologies without t
 
 **[🌐 View Live Site](https://GoDSpeeD0o0.github.io/)**
 
+![Portfolio Preview](assets/img/preview.png)
+
 ---
 
 ## ✨ Features
@@ -21,7 +23,7 @@ We built this for maximum visual impact, using modern web technologies without t
 ## 🛠 Tech Stack
 
 - **Core Structure**: Semantic HTML5 and Vanilla JavaScript (ES6+).
-- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) — We use the modern Node.js CLI to heavily compress and bundle the CSS. 
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) — We use the modern Node.js CLI to heavily compress and bundle the CSS.
 - **Animation**: [GSAP (GreenSock)](https://gsap.com/) for fluid transitions, timelines, and scroll-linked reveals.
 
 ---
@@ -33,23 +35,30 @@ We built this for maximum visual impact, using modern web technologies without t
 If you want to edit the HTML or CSS yourself, you need to run the build pipeline:
 
 ### 1. Requirements
+
 Ensure you have [Node.js](https://nodejs.org/) installed.
 
 ### 2. Configure Your Compiler
+
 This project uses Tailwind v4 to handle styles. To set it up, generate a `package.json` and install Tailwind in the root of the project:
+
 ```bash
 npm init -y
 npm install -D tailwindcss @tailwindcss/cli
 ```
 
 ### 3. Start the Compiler
+
 Once installed, execute the Tailwind build process in "watch" mode. This will actively listen for any CSS/HTML changes you make and re-compile the `assets/css/tailwind.css` file automatically:
+
 ```bash
 npx tailwindcss -i assets/css/tailwind-input.css -o assets/css/tailwind.css --watch
 ```
 
 ### 4. View the Site
+
 Because this project utilizes ES6 modules and fetches local data, opening `index.html` directly from your file system (`file://`) will cause browser security errors. You **must** serve it using a local development server like VS Code's "Live Server" extension or via terminal:
+
 ```bash
 npx serve .
 ```
