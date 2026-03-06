@@ -1,60 +1,55 @@
 # Prateek Parashar — Portfolio 🚀
 
-A highly interactive, performance-optimized portfolio website built for a modern "Model OS" and "GenAI" aesthetic. Features fluid WebGL backgrounds, glassmorphism UI, smooth scrolling, and dynamic project case studies without the overhead of a heavy JavaScript framework.
+A highly interactive, performance-optimized personal portfolio and resume website with a "Model OS" and "GenAI" aesthetic. Designed with fluid WebGL backgrounds, smooth scrolling, and an interactive project case study viewer.
 
-**[🌐 View Live Site](https://godspeed0o0.github.io/)**
+We built this for maximum visual impact, using modern web technologies without the bloat of a heavy JavaScript framework.
+
+**[🌐 View Live Site](https://GoDSpeeD0o0.github.io/)**
 
 ---
 
 ## ✨ Features
 
-- **Cinematic WebGL & Canvas Backgrounds**: A custom shader-powered aurora borealis and a scroll-velocity reactive starfield (warp-drive effect).
-- **Smooth Scrolling**: Integrated with [Lenis](https://studiofreight.github.io/lenis/) for butter-smooth parallax and scroll-trigger animations.
-- **Dynamic Project Case Studies**: JavaScript-powered dynamic routing (`project-detail.html?id=...`) to inject rich, styled project data without needing a backend or a static site generator.
-- **Advanced Micro-Interactions**: 
-  - GSAP-powered magnetic buttons that pull towards the cursor.
-  - 3D holographic tilt effects on project cards.
-  - Custom SVG drawing animations and an interactive "AI Rover".
-- **Glassmorphism UI**: Beautiful frosted glass panels, deep dark mode gradients, and vibrant neon accents.
-- **Performance First**: Lazy-loaded WebP images, local fonts, and a compiled Tailwind CSS stylesheet (no runtime CDN).
+- **Cinematic Environment**: Dynamic WebGL-powered 3D aurora borealis and an interactive "warp speed" starfield that reacts to your scrolling velocity.
+- **Dynamic Case Studies**: An elegant, slide-in interface for project details, featuring frosted glassmorphism cards. Everything is configured via a JSON data store, no separate backend needed!
+- **Smooth Navigation**: Custom scrolling physics (via Lenis API) integrated with GSAP animations.
+- **Premium Aesthetics**: Glassmorphism UI, neon gradients, and a magnetic cursor effect that pulls interactive elements toward your mouse.
+- **Lightning Fast**: Optimized for speed, we serve WebP imagery and completely pre-compile all the CSS, stripping out unused code.
 
 ---
 
 ## 🛠 Tech Stack
 
-- **Core**: Vanilla HTML5, CSS3, JavaScript (ES6+). No React, Vue, or heavy frameworks.
-- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) (Compiled via PostCSS/CLI).
-- **Animation**: [GSAP (GreenSock)](https://gsap.com/) & ScrollTrigger for timeline animations and scroll-linked reveals.
-- **Scroll Hijacking**: Lenis Smooth Scroll API.
-- **Hosting**: GitHub Pages.
+- **Core Structure**: Semantic HTML5 and Vanilla JavaScript (ES6+).
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) — We use the modern Node.js CLI to heavily compress and bundle the CSS. 
+- **Animation**: [GSAP (GreenSock)](https://gsap.com/) for fluid transitions, timelines, and scroll-linked reveals.
 
 ---
 
-## 🚀 Local Development Setup
+## 🚀 Running This Locally (Development Setup)
 
-We recently moved from a Tailwind CDN to a locally compiled Tailwind CSS workflow for better performance. 
+*Note: The `node_modules` folder and `package.json` files are **not** needed to simply view the website or deploy it to GitHub Pages. They are only used by developers to compile new CSS files if changes are made to the design.*
 
-### 1. Prerequisites
-You will need [Node.js](https://nodejs.org/) installed on your machine.
+If you want to edit the HTML or CSS yourself, you need to run the build pipeline:
 
-### 2. Install Dependencies
-Clone the repository and install the required npm packages:
+### 1. Requirements
+Ensure you have [Node.js](https://nodejs.org/) installed.
+
+### 2. Configure Your Compiler
+This project uses Tailwind v4 to handle styles. To set it up, generate a `package.json` and install Tailwind in the root of the project:
 ```bash
-git clone https://github.com/GoDSpeeD0o0/GoDSpeeD0o0.github.io.git
-cd GoDSpeeD0o0.github.io
-npm install
+npm init -y
+npm install -D tailwindcss @tailwindcss/cli
 ```
 
-### 3. Start Tailwind Compiler (Watch Mode)
-To automatically recompile the Tailwind CSS file (`assets/css/tailwind.css`) whenever you make changes to your HTML or CSS input files, run:
+### 3. Start the Compiler
+Once installed, execute the Tailwind build process in "watch" mode. This will actively listen for any CSS/HTML changes you make and re-compile the `assets/css/tailwind.css` file automatically:
 ```bash
-npm run watch:css
+npx tailwindcss -i assets/css/tailwind-input.css -o assets/css/tailwind.css --watch
 ```
 
-### 4. Serve the HTML
-Since this uses ES6 modules and fetches local data, you must serve the files through a local web server (opening `index.html` directly in the browser via `file://` will cause CORS/module errors).
-
-You can use the **Live Server** extension in VS Code, or run:
+### 4. View the Site
+Because this project utilizes ES6 modules and fetches local data, opening `index.html` directly from your file system (`file://`) will cause browser security errors. You **must** serve it using a local development server like VS Code's "Live Server" extension or via terminal:
 ```bash
 npx serve .
 ```
@@ -63,12 +58,11 @@ npx serve .
 
 ## 📂 Project Structure
 
-\`\`\`text
+```text
 ├── assets/
 │   ├── css/
 │   │   ├── main.css           # Custom CSS animations & base styles
-│   │   ├── tailwind-input.css # Tailwind source file
-│   │   └── tailwind.css       # Compiled output (included in HTML)
+│   │   └── tailwind.css       # Compiled output from Tailwind (Included in HTML)
 │   ├── img/                   # WebP compressed images & icons
 │   └── js/
 │       └── main.js            # Core application logic, GSAP animations, Project JSON DB
@@ -76,13 +70,11 @@ npx serve .
 ├── index.html                 # Landing page & featured highlights
 ├── projects.html              # Portfolio grid of all projects
 ├── project-detail.html        # Dynamic template for individual case studies
-├── package.json               # NPM scripts and Tailwind dependencies
 └── README.md
-\`\`\`
+```
 
 ---
 
 ## 📝 License
 
-Designed and engineered by Prateek Parashar. 
-Open for inspiration, but please do not blindly clone and deploy as your own portfolio without significant modifications.
+Designed and engineered by Prateek Parashar.
