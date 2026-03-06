@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Projects - Prateek Parashar</title>
+    <meta name="description" content="Featured projects by Prateek Parashar — GenAI, NLP, Data Engineering, and Automation." />
+    <link rel="stylesheet" href="assets/css/tailwind.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="icon" href="favicon.ico" />
+    <link rel="stylesheet" href="assets/css/main.css?v=45" />
+  </head>
+
+  <body class="min-h-screen text-white">
+    <canvas id="neural-cursor" class="fixed inset-0 z-[9999] pointer-events-none w-screen h-screen"></canvas>
+
+    <!-- Page Entry Overlay (prevents flicker before JS loads) -->
+    <div id="page-entry-overlay" class="fixed inset-0 z-[100] pointer-events-none bg-[#071023] transition-opacity duration-700 ease-out"></div>
+
+    <canvas id="ai-bg" aria-hidden="true" style="position:fixed; inset:0; z-index:-3; width:100vw; height:100vh; pointer-events:none;"></canvas>
+
+    <!-- Parallax Atmosphere -->
+    <div id="atmosphere" class="fixed inset-0 z-[0] pointer-events-none overflow-hidden">
+      <div class="parallax-orb absolute -top-[10%] -left-[10%] w-[40vw] h-[40vw] rounded-full bg-cyan-500/10 blur-[120px]" data-speed="0.05"></div>
+      <div class="parallax-orb absolute top-[40%] -right-[20%] w-[50vw] h-[50vw] rounded-full bg-violet-600/10 blur-[140px]" data-speed="-0.08"></div>
+    </div>
+
+    <div class="bg-overlay" aria-hidden="true" style="position:fixed; inset:0; z-index:-1; pointer-events:none;"></div>
+
+    <!-- NAV -->
+    <header class="sticky top-0 z-20 border-b border-white/10 backdrop-blur">
+      <nav class="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between gap-3">
+        <a href="index.html" class="flex items-center gap-3">
+          <span class="h-2.5 w-2.5 rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,0.8)]"></span>
+          <span class="font-extrabold tracking-tight">Prateek</span>
+        </a>
+        <button id="menu-btn" class="md:hidden px-3 py-2 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10" aria-label="Open menu" aria-expanded="false">
+          <span class="mono text-sm">MENU</span>
+        </button>
+        <div class="hidden md:flex items-center gap-2">
+          <a class="nav-pill" href="index.html">Home</a>
+          <a class="nav-pill" href="experience.html">Experience</a>
+          <a class="nav-pill nav-pill-active" href="projects.html">Projects</a>
+          <a class="nav-pill nav-pill-strong" href="resume/resume.pdf" target="_blank" rel="noopener">Resume PDF</a>
+        </div>
+      </nav>
+      <div id="mobile-menu" class="md:hidden hidden border-t border-white/10">
+        <div class="mx-auto max-w-7xl px-4 py-3 flex flex-col gap-3 text-white/85">
+          <a class="nav-pill w-fit" href="index.html">Home</a>
+          <a class="nav-pill w-fit" href="experience.html">Experience</a>
+          <a class="nav-pill w-fit" href="projects.html">Projects</a>
+          <a class="nav-pill nav-pill-strong w-fit" href="resume/resume.pdf" target="_blank" rel="noopener">Resume PDF</a>
+        </div>
+      </div>
+    </header>
+
+    <div id="scroll-progress" aria-hidden="true"><div id="scroll-progress-bar"></div></div>
+
+    <main class="mx-auto max-w-7xl px-4 py-12 relative min-h-[70vh] z-10 pt-32">
+      <!-- Back Button -->
+      <a href="projects.html" class="inline-flex items-center gap-2 text-white/50 hover:text-cyan-400 transition-colors mb-8 group is-magnetic w-fit z-50 relative">
+        <svg class="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+        </svg>
+        <span class="font-medium">Back to Projects</span>
+      </a>
+
+      <!-- Error State (Hidden by default) -->
+      <div id="project-error" class="hidden text-center py-20">
+        <h1 class="text-4xl font-bold mb-4">Project Not Found</h1>
+        <p class="text-white/60 mb-8">The project you're looking for doesn't exist or was removed.</p>
+        <a href="projects.html" class="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors relative z-50">Return to Portfolio</a>
+      </div>
+
+      <!-- Detail Template Content -->
+      <article id="project-content" class="hidden opacity-0 transform translate-y-4 transition-all duration-700 ease-out pb-24">
+        
+        <!-- Header Section -->
+        <header class="mb-12">
+          <div class="flex flex-wrap items-center gap-4 mb-4" id="pd-meta">
+            <span id="pd-timeline" class="text-cyan-400 font-mono text-sm tracking-wider uppercase">Loading...</span>
+            <span class="text-white/20">•</span>
+            <span id="pd-role" class="text-violet-400 font-mono text-sm tracking-wider uppercase">Loading...</span>
+          </div>
+          <h1 id="pd-title" class="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-8">Loading Project...</h1>
+          
+          <div id="pd-tags" class="flex flex-wrap gap-2 mb-8">
+            <!-- Tags injected here -->
+          </div>
+        </header>
+
+        <!-- Cinematic Hero Image -->
+        <div class="relative w-full aspect-video md:aspect-[21/7] max-h-[50vh] rounded-3xl overflow-hidden glass border border-white/10 shadow-2xl mb-16 mt-6 group pointer-events-none">
+          <div class="absolute inset-0 bg-gradient-to-t from-[#0B1020] via-transparent to-transparent z-10 opacity-60"></div>
+          <img id="pd-hero-img" src="" alt="Project Cover" class="w-full h-full object-cover transform scale-105 transition-transform duration-[2s] ease-out group-hover:scale-110" />
+        </div>
+
+        <!-- Two Column Layout: Specs & Story -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 relative z-50">
+          
+          <!-- Sticky Left Sidebar (Specs) -->
+          <div class="lg:col-span-4 order-2 lg:order-1">
+            <div class="sticky top-28 glass p-8 rounded-2xl border border-white/5 space-y-8">
+              
+              <div>
+                <h3 class="text-xs font-mono text-white/40 uppercase mb-2">Team Size</h3>
+                <p id="pd-team" class="text-white/90">Loading...</p>
+              </div>
+              
+              <div id="pd-links-container">
+                <h3 class="text-xs font-mono text-white/40 uppercase mb-4">Links</h3>
+                <div id="pd-links" class="flex flex-col gap-3">
+                  <!-- Links injected here -->
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Right Column (The Story) -->
+          <div class="lg:col-span-8 order-1 lg:order-2">
+            <div id="pd-story" class="prose prose-invert prose-cyan max-w-none text-white/80 leading-relaxed text-lg pb-10">
+              <!-- Content injected here -->
+            </div>
+          </div>
+
+        </div>
+
+      </article>
+      <!-- Footer -->
+      <footer class="border-t border-white/10 pt-8 pb-12 mt-20">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div class="text-white/50 text-xs md:text-sm">Built with Vanilla JS, GSAP & too much coffee <span class="text-white/80">☕</span></div>
+          <div class="flex space-x-6">
+            <a class="text-white/40 hover:text-cyan-400 transition-colors" href="https://github.com/GoDSpeeD0o0" target="_blank" rel="noopener">GitHub</a>
+            <a class="text-white/40 hover:text-cyan-400 transition-colors" href="https://linkedin.com/in/prateekp7" target="_blank" rel="noopener">LinkedIn</a>
+            <a class="text-white/40 hover:text-cyan-400 transition-colors" href="mailto:pparash7@asu.edu">Email</a>
+          </div>
+        </div>
+        <div class="mt-4 text-center text-xs text-white/30 mono">© <span id="year"></span></div>
+      </footer>
+    </main>
+
+    <button id="back-to-top" class="fixed bottom-6 right-6 z-50 p-3 rounded-xl bg-violet-600/20 border border-violet-400/30 text-violet-400 backdrop-blur-md shadow-[0_0_16px_rgba(168,85,247,0.15)] opacity-0 pointer-events-none hover:bg-violet-600/30 hover:border-violet-400/50 hover:scale-110 hover:-translate-y-1 transition-all duration-300 ease-out" aria-label="Back to top">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+    </button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+    <script src="assets/js/main.js?v=45"></script>
+  </body>
+</html>

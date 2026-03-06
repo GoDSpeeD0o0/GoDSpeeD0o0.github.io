@@ -86,28 +86,6 @@
   });
 
   // =========================
-  // Mobile Menu Toggle
-  // =========================
-  const menuBtn = document.getElementById("menu-btn");
-  const mobileMenu = document.getElementById("mobile-menu");
-  
-  if (menuBtn && mobileMenu) {
-    menuBtn.addEventListener("click", () => {
-      mobileMenu.classList.toggle("hidden");
-      const isExpanded = menuBtn.getAttribute("aria-expanded") === "true";
-      menuBtn.setAttribute("aria-expanded", !isExpanded);
-    });
-    
-    // Close mobile menu on link click
-    mobileMenu.querySelectorAll("a").forEach(link => {
-      link.addEventListener("click", () => {
-        mobileMenu.classList.add("hidden");
-        menuBtn.setAttribute("aria-expanded", "false");
-      });
-    });
-  }
-
-  // =========================
   // Utilities
   // =========================
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -249,6 +227,31 @@
           }
         );
       });
+    }
+
+    // =========================
+    // Active Nav Highlight on Scroll
+    // =========================
+    const navPills = document.querySelectorAll('header nav .nav-pill[href^="#"]');
+    if (navPills.length > 0) {
+      navPills.forEach(pill => {
+        const sectionId = pill.getAttribute('href');
+        const section = document.querySelector(sectionId);
+        if (!section) return;
+        
+        window.ScrollTrigger.create({
+          trigger: section,
+          start: 'top 40%',
+          end: 'bottom 40%',
+          onEnter: () => setActiveNav(pill),
+          onEnterBack: () => setActiveNav(pill),
+        });
+      });
+      
+      function setActiveNav(activePill) {
+        navPills.forEach(p => p.classList.remove('nav-pill-active'));
+        activePill.classList.add('nav-pill-active');
+      }
     }
 
   }
@@ -1585,17 +1588,51 @@
     }
 
     let scrollY = window.scrollY;
-    window.addEventListener('scroll', () => {
-      scrollY = window.scrollY;
-    }, {passive: true});
+    let prevScrollY = scrollY;
+    let scrollVelocity = 0;
+    
+    // Make sure we hook into Lenis if it exists since it handles smooth scrolling
+    // Otherwise fallback to native scroll
+    const updateScrollState = (customY, customVelocity) => {
+      scrollY = customY !== undefined ? customY : window.scrollY;
+      
+      if (customVelocity !== undefined) {
+        // Lenis provides reliable velocity
+        scrollVelocity = Math.abs(customVelocity);
+      } else {
+        // Fallback calculation
+        const rawVelocity = Math.abs(scrollY - prevScrollY);
+        scrollVelocity += (rawVelocity - scrollVelocity) * 0.2; // Lerp
+      }
+      prevScrollY = scrollY;
+    };
+    
+    window.addEventListener('scroll', () => updateScrollState(), {passive: true});
+    
+    // Hack: Wait a tick to see if Lenis was initialized globally elsewhere in main.js
+    setTimeout(() => {
+      if (typeof lenis !== 'undefined' && lenis) {
+        lenis.on('scroll', (e) => updateScrollState(e.scroll, e.velocity));
+      }
+    }, 100);
 
     const drawStars = () => {
       ctx.clearRect(0, 0, width, height);
       
+      // Decay velocity if natively calculated, to handle stopping
+      if (typeof lenis === 'undefined' || !lenis) {
+        scrollVelocity *= 0.95; 
+      }
+      
+      // Warp factor: 0 = idle, 1 = max warp. Lowered the divisor to make it MORE sensitive (was 40, now 15)
+      const warpFactor = Math.min(scrollVelocity / 15, 1);
+      
       stars.forEach(star => {
         // Twinkle
         star.life += star.speed;
-        const opacity = Math.abs(Math.sin(star.life)) * 0.8 + 0.2; // 0.2 to 1.0
+        const baseOpacity = Math.abs(Math.sin(star.life)) * 0.8 + 0.2;
+        // Brighter during warp
+        const opacity = baseOpacity + (warpFactor * 0.4);
         const radius = star.baseRadius + (Math.sin(star.life) * 0.4);
 
         // Parallax scroll position
@@ -1608,16 +1645,30 @@
           currentY = currentY % height;
         }
 
-        ctx.beginPath();
-        ctx.arc(star.x, currentY, Math.max(0.1, radius), 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-        ctx.fill();
+        // During warp: stretch stars into vertical streaks
+        const streakLength = warpFactor * (star.parallaxSpeed * 30);
+        
+        if (streakLength > 0.5) {
+          // Draw as a streak line
+          ctx.beginPath();
+          ctx.moveTo(star.x, currentY - streakLength);
+          ctx.lineTo(star.x, currentY + streakLength);
+          ctx.strokeStyle = `rgba(255, 255, 255, ${Math.min(1, opacity)})`;
+          ctx.lineWidth = Math.max(0.3, radius * 0.6);
+          ctx.stroke();
+        } else {
+          // Normal dot
+          ctx.beginPath();
+          ctx.arc(star.x, currentY, Math.max(0.1, radius), 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, opacity)})`;
+          ctx.fill();
+        }
         
         // Add subtle cyan/violet glow to larger stars
         if (star.baseRadius > 1.0) {
-           ctx.shadowBlur = 4;
+           ctx.shadowBlur = 4 + (warpFactor * 4);
            ctx.shadowColor = (star.life % 2 < 1) ? 'rgba(34, 211, 238, 0.4)' : 'rgba(168, 85, 247, 0.4)';
-           ctx.fill();
+           if (streakLength > 0.5) { ctx.stroke(); } else { ctx.fill(); }
            ctx.shadowBlur = 0; // Reset
         }
       });
@@ -1694,6 +1745,244 @@
         yTo(0);
       });
     });
+  }
+
+  // =========================
+  // Project Detail Page Logic
+  // =========================
+  const pdData = {
+    "slackbot": {
+      title: "Slack Python QnA Bot",
+      timeline: "Nov 2025",
+      role: "AI Engineer",
+      team: "Solo / Internal Tool",
+      tags: ["Python", "Slack API", "NLP"],
+      image: "assets/img/1.webp",
+      links: [
+        { label: "GitHub", url: "https://github.com/AII-projects/slackbot", icon: `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/></svg>` }
+      ],
+      story: `
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-cyan-400"></div> Objective</h3>
+          <p>Developers and team members were constantly switching context to ask repetitive Python, infrastructure, and HR-related questions. The objective was to build an automated organizational support agent integrated directly into the company's Slack workspace to intercept tier-1 support queries.</p>
+        </div>
+        
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-violet-400"></div> Tech Stack & Architecture</h3>
+          <p>The bot is built using Python and leverages the official <strong>Slack Bolt API</strong> for real-time event listening. When a user asks a question, the message is routed through a <strong>Natural Language Processing (NLP)</strong> layer to determine intent. If the query matches a known symptom or repetitive question, the bot immediately fetches the resolution from an internal knowledge base.</p>
+        </div>
+        
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-400"></div> Results & Impact</h3>
+          <p>By handling tier-1 inquiries automatically, this agent significantly reduced the volume of IT and HR support tickets. This allowed the engineering team to maintain deep focus states without constant context switching, materially improving sprint velocity.</p>
+        </div>
+      `
+    },
+    "faster-diffusion": {
+      title: "Faster Diffusion",
+      timeline: "Spring 2025",
+      role: "ML Researcher",
+      team: "Team of 3",
+      tags: ["PyTorch", "Diffusion", "CUDA"],
+      image: "assets/img/2.webp",
+      links: [
+        { label: "GitHub Repo", url: "https://github.com/GoDSpeeD0o0/GenAIProject", icon: `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/></svg>` }
+      ],
+      story: `
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-cyan-400"></div> Objective</h3>
+          <p>Stable Diffusion models are notoriously slow during inference, often requiring massive GPU compute to generate a single image within an acceptable timeframe. The primary objective was to reduce latency on local consumer hardware without sacrificing visual fidelity.</p>
+        </div>
+        
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-violet-400"></div> Tech Stack & Architecture</h3>
+          <p>We attacked the problem from multiple angles using <strong>PyTorch</strong> and <strong>CUDA</strong> optimizations. First, we implemented <strong>Token Merging (ToMe)</strong>, which identifies and fuses redundant tokens in the attention layers, drastically reducing the required matrix multiplications. Second, we optimized the hardware-aware scheduling to maximize tensor core utilization.</p>
+        </div>
+        
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-400"></div> Results & Impact</h3>
+          <p>Our combined optimizations resulted in a massive <strong>41% reduction in inference time</strong> on local consumer hardware. The generated images maintained a structural similarity index (SSIM) of >0.98 compared to the unoptimized baseline, proving that significant speedups do not require a compromise in quality.</p>
+        </div>
+      `
+    },
+    "particle-pollution": {
+      title: "Particle Pollution CNN",
+      timeline: "May 2022",
+      role: "Lead Author",
+      team: "Academic Research",
+      tags: ["TensorFlow", "CNN", "Research"],
+      image: "assets/img/3.webp",
+      links: [
+        { label: "Read Paper", url: "https://github.com/GoDSpeeD0o0/Research-Paper/tree/main/MachineLearningAnalysis_Particle_Pollution", icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>` }
+      ],
+      story: `
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-cyan-400"></div> Objective</h3>
+          <p>Urban air quality monitoring is typically reliant on sparse, expensive ground sensors. Our objective was to determine if machine learning algorithms could accurately predict and map PM 2.5 particle distribution remotely by synthesizing meteorological data and satellite imagery.</p>
+        </div>
+        
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-violet-400"></div> Tech Stack & Architecture</h3>
+          <p>We designed a dual-input Convolutional Neural Network (CNN) inside <strong>TensorFlow / Keras</strong>. The architecture processes sequential weather telemetry alongside spatial satellite snapshots. By fusing these multimodal features before the final classification layers, the model learns the complex relationship between wind patterns, humidity, and particulate clustering.</p>
+        </div>
+        
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-400"></div> Results & Impact</h3>
+          <p>The neural network achieved a highly correlative prediction accuracy against ground truth sensors. This research was peer-reviewed and officially accepted at the <strong>ICoAC conference</strong>. The open-source prediction framework is now available for other researchers to adopt scale cost-effective air quality monitoring in developing countries.</p>
+        </div>
+      `
+    },
+    "tweet-sentiment": {
+      title: "Tweet Sentiment Pipeline",
+      timeline: "Apr 2024",
+      role: "Data Engineer",
+      team: "Solo Project",
+      tags: ["NLP", "Transformers", "API"],
+      image: "assets/img/4.webp",
+      links: [
+        { label: "GitHub Repo", url: "https://github.com/GoDSpeeD0o0/TextSentimentAnalysis", icon: `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/></svg>` }
+      ],
+      story: `
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-cyan-400"></div> Objective</h3>
+          <p>Design an end-to-end data pipeline capable of ingesting, sanitizing, and classifying the semantic sentiment of large-scale Twitter streams in real-time, allowing businesses to monitor brand perception dynamically.</p>
+        </div>
+        
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-violet-400"></div> Tech Stack & Architecture</h3>
+          <p>The system connects to the <strong>Twitter API</strong> to listen for specific keyword streams. Raw tweets are sanitized (removing URLs, handles, and special characters) using regex, then batched and passed into a fine-tuned <strong>ALBERT Transformer model</strong>. ALBERT was chosen over standard BERT due to its parameter-sharing architecture, which vastly improved throughput and reduced memory overhead.</p>
+        </div>
+        
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-400"></div> Results & Impact</h3>
+          <p>The pipeline successfully processed thousands of tweets per minute with >90% operational uptime. The high-accuracy categorization pumped resulting sentiment scores into a visual dashboard, allowing for live tracking of public reaction trends to specific events.</p>
+        </div>
+      `
+    },
+    "digital-assets": {
+      title: "Digital Assets Pipeline",
+      timeline: "2024",
+      role: "Data Engineer",
+      team: "Enterprise Build",
+      tags: ["Snowflake", "dbt", "Airflow"],
+      image: "assets/img/5.webp",
+      links: [
+        { label: "Architecture", url: "https://github.com/AII-projects/DigitalAssetsAnalyticsPipeline", icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>` }
+      ],
+      story: `
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-cyan-400"></div> Objective</h3>
+          <p>Processing millions of daily digital asset transactions requires a rock-solid, scalable architecture. The existing systems were struggling with data latency, schema drift, and validation bottlenecks. The objective was to modernize the entire stack to handle exponential data growth.</p>
+        </div>
+        
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-violet-400"></div> Tech Stack & Architecture</h3>
+          <p>I architected a modern ETL stack centered around <strong>Snowflake</strong> for the data warehouse and <strong>dbt (data build tool)</strong> for the transformation layer. All ingestion jobs and DAG dependencies were orchestrated using <strong>Apache Airflow</strong> to ensure cron-like reliability.</p>
+        </div>
+        
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-400"></div> Results & Impact</h3>
+          <p>Crucially, the pipeline implements strict data governance. dbt tests run on every pull request, ensuring that anomalies, nulls, or schema changes fail the CI/CD pipeline before they can pollute the production warehouse. This resulted in a 99.9% reduction in downstream dashboard errors.</p>
+        </div>
+      `
+    },
+    "stock-prediction": {
+      title: "Algorithmic Trading Stack",
+      timeline: "Ongoing",
+      role: "Quant Developer",
+      team: "Solo / R&D",
+      tags: ["PyTorch", "LSTM", "DuckDB"],
+      image: "assets/img/6.webp",
+      links: [
+        { label: "In Development", url: "#", icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>` }
+      ],
+      story: `
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-cyan-400"></div> Objective</h3>
+          <p>A personal R&D project building a full-stack algorithmic trading and backtesting engine for U.S. equities, from data ingestion to live-simulated execution.</p>
+        </div>
+        
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-violet-400"></div> Tech Stack & Architecture</h3>
+          <p>The system is split into three core Python microservices:<br><br>
+          1. <strong>ETL Engine</strong>: Pulls daily and intraday ticking data from external APIs, normalizes it using Pandas, and stores it in a fast local DuckDB instance.<br>
+          2. <strong>Predictive Model</strong>: A PyTorch-based sequence modeling engine testing LSTM networks and Temporal Fusion Transformers (TFT) to forecast momentum based on order book imbalance.<br>
+          3. <strong>Execution Engine</strong>: A systematic backtesting harness that simulates slippage, commission, and latency.</p>
+        </div>
+        
+        <div class="glass p-8 rounded-2xl border border-white/5 mb-8">
+          <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-400"></div> Results & Impact</h3>
+          <p>This project is currently in active development. The underlying DuckDB architecture has proven highly performant for iterating through historical backtests locally without cloud costs.</p>
+        </div>
+      `
+    }
+  };
+
+  // Check if we are on the project detail page
+  const pdContainer = document.getElementById('project-content');
+  if (pdContainer) {
+    const params = new URLSearchParams(window.location.search);
+    const projectId = params.get('id');
+    const project = pdData[projectId];
+    const errorState = document.getElementById('project-error');
+
+    if (!project) {
+      if (errorState) errorState.classList.remove('hidden');
+    } else {
+      // Inject Data
+      document.getElementById('pd-title').textContent = project.title;
+      document.getElementById('pd-timeline').textContent = project.timeline;
+      document.getElementById('pd-role').textContent = project.role;
+      
+      // Inject Team Size with Icon
+      document.getElementById('pd-team').innerHTML = `
+        <div class="flex items-center gap-2 text-white/90">
+          <svg class="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+          ${project.team}
+        </div>
+      `;
+      
+      document.getElementById('pd-hero-img').src = project.image;
+      document.getElementById('pd-story').innerHTML = project.story;
+
+      // Inject Tags
+      const tagsContainer = document.getElementById('pd-tags');
+      project.tags.forEach(tag => {
+        const span = document.createElement('span');
+        span.className = 'pill';
+        span.textContent = tag;
+        tagsContainer.appendChild(span);
+      });
+
+      // Inject Links (Icon style)
+      const linksContainer = document.getElementById('pd-links');
+      linksContainer.className = "flex flex-wrap gap-3"; // update layout
+      project.links.forEach((link, idx) => {
+        const a = document.createElement('a');
+        // If it's the primary link, make it pop. Otherwise subtle.
+        a.className = idx === 0 
+          ? 'flex items-center gap-2 px-5 py-2.5 bg-white text-black font-semibold rounded-full hover:bg-cyan-200 hover:scale-105 transition-all text-sm group'
+          : 'flex items-center gap-2 px-5 py-2.5 glass border border-white/20 text-white font-semibold rounded-full hover:bg-white/10 hover:border-white/40 transition-all text-sm group';
+        a.href = link.url;
+        a.innerHTML = `
+          <span class="opacity-80 group-hover:opacity-100 transition-opacity">${link.icon || ''}</span>
+          ${link.label}
+        `;
+        if (link.url !== '#') {
+          a.target = '_blank';
+          a.rel = 'noopener';
+        }
+        linksContainer.appendChild(a);
+      });
+
+      // Trigger entrance animation
+      pdContainer.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          pdContainer.classList.remove('opacity-0', 'translate-y-4');
+        });
+      });
+    }
   }
 
 })();
